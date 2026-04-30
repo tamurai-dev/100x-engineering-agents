@@ -1,10 +1,18 @@
-# 100x Engineering Agents
-
-## このドキュメントについて
-
-このREADMEは、本プロジェクトに関わるすべてのAIエージェント（Devin, Claude Code, Cursor等）と人間の開発者が**最初に読み、繰り返し参照する文書**です。曖昧な記述や願望は載せません。ここに書かれていることはすべて**現時点での決定事項**です。未決定の事項は明示的に「未決定」と記載します。
-
 ---
+document:
+  type: single-source-of-truth
+  audience:
+    - AI agents (Devin, Claude Code, Cursor, etc.)
+    - human developers
+  policy:
+    - 曖昧な記述や願望は載せない
+    - ここに書かれていることはすべて現時点での決定事項である
+    - 未決定の事項は明示的に「未決定」と記載する
+  read_frequency: 全セッション開始時に必読
+  modification_rule: オーナー（YoshibaTakumu）の承認なしに変更禁止
+---
+
+# 100x Engineering Agents
 
 ## 1. ビジョン
 
