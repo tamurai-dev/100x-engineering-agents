@@ -11,10 +11,13 @@ Usage:
     python scripts/validate_subagents.py --check-template   # テンプレートのスキーマ整合性検証
 """
 
+from __future__ import annotations
+
 import json
 import re
 import sys
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 try:
     import yaml
