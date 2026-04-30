@@ -1,0 +1,13 @@
+repos:
+  - repo: local
+    hooks:
+      - id: validate-subagent-frontmatter
+        name: "Subagent Frontmatter バリデーション"
+        entry: python scripts/validate_subagents.py
+        language: python
+        files: ^agents/agents/.*\.md$
+        additional_dependencies:
+          - pyyaml
+          - jsonschema
+        pass_filenames: true
+        description: "Claude Code subagent の YAML frontmatter が仕様に準拠しているか検証する"

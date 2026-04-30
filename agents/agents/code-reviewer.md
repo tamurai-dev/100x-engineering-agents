@@ -4,11 +4,6 @@ description: >
   コード変更のレビューを行う。品質・セキュリティ・規約遵守の観点で問題を検出する。
   PRレビュー依頼やコード変更後に PROACTIVELY 起動される。
 model: sonnet
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Bash
 disallowedTools:
   - Write
   - Edit

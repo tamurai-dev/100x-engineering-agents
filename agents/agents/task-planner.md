@@ -4,11 +4,6 @@ description: >
   大規模タスクを実行可能なサブタスクに分解し、実行計画を策定する。
   複雑な機能開発やリファクタリングの計画時に起動される。
 model: sonnet
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Bash
 disallowedTools:
   - Write
   - Edit

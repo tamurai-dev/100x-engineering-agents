@@ -10,8 +10,6 @@ tools:
   - Edit
   - Glob
   - Grep
-disallowedTools:
-  - Bash
 effort: medium
 color: cyan
 ---

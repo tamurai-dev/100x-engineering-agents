@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/tamurai-dev/100x-engineering-agents/agents/schemas/subagent-frontmatter.schema.json",
+  "title": "Claude Code Subagent Frontmatter",
+  "description": "Claude Code v2.1+ subagent YAML frontmatter のバリデーションスキーマ（全16フィールド対応）",
+  "type": "object",
+  "required": ["name", "description"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$",
+      "maxLength": 64,
+      "description": "小文字+ハイフンのみ。最大64文字"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 10,
+      "description": "エージェントの説明。最低10文字。第三者視点で記述"
+    },
+    "model": {
+      "type": "string",
+      "anyOf": [
+        { "enum": ["sonnet", "opus", "haiku", "inherit"] },
+        { "pattern": "^claude-" }
+      ],
+      "description": "使用モデル。エイリアスまたはフルモデルID"
+    },
+    "tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "許可ツールリスト"
+    },
+    "disallowedTools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "拒否ツールリスト"
+    },
+    "permissionMode": {
+      "type": "string",
+      "enum": ["default", "acceptEdits", "auto", "dontAsk", "bypassPermissions", "plan"],
+      "description": "パーミッションモード"
+    },
+    "maxTurns": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "最大ターン数"
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "プリロードするスキル名"
+    },
+    "mcpServers": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "object" }
+        ]
+      },
+      "description": "MCPサーバー参照またはインライン定義"
+    },
+    "hooks": {
+      "type": "object",
+      "description": "ライフサイクルフック設定"
+    },
+    "memory": {
+      "type": "string",
+      "enum": ["user", "project", "local"],
+      "description": "永続メモリスコープ"
+    },
+    "background": {
+      "type": "boolean",
+      "description": "バックグラウンドタスクとして実行するか"
+    },
+    "effort": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "xhigh", "max"],
+      "description": "エフォートレベル"
+    },
+    "isolation": {
+      "type": "string",
+      "enum": ["worktree"],
+      "description": "分離モード"
+    },
+    "initialPrompt": {
+      "type": "string",
+      "description": "エージェント起動時の初期プロンプト"
+    },
+    "color": {
+      "type": "string",
+      "enum": ["red", "blue", "green", "yellow", "purple", "orange", "pink", "cyan"],
+      "description": "表示色"
+    }
+  },
+  "not": {
+    "required": ["tools", "disallowedTools"]
+  }
+}

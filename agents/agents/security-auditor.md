@@ -4,11 +4,6 @@ description: >
   セキュリティ観点でコードベースを監査する。脆弱性、シークレット漏洩、
   依存関係リスクを検出する。セキュリティに関わる変更時に起動される。
 model: sonnet
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Bash
 disallowedTools:
   - Write
   - Edit
