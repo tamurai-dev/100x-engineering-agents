@@ -1,15 +1,55 @@
 ---
+# ============================================================
+# Project Frontmatter — Claude Code subagent 書式に準拠
+# https://docs.anthropic.com/en/docs/claude-code/sub-agents
+# ============================================================
+
+# --- Identity（プロジェクト識別） ---
+name: 100x-engineering-agents
+description: >
+  AIエージェントが正しく動くために必要な「構造化されたコンテキスト」を
+  設計・管理・運用するためのフレームワーク。
+  エンタープライズが求めるセキュリティ・コンプライアンス・ガバナンスを
+  エージェントが自律的に遵守できる状態を目指す。
+owner: YoshibaTakumu
+repo: tamurai-dev/100x-engineering-agents
+
+# --- Status（プロジェクト状態） ---
+status: inception                  # inception | active | maintenance | archived
+tech_stack: 未決定                  # 技術スタック選定後に更新
+ci_cd: 未設定                       # CI/CDパイプライン構築後に更新
+
+# --- Document Governance（文書統制） ---
 document:
-  type: single-source-of-truth
+  type: single-source-of-truth     # この文書の性質
+  read_frequency: session-start    # エージェントは全セッション開始時に必読
   audience:
-    - AI agents (Devin, Claude Code, Cursor, etc.)
-    - human developers
-  policy:
+    - ai-agent                     # Devin, Claude Code, Cursor, etc.
+    - human-developer
+  permission:
+    modify: owner-approval-required  # オーナー承認なしに変更禁止
+    reason: 規約変更は全エージェント・開発者に影響するため
+  integrity:
     - 曖昧な記述や願望は載せない
-    - ここに書かれていることはすべて現時点での決定事項である
-    - 未決定の事項は明示的に「未決定」と記載する
-  read_frequency: 全セッション開始時に必読
-  modification_rule: オーナー（YoshibaTakumu）の承認なしに変更禁止
+    - 記載内容はすべて現時点での決定事項である
+    - 未決定事項は明示的に「未決定」と記載する
+    - 存在しない機能を「対応済み」と書かない
+
+# --- Agent Behavior（エージェント行動制御） ---
+agent:
+  language:
+    documentation: ja              # README, Issue, PR本文, コミットメッセージ
+    code_comments: en              # コード内コメント
+    identifiers: en                # 変数名, 関数名, クラス名
+  disallowedActions:
+    - main ブランチへの直接プッシュ
+    - force push（--force-with-lease は自分のfeatureブランチに限り許可）
+    - 推測に基づくコード生成（不明な仕様はIssueで確認）
+    - 未使用ライブラリの無断追加
+    - テストの改変による通過
+    - 自動生成ファイルの手動編集
+    - この README の無断変更
+  effort: high                     # low | medium | high | max
 ---
 
 # 100x Engineering Agents
