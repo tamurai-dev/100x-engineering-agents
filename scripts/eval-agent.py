@@ -233,7 +233,11 @@ def run_eval_trial(
                         }
             case "agent.tool_result":
                 if hasattr(event, "content"):
-                    event_data["content_preview"] = str(event.content)[:1000]
+                    raw = str(event.content)
+                    if len(raw) > 2000:
+                        event_data["content_preview"] = raw[:1000] + "\n...\n" + raw[-1000:]
+                    else:
+                        event_data["content_preview"] = raw
             case "span.model_request_start":
                 pass
             case "span.model_request_end":

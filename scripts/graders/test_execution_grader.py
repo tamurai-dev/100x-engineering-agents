@@ -64,10 +64,12 @@ def grade_test_execution(events: list[dict]) -> dict:
             "reason": "テスト実行コマンドが見つからなかった",
         }
 
+    # 全テスト実行結果を結合して判定（最終実行を優先）
+    all_test_output = "\n".join(r.get("result", "") or "" for r in test_runs)
     final_run = test_runs[-1]
     test_output = final_run.get("result", "") or ""
 
-    tests_passed = _check_test_passed(test_output)
+    tests_passed = _check_test_passed(all_test_output)
 
     return {
         "tests_executed": True,
@@ -104,6 +106,11 @@ def _check_test_passed(output: str) -> bool:
 
     # pytest のサマリー行を解析（最も信頼性が高い）
     m = _PYTEST_SUMMARY_RE.search(output)
+    # BetaManagedAgentsTextBlock wrapper の中身も検索
+    if not m:
+        inner = re.search(r"text=['\"](.+)['\"]\)", output, re.DOTALL)
+        if inner:
+            m = _PYTEST_SUMMARY_RE.search(inner.group(1))
     if m:
         passed_count = int(m.group(1) or 0)
         failed_count = int(m.group(2) or 0)
