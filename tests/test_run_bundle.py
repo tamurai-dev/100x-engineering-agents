@@ -34,6 +34,8 @@ from run_bundle_helpers import (
     DEFAULT_MODEL_ESCALATION,
     ESCALATION_IMPROVEMENT_DELTA,
     EVIDENCE_RESPONSE_LIMIT,
+    FILE_OUTPUT_INSTRUCTIONS,
+    FORMAT_REQUIRES_SONNET,
     MULTIAGENT_BETA,
     ORCHESTRATOR_MAX_QA_PROMPT_CHARS,
     build_feedback_history,
@@ -484,6 +486,40 @@ class TestMultiagent(unittest.TestCase):
         result = build_orchestrator_system("test-bundle", qa_settings, None)
         self.assertIn("final_status", result)
         self.assertIn("best_score", result)
+
+
+class TestFileOutputInstructions(unittest.TestCase):
+    """File output instructions and format-based model defaults."""
+
+    def test_file_output_instructions_defined(self):
+        """FILE_OUTPUT_INSTRUCTIONS is a non-empty string."""
+        self.assertIsInstance(FILE_OUTPUT_INSTRUCTIONS, str)
+        self.assertIn("/mnt/session/outputs/", FILE_OUTPUT_INSTRUCTIONS)
+        self.assertIn("ls -la", FILE_OUTPUT_INSTRUCTIONS)
+
+    def test_file_output_instructions_contains_verification(self):
+        """Instructions include file verification step."""
+        self.assertIn("verify", FILE_OUTPUT_INSTRUCTIONS.lower())
+
+    def test_format_requires_sonnet_defined(self):
+        """FORMAT_REQUIRES_SONNET is a set of known formats."""
+        self.assertIsInstance(FORMAT_REQUIRES_SONNET, set)
+        self.assertIn("presentation", FORMAT_REQUIRES_SONNET)
+        self.assertIn("structured_data", FORMAT_REQUIRES_SONNET)
+        self.assertIn("media_image", FORMAT_REQUIRES_SONNET)
+
+    def test_format_requires_sonnet_excludes_text(self):
+        """Text-based formats should not require sonnet."""
+        self.assertNotIn("text", FORMAT_REQUIRES_SONNET)
+        self.assertNotIn("code", FORMAT_REQUIRES_SONNET)
+
+    def test_build_skill_preamble_with_file_instructions(self):
+        """Skill preamble and file instructions combine correctly."""
+        preamble = build_skill_preamble("Use pptxgenjs for slides.")
+        combined = preamble + "Create slides" + FILE_OUTPUT_INSTRUCTIONS
+        self.assertIn("SKILL.md", combined)
+        self.assertIn("/mnt/session/outputs/", combined)
+        self.assertIn("Create slides", combined)
 
 
 if __name__ == "__main__":

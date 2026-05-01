@@ -63,6 +63,21 @@ EVIDENCE_RESPONSE_LIMIT = 2000
 # QA loop iteration limit for orchestrator prompt
 ORCHESTRATOR_MAX_QA_PROMPT_CHARS = 4000
 
+# artifact_format values that require higher-tier models by default
+FORMAT_REQUIRES_SONNET = {"presentation", "structured_data", "media_image"}
+
+# File output instructions appended to Task Agent prompt
+FILE_OUTPUT_INSTRUCTIONS = (
+    "\n\n---\n"
+    "## IMPORTANT: File Output Rules\n\n"
+    "1. Save ALL generated artifacts to `/mnt/session/outputs/`.\n"
+    "2. After saving, run `ls -la /mnt/session/outputs/` to verify "
+    "the files exist and are non-empty.\n"
+    "3. If a file is missing or empty, regenerate and save it again.\n"
+    "4. Do NOT just describe what you would create — actually create "
+    "the files and save them to the output directory.\n"
+)
+
 
 def check_api_key() -> str:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -860,7 +875,14 @@ def run_bundle(
     )
     # If user explicitly specified a model, disable escalation
     explicit_model = model is not None
-    current_model = model or escalation_order[0]
+    artifact_format = bundle.get("artifact_format", "")
+    if not explicit_model and artifact_format in FORMAT_REQUIRES_SONNET:
+        # Complex artifact formats start with sonnet for higher success rate
+        default_model = "sonnet" if "sonnet" in escalation_order else escalation_order[0]
+        current_model = default_model
+        print(f"  artifact_format '{artifact_format}' -> デフォルト: {default_model}")
+    else:
+        current_model = model or escalation_order[0]
 
     results = {
         "bundle": bundle_name,
@@ -889,11 +911,12 @@ def run_bundle(
         packages=bundle_packages or None,
     )
 
-    # Build initial prompt with skill preamble
+    # Build initial prompt with skill preamble + file output instructions
     initial_prompt = ""
     if skill_content:
         initial_prompt += build_skill_preamble(skill_content)
     initial_prompt += user_input
+    initial_prompt += FILE_OUTPUT_INSTRUCTIONS
 
     task_result = send_and_collect(client, task_session.id, initial_prompt)
 
@@ -1024,9 +1047,11 @@ def run_bundle(
             results["final_status"] = "passed"
             break
 
-        # Convergence check (compare only against previous *successful* QA score)
+        # Convergence check — only compare scores from the same model
         prev_valid_scores = [
-            it["score"] for it in results["iterations"][:-1] if "score" in it
+            it["score"]
+            for it in results["iterations"][:-1]
+            if "score" in it and it.get("model") == current_model
         ]
         if prev_valid_scores:
             prev_score = prev_valid_scores[-1]
