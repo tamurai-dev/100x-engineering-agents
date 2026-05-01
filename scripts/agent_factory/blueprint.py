@@ -333,7 +333,7 @@ def _validate_blueprint(blueprint: dict) -> None:
 
 def _inject_weakness_mitigations(system_prompt: str, agent_type: str) -> str:
     """system prompt に弱点対策を注入する（まだ含まれていない場合のみ）。"""
-    mitigations = WEAKNESS_MITIGATIONS.get("__all__", [])
+    mitigations = list(WEAKNESS_MITIGATIONS.get("__all__", []))
     mitigations += WEAKNESS_MITIGATIONS.get(agent_type, [])
 
     # 既に含まれている指示はスキップ

@@ -39,6 +39,12 @@ TARGET_SCORE = 0.65
 MAX_ITERATIONS = 3
 MIN_IMPROVEMENT = 0.02
 
+MODEL_MAP = {
+    "haiku": "claude-haiku-4-5",
+    "sonnet": "claude-sonnet-4-6",
+    "opus": "claude-opus-4-6",
+}
+
 # ── 改善ルール ──────────────────────────────────────
 
 IMPROVEMENT_RULES = {
@@ -160,8 +166,7 @@ def _identify_improvements(task_results: list[dict]) -> list[str]:
     # 通常タスク（弱点テスト以外）のスコアを集計
     main_results = [
         r for r in task_results
-        if r.get("task", "").find("-test") == -1
-        or r.get("task", "").find("weakness") == -1
+        if not r.get("task", "").endswith("-test")
     ]
 
     for result in main_results:
@@ -362,7 +367,8 @@ def run_edd_loop(
         current_prompt = config.get("system", "")
 
         print("  system prompt を改善中 ...")
-        new_prompt = _improve_prompt(client, current_prompt, task_results, model=model)
+        resolved_model = MODEL_MAP.get(model, model)
+        new_prompt = _improve_prompt(client, current_prompt, task_results, model=resolved_model)
 
         if new_prompt == current_prompt:
             print("  system prompt に変更なし")
