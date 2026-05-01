@@ -3,33 +3,39 @@
   "agents": {
     "code-reviewer": {
       "file": "agents/agents/code-reviewer/agent.md",
-      "created_at": "2026-05-01T01:09:13.440788+00:00",
+      "created_at": "2026-05-01T05:50:18.855961+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "5d9ab499b32b8e4366fde851f2a089e4c2903df474f805feb39ba069a46e1854"
+      "hmac_sha256": "21c665e1e52dd488552c43f9e7085622bcf05e9040ed59f60bd24995798c89a0"
     },
     "doc-writer": {
       "file": "agents/agents/doc-writer/agent.md",
-      "created_at": "2026-05-01T01:09:13.440956+00:00",
+      "created_at": "2026-05-01T05:50:18.856119+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "182f7266750254cf03da3a4db021b26757b80c0373ef848ee2f07c5b16c9b43c"
+      "hmac_sha256": "2b1cf8124fcd1e6912f52a5c4bcc33628f99bf082f370777e75f59a17e429e71"
+    },
+    "performance-optimizer": {
+      "file": "agents/agents/performance-optimizer/agent.md",
+      "created_at": "2026-05-01T05:50:18.856405+00:00",
+      "created_by": "initial-seed",
+      "hmac_sha256": "69c38c78afa5f81f41c69a2ab605100b40d28c92835e704bcfdd0616fe8f32a6"
     },
     "security-auditor": {
       "file": "agents/agents/security-auditor/agent.md",
-      "created_at": "2026-05-01T01:09:13.441224+00:00",
+      "created_at": "2026-05-01T05:50:18.856698+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "63a4dcc0b00f10048acc669dec452809969df00b1a320a7e667707c5bb8c6324"
+      "hmac_sha256": "abee5e6086dd9d06775933393a254d064eb56b4ffcdf35e49cef75c1b8b6845c"
     },
     "task-planner": {
       "file": "agents/agents/task-planner/agent.md",
-      "created_at": "2026-05-01T01:09:13.441433+00:00",
+      "created_at": "2026-05-01T05:50:18.856895+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "7d0133155c3390a3c835d8e8aa357ed762fffcc469bed8a883ff856ca5ae1b76"
+      "hmac_sha256": "5bf4d1bcd014a1d44155f48a05ec5f24f3ed364d49d17561ba4bedaa2c90ac0f"
     },
     "test-generator": {
       "file": "agents/agents/test-generator/agent.md",
-      "created_at": "2026-05-01T01:09:13.441584+00:00",
+      "created_at": "2026-05-01T05:50:18.857108+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "77e72ed38320d1c7f5f82db0c654127eba32247a5992bf3e9f0a91384c6cf6f1"
+      "hmac_sha256": "dcb012088aa09e998d36dc385106fd10c9a8f210a1a76e0fea3eb5ff7e349a8f"
     }
   }
 }

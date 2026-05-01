@@ -1,0 +1,76 @@
+{
+  "issues": [
+    {
+      "id": "n-plus-1-orders",
+      "file": "app.py",
+      "line_range": [28, 45],
+      "type": "n-plus-1-query",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "get_all_orders_with_details でループ内に3重の個別クエリ（order_items, products, categories）を発行している"
+    },
+    {
+      "id": "select-star",
+      "file": "app.py",
+      "line_range": [22, 42],
+      "type": "select-star",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "全テーブルに対して SELECT * を使用しており、不要なカラムも取得している"
+    },
+    {
+      "id": "bubble-sort",
+      "file": "app.py",
+      "line_range": [91, 94],
+      "type": "inefficient-algorithm",
+      "severity": "high",
+      "category": "must_find",
+      "description": "バブルソート O(n²) を使用。sorted() の O(n log n) を使うべき"
+    },
+    {
+      "id": "duplicate-check-quadratic",
+      "file": "app.py",
+      "line_range": [102, 106],
+      "type": "inefficient-algorithm",
+      "severity": "high",
+      "category": "must_find",
+      "description": "O(n²) の総当たりで重複メール検出。辞書またはSQLのGROUP BYで O(n) に改善可能"
+    },
+    {
+      "id": "no-index-like",
+      "file": "app.py",
+      "line_range": [61, 63],
+      "type": "unindexable-query",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "LIKE '%keyword%' は先頭ワイルドカードによりインデックスが効かない"
+    },
+    {
+      "id": "redundant-fetch",
+      "file": "app.py",
+      "line_range": [70, 71],
+      "type": "redundant-computation",
+      "severity": "high",
+      "category": "should_find",
+      "description": "calculate_revenue_report が全注文を再取得している。日付フィルタをSQLに組み込むべき"
+    },
+    {
+      "id": "sequential-batch",
+      "file": "utils.py",
+      "line_range": [27, 31],
+      "type": "sequential-processing",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "batch_process が名前に反して逐次処理。並行処理（asyncio, ThreadPool 等）で高速化可能"
+    },
+    {
+      "id": "merge-resort",
+      "file": "utils.py",
+      "line_range": [36, 38],
+      "type": "inefficient-algorithm",
+      "severity": "low",
+      "category": "should_find",
+      "description": "ソート済みリストのマージを O(n log n) の再ソートで実装。O(n) のマージ操作で済む"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "issues": [
+    {
+      "id": "stats-no-memo",
+      "file": "Dashboard.tsx",
+      "line_range": [42, 51],
+      "type": "missing-memoization",
+      "severity": "high",
+      "category": "must_find",
+      "description": "stats オブジェクトがレンダリング毎に再計算される。useMemo で依存値（users）に基づきメモ化すべき"
+    },
+    {
+      "id": "lodash-full-import",
+      "file": "Dashboard.tsx",
+      "line_range": [2, 2],
+      "type": "bundle-size",
+      "severity": "high",
+      "category": "must_find",
+      "description": "lodash を全量インポートしている。lodash/sortBy のような個別インポートまたは lodash-es で tree-shaking を有効にすべき"
+    },
+    {
+      "id": "moment-heavy",
+      "file": "Dashboard.tsx",
+      "line_range": [3, 3],
+      "type": "bundle-size",
+      "severity": "high",
+      "category": "must_find",
+      "description": "moment.js（300KB+）を使用。date-fns や dayjs（数KB）への置き換えを推奨"
+    },
+    {
+      "id": "inline-callback",
+      "file": "Dashboard.tsx",
+      "line_range": [99, 105],
+      "type": "unnecessary-rerender",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "onClick にインラインアロー関数を使用しており、レンダリング毎に新しい関数参照が生成される"
+    },
+    {
+      "id": "format-date-recompute",
+      "file": "Dashboard.tsx",
+      "line_range": [54, 56],
+      "type": "redundant-computation",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "formatDate が各行のレンダリング毎に moment オブジェクトを生成。結果のキャッシュまたは軽量ライブラリ使用を推奨"
+    },
+    {
+      "id": "departments-set-recompute",
+      "file": "Dashboard.tsx",
+      "line_range": [48, 48],
+      "type": "redundant-computation",
+      "severity": "low",
+      "category": "should_find",
+      "description": "departments の Set 生成がレンダリング毎に実行される。stats と共に useMemo 内で計算すべき"
+    }
+  ]
+}
