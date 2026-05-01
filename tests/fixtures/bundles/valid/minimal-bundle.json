@@ -1,0 +1,20 @@
+{
+  "name": "code-review-bundle",
+  "version": "1.0.0",
+  "description": "最小構成のバリデーション用バンドル定義。必須フィールドのみ。",
+  "artifact_format": "text",
+  "task_agent": {
+    "name": "code-reviewer",
+    "ref": "agents/agents/code-reviewer"
+  },
+  "qa_agent": {
+    "name": "code-review-qa",
+    "ref": "agents/agents/code-review-qa"
+  },
+  "workflow": {
+    "qa": {
+      "max_iterations": 3,
+      "pass_threshold": 0.80
+    }
+  }
+}

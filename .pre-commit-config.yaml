@@ -30,3 +30,13 @@ repos:
         files: ^agents/agents/.*/agent\.md$
         pass_filenames: false
         description: "新規 subagent が create-subagent.sh 経由で作成されたか HMAC 署名で検証する"
+
+      - id: validate-bundle
+        name: "Actor-Critic Bundle バリデーション"
+        entry: python scripts/validate-bundle.py
+        language: python
+        files: ^agents/(bundles/.*/bundle\.json|schemas/bundle\.schema\.json)$
+        additional_dependencies:
+          - jsonschema
+        pass_filenames: false
+        description: "bundle.json がスキーマに準拠し、参照先エージェントが正しく登録されているか検証する"

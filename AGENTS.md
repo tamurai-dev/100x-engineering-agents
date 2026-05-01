@@ -214,10 +214,11 @@ make check-all
 | 1 | `make validate` | 全 agent.md の frontmatter バリデーション（Claude Code 用） |
 | 2 | `make validate-config` | 全 config.json バリデーション + agent.md との整合性チェック |
 | 3 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
-| 4 | `make check-template` | テンプレート整合性チェック |
-| 5 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 6 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 7 | `make report` | バリデーションレポート (JSON) 生成 |
+| 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
+| 5 | `make check-template` | テンプレート整合性チェック |
+| 6 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 7 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 8 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 
@@ -284,10 +285,11 @@ Layer 5 [最強] ── Branch Protection (required status checks)
                    → CI 未通過 = マージ不可能
 Layer 4 ────────── GitHub Actions CI
                    → push/PR 時に自動実行
-Layer 3 ────────── pre-commit hook（3段構成）
+Layer 3 ────────── pre-commit hook（4段構成）
                    → Hook 1: agent.md frontmatter バリデーション
                    → Hook 2: config.json バリデーション + 整合性チェック
                    → Hook 3: マニフェスト + HMAC 署名検証
+                   → Hook 4: Actor-Critic Bundle バリデーション
 Layer 2 ────────── マニフェスト登録制 + HMAC-SHA256 署名
                    → create-subagent.sh 以外からの作成を検出
 Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）

@@ -1,0 +1,20 @@
+{
+  "name": "iterations-out-bundle",
+  "version": "1.0.0",
+  "description": "max_iterations が範囲外（11）のバンドル。最大値は 10。",
+  "artifact_format": "text",
+  "task_agent": {
+    "name": "code-reviewer",
+    "ref": "agents/agents/code-reviewer"
+  },
+  "qa_agent": {
+    "name": "code-review-qa",
+    "ref": "agents/agents/code-review-qa"
+  },
+  "workflow": {
+    "qa": {
+      "max_iterations": 11,
+      "pass_threshold": 0.80
+    }
+  }
+}
