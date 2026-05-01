@@ -81,7 +81,7 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
     if model_override:
         agent_config["model"] = MODEL_MAP.get(model_override, model_override)
 
-    # Security screening (input) — API リソース作成前に実行
+    # Security screening (input) — run before API resource creation
     from scripts.security import screen_text
     from scripts.security.config import SecurityConfig
 
@@ -276,6 +276,7 @@ def save_evidence(agent_name: str, model: str, results: list[dict]) -> Path:
             "total": len(results),
             "passed": sum(1 for r in results if r["status"] == "pass"),
             "failed": sum(1 for r in results if r["status"] == "fail"),
+            "blocked": sum(1 for r in results if r["status"] == "blocked_by_security"),
         },
     }
 
@@ -327,6 +328,7 @@ def main():
 
     total_passed = 0
     total_failed = 0
+    total_blocked = 0
 
     for agent_name in agents:
         config = load_config(agent_name)
@@ -360,16 +362,22 @@ def main():
             filepath = save_evidence(agent_name, model, results)
             passed = sum(1 for r in results if r["status"] == "pass")
             failed = sum(1 for r in results if r["status"] == "fail")
+            blocked = sum(1 for r in results if r["status"] == "blocked_by_security")
             total_passed += passed
             total_failed += failed
+            total_blocked += blocked
 
             print(f"\n  結果: {passed}/{len(results)} PASS")
+            if blocked > 0:
+                print(f"  ブロック: {blocked}")
             print(f"  証跡: {filepath.relative_to(REPO_ROOT)}")
 
     print(f"\n{'='*60}")
     print(f"  合計: {total_passed} passed / {total_failed} failed")
+    if total_blocked > 0:
+        print(f"  ブロック: {total_blocked}")
     print(f"{'='*60}")
-    sys.exit(1 if total_failed > 0 else 0)
+    sys.exit(1 if total_failed > 0 or total_blocked > 0 else 0)
 
 
 if __name__ == "__main__":
