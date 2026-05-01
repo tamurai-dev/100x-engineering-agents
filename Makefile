@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary
+.PHONY: help validate validate-config test check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -60,6 +60,26 @@ endif
 
 test-all-agents: ## 全エージェントを Managed Agents API でテスト
 	@$(PYTHON) scripts/test-agent.py --all --model $(or $(MODEL),sonnet)
+
+# ── 品質評価（Eval） ──────────────────────────────
+eval-agent: ## エージェント品質評価 (usage: make eval-agent NAME=<name> [MODEL=haiku] [TRIALS=3])
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@echo "  例: make eval-agent NAME=code-reviewer"
+	@echo "  例: make eval-agent NAME=code-reviewer MODEL=haiku TRIALS=3"
+	@exit 1
+endif
+	@$(PYTHON) scripts/eval-agent.py $(NAME) --model $(or $(MODEL),haiku) --trials $(or $(TRIALS),3)
+
+eval-agent-dry: ## 品質評価の予行（API を呼ばずに設定確認）(usage: make eval-agent-dry NAME=<name>)
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@exit 1
+endif
+	@$(PYTHON) scripts/eval-agent.py $(NAME) --dry-run
+
+eval-all-agents: ## 全エージェント品質評価
+	@$(PYTHON) scripts/eval-agent.py --all --model $(or $(MODEL),haiku) --trials $(or $(TRIALS),3)
 
 # ── マニフェスト ─────────────────────────────────
 manifest-verify: ## マニフェスト全エントリの HMAC 署名検証

@@ -115,17 +115,17 @@ def main():
         data, parse_error = extract_frontmatter(filepath)
         if parse_error:
             r.failed += 1
-            print(f"  FAIL: {filepath.name} — {parse_error}")
+            print(f"  FAIL: {filepath.parent.name} — {parse_error}")
             continue
         errs = validate_frontmatter(data, schema, filepath)
         if errs:
             r.failed += 1
-            print(f"  FAIL: {filepath.name}")
+            print(f"  FAIL: {filepath.parent.name}")
             for e in errs:
                 print(f"        {e}")
         else:
             r.passed += 1
-            print(f"  PASS: {filepath.name}")
+            print(f"  PASS: {filepath.parent.name}")
 
     # === 結果 ===
     print()

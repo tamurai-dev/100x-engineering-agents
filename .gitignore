@@ -10,6 +10,9 @@ tests/reports/
 # HMAC signing key (NEVER commit)
 .manifest-key
 
+# Eval results (auto-generated, may contain API session data)
+evidence/evals/
+
 # OS
 .DS_Store
 Thumbs.db

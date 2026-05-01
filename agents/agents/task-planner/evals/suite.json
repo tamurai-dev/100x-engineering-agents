@@ -1,0 +1,7 @@
+{
+  "agent": "task-planner",
+  "description": "タスク分解エージェントの品質評価スイート",
+  "tasks": ["feature-spec"],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

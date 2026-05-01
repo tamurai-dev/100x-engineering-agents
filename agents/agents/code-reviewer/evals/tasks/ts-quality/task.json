@@ -1,0 +1,24 @@
+{
+  "name": "ts-quality",
+  "category": "quality",
+  "difficulty": "medium",
+  "prompt": "/mnt/session/uploads/project/ にある TypeScript プロジェクトのコードをレビューしてください。型安全性、コード品質、エラーハンドリングの観点から問題を検出し、重要度順に報告してください。出力は agent.md で定義されたフォーマットに従ってください。",
+  "graders": {
+    "code_based": {
+      "type": "ground-truth-match",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": ["MUST FIX|SHOULD FIX|CONSIDER"],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.4
+  }
+}

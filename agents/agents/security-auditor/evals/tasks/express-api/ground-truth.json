@@ -1,0 +1,112 @@
+{
+  "issues": [
+    {
+      "id": "sqli-1",
+      "file": "server.ts",
+      "line_range": [12, 12],
+      "type": "sql-injection",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "テンプレートリテラルでユーザー入力を SQL クエリに埋め込み"
+    },
+    {
+      "id": "sqli-2",
+      "file": "server.ts",
+      "line_range": [20, 20],
+      "type": "sql-injection",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "ログインクエリにユーザー入力を直接埋め込み"
+    },
+    {
+      "id": "secret-1",
+      "file": "auth.ts",
+      "line_range": [3, 3],
+      "type": "hardcoded-secret",
+      "severity": "high",
+      "category": "must_find",
+      "description": "JWT シークレットがソースコードにハードコード"
+    },
+    {
+      "id": "cors-1",
+      "file": "server.ts",
+      "line_range": [8, 8],
+      "type": "cors-misconfiguration",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "CORS origin が * で全オリジンを許可"
+    },
+    {
+      "id": "ssrf-1",
+      "file": "server.ts",
+      "line_range": [35, 37],
+      "type": "ssrf",
+      "severity": "high",
+      "category": "must_find",
+      "description": "ユーザー提供の URL を検証なしに fetch している"
+    },
+    {
+      "id": "stack-1",
+      "file": "server.ts",
+      "line_range": [43, 43],
+      "type": "stack-trace-exposure",
+      "severity": "high",
+      "category": "must_find",
+      "description": "スタックトレースをクライアントに返している"
+    },
+    {
+      "id": "xss-1",
+      "file": "handlers.ts",
+      "line_range": [5, 5],
+      "type": "xss",
+      "severity": "high",
+      "category": "must_find",
+      "description": "ユーザー入力をエスケープなしに HTML に埋め込み"
+    },
+    {
+      "id": "log-1",
+      "file": "handlers.ts",
+      "line_range": [22, 22],
+      "type": "sensitive-log",
+      "severity": "high",
+      "category": "must_find",
+      "description": "パスワードをログに出力している"
+    },
+    {
+      "id": "timing-1",
+      "file": "auth.ts",
+      "line_range": [23, 24],
+      "type": "timing-attack",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "パスワード比較に === を使用（タイミング攻撃に脆弱）"
+    },
+    {
+      "id": "expiry-1",
+      "file": "auth.ts",
+      "line_range": [11, 11],
+      "type": "no-token-expiry",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "JWT トークンに有効期限が設定されていない"
+    },
+    {
+      "id": "auth-1",
+      "file": "server.ts",
+      "line_range": [11, 14],
+      "type": "missing-auth",
+      "severity": "high",
+      "category": "should_find",
+      "description": "API エンドポイントに認証ミドルウェアがない"
+    },
+    {
+      "id": "env-1",
+      "file": "handlers.ts",
+      "line_range": [23, 23],
+      "type": "sensitive-log",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "process.env をレスポンスに含めている（環境変数漏洩）"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "issues": [
+    {
+      "id": "any-1",
+      "file": "src/utils.ts",
+      "line_range": [1, 1],
+      "type": "any-type",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "processItems の引数に any[] を使用"
+    },
+    {
+      "id": "var-1",
+      "file": "src/utils.ts",
+      "line_range": [2, 4],
+      "type": "var-usage",
+      "severity": "low",
+      "category": "must_find",
+      "description": "var の使用（let/const を使用すべき）"
+    },
+    {
+      "id": "eq-1",
+      "file": "src/utils.ts",
+      "line_range": [6, 6],
+      "type": "loose-equality",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "== null の使用（=== を推奨）"
+    },
+    {
+      "id": "unused-1",
+      "file": "src/utils.ts",
+      "line_range": [15, 15],
+      "type": "unused-variable",
+      "severity": "low",
+      "category": "should_find",
+      "description": "unused 変数が定義されているが使用されていない"
+    },
+    {
+      "id": "any-2",
+      "file": "src/utils.ts",
+      "line_range": [19, 19],
+      "type": "any-type",
+      "severity": "medium",
+      "category": "must_find",
+      "description": "fetchData の引数・戻り値に any を使用"
+    },
+    {
+      "id": "error-1",
+      "file": "src/utils.ts",
+      "line_range": [24, 24],
+      "type": "missing-error-handling",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "JSON.parse のエラーハンドリングがない"
+    },
+    {
+      "id": "await-1",
+      "file": "src/api.ts",
+      "line_range": [4, 4],
+      "type": "unhandled-promise",
+      "severity": "high",
+      "category": "must_find",
+      "description": "fetchData() の戻り値が Promise だが await されていない"
+    },
+    {
+      "id": "await-2",
+      "file": "src/api.ts",
+      "line_range": [11, 14],
+      "type": "unhandled-promise",
+      "severity": "high",
+      "category": "must_find",
+      "description": "fetch() が await されていない"
+    },
+    {
+      "id": "any-3",
+      "file": "src/api.ts",
+      "line_range": [18, 18],
+      "type": "any-type",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "deleteUser の引数に any を使用"
+    }
+  ]
+}

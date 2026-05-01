@@ -1,0 +1,22 @@
+{
+  "required_elements": {
+    "extract": {
+      "parameters": ["source", "format", "encoding", "skip_header", "max_rows"],
+      "return_type": "list[dict[str, Any]]",
+      "exceptions": ["FileNotFoundError", "ValueError"]
+    },
+    "transform": {
+      "parameters": ["records", "rename", "drop_columns", "filter_fn", "add_columns"],
+      "return_type": "list[dict[str, Any]]"
+    },
+    "load": {
+      "parameters": ["records", "destination", "format", "encoding", "overwrite"],
+      "return_type": "int",
+      "exceptions": ["FileExistsError", "ValueError"]
+    },
+    "PipelineConfig": {
+      "fields": ["source_path", "destination_path", "source_format", "destination_format", "encoding", "max_rows", "overwrite", "rename_columns", "drop_columns", "filter_expression", "extra"],
+      "methods": ["validate"]
+    }
+  }
+}

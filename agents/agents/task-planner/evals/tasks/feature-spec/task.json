@@ -1,0 +1,23 @@
+{
+  "name": "feature-spec",
+  "category": "planning",
+  "difficulty": "hard",
+  "prompt": "/mnt/session/uploads/project/ にある要件定義・制約条件・現在のアーキテクチャを読み、リアルタイム通知機能のタスク分解を行ってください。各サブタスクに完了条件・依存関係・推定規模・リスクを含めてください。出力は agent.md で定義されたフォーマットに従ってください。",
+  "graders": {
+    "code_based": {
+      "type": "keyword-check",
+      "keywords": ["サブタスク", "依存", "完了条件", "リスク", "WebSocket", "PostgreSQL"]
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": [],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}

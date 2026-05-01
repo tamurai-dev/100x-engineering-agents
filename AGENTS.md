@@ -60,7 +60,15 @@ agent:
 │   │   ├── code-reviewer/            #   コードレビュー専門
 │   │   │   ├── agent.md              #     Claude Code 用定義
 │   │   │   ├── config.json           #     Managed Agents API 用設定
-│   │   │   └── test-prompts.json     #     テストケース
+│   │   │   ├── test-prompts.json     #     スモークテストケース
+│   │   │   └── evals/                #     品質評価（fixture + grader）
+│   │   │       ├── suite.json         #       テストスイートメタデータ
+│   │   │       ├── rubric.md          #       ルーブリック（Model-Based 採点用）
+│   │   │       └── tasks/             #       タスク別 fixture
+│   │   │           └── <task-name>/
+│   │   │               ├── task.json      # タスク定義（プロンプト・grader設定）
+│   │   │               ├── fixture/       # エージェントに渡すファイル群
+│   │   │               └── ground-truth.json  # 正解データ
 │   │   ├── security-auditor/         #   セキュリティ監査専門
 │   │   ├── test-generator/           #   テスト生成専門
 │   │   ├── doc-writer/               #   ドキュメント生成専門
@@ -83,14 +91,20 @@ agent:
 ├── scripts/                          # 開発スクリプト
 │   ├── validate_subagents.py         #   Frontmatter バリデーション（Claude Code 用）
 │   ├── validate-config.py            #   config.json バリデーション（Managed Agents API 用）
-│   ├── test-agent.py                 #   Managed Agents API テストランナー
+│   ├── test-agent.py                 #   Managed Agents API スモークテストランナー
+│   ├── eval-agent.py                 #   品質評価ランナー（fixture + 3層Grader + Trial）
+│   ├── graders/                      #   評価 grader モジュール
+│   │   ├── code_grader.py            #     Ground Truth マッチ + Transcript 分析
+│   │   ├── model_grader.py           #     Messages API ルーブリック採点
+│   │   └── test_execution_grader.py  #     テスト実行結果判定
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
 │   └── setup-hooks.sh                #   pre-commit セットアップ
 │
 ├── evidence/                         # テスト証跡（Managed Agents セッション）
-│   ├── sessions/                     #   セッションイベント保存先
+│   ├── sessions/                     #   スモークテスト証跡
+│   ├── evals/                        #   品質評価結果
 │   ├── SUMMARY.md                    #   証跡サマリー（自動生成）
 │   └── .gitattributes                #   linguist-generated 設定
 │
@@ -190,6 +204,46 @@ make test-agent-dry NAME=code-reviewer
 ```
 
 テスト結果は `evidence/sessions/` に自動保存される。`agent.md` の `model` フィールドはテスト結果に基づいて最安モデルを選定する。
+
+#### 品質評価（Eval-Driven Development）
+
+スモークテスト（`make test-agent`）はキーワードマッチによる動作確認。品質評価（`make eval-agent`）は多角的な品質スコアリング。
+
+```bash
+# 個別エージェントの品質評価（ANTHROPIC_API_KEY 必須）
+make eval-agent NAME=code-reviewer MODEL=haiku TRIALS=3
+
+# 全エージェントの品質評価
+make eval-all-agents MODEL=haiku TRIALS=3
+
+# ドライラン（設定確認のみ）
+make eval-agent-dry NAME=code-reviewer
+```
+
+**評価の構造:**
+
+| 評価軸 | 重み | 内容 |
+|--------|------|------|
+| Outcome | 50% | 正解データとの照合（Precision/Recall/F1）、テスト実行結果 |
+| Efficiency | 20% | ターン数、ツール呼び出し数、トークン使用量 |
+| Output Quality | 30% | フォーマット準拠、ルーブリック採点（Model-Based） |
+
+**Grader の3層構造:**
+
+| 種類 | 用途 | コスト |
+|------|------|--------|
+| Code-Based | Ground Truth マッチ、Transcript 分析、フォーマット検証 | 無料 |
+| Model-Based | ルーブリック採点（Messages API 1回呼び出し） | 低 |
+| Test Execution | テスト生成エージェント用（pytest 実行結果） | 無料 |
+
+**信頼性指標:**
+
+| 指標 | 意味 |
+|------|------|
+| pass@k | k回中1回でも成功 → エージェントの「能力」 |
+| pass^k | k回全て成功 → エージェントの「信頼性」 |
+
+評価結果は `evidence/evals/` に自動保存される。
 
 #### 強制メカニズム（多層防御）
 

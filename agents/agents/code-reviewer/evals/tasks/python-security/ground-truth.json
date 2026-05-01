@@ -1,0 +1,85 @@
+{
+  "issues": [
+    {
+      "id": "sqli-1",
+      "file": "app.py",
+      "line_range": [15, 16],
+      "type": "sql-injection",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "f-string でユーザー入力を直接 SQL クエリに埋め込み"
+    },
+    {
+      "id": "cmdi-1",
+      "file": "app.py",
+      "line_range": [23, 24],
+      "type": "command-injection",
+      "severity": "critical",
+      "category": "must_find",
+      "description": "subprocess.run に shell=True でユーザー入力を渡している"
+    },
+    {
+      "id": "path-1",
+      "file": "app.py",
+      "line_range": [30, 31],
+      "type": "path-traversal",
+      "severity": "high",
+      "category": "must_find",
+      "description": "ユーザー入力のファイルパスを検証なしに open している"
+    },
+    {
+      "id": "secret-1",
+      "file": "auth.py",
+      "line_range": [5, 5],
+      "type": "hardcoded-secret",
+      "severity": "high",
+      "category": "must_find",
+      "description": "JWT 署名鍵がソースコードにハードコードされている"
+    },
+    {
+      "id": "except-1",
+      "file": "auth.py",
+      "line_range": [16, 17],
+      "type": "bare-except",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "except: で全例外を握り潰しており、デバッグが困難"
+    },
+    {
+      "id": "expiry-1",
+      "file": "auth.py",
+      "line_range": [9, 10],
+      "type": "no-token-expiry",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "JWT トークンに有効期限（exp）が設定されていない"
+    },
+    {
+      "id": "debug-1",
+      "file": "config.py",
+      "line_range": [5, 5],
+      "type": "debug-mode",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "DEBUG=True が本番環境で有効になる可能性"
+    },
+    {
+      "id": "secret-2",
+      "file": "config.py",
+      "line_range": [6, 6],
+      "type": "hardcoded-secret",
+      "severity": "high",
+      "category": "should_find",
+      "description": "Flask SECRET_KEY がソースコードにハードコードされている"
+    },
+    {
+      "id": "hosts-1",
+      "file": "config.py",
+      "line_range": [8, 8],
+      "type": "unrestricted-hosts",
+      "severity": "medium",
+      "category": "should_find",
+      "description": "ALLOWED_HOSTS がワイルドカード"
+    }
+  ]
+}

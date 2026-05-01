@@ -1,0 +1,24 @@
+{
+  "name": "python-security",
+  "category": "security",
+  "difficulty": "medium",
+  "prompt": "/mnt/session/uploads/project/ にある Python プロジェクトのコードをレビューしてください。品質・セキュリティの両面から問題を検出し、重要度順に報告してください。出力は agent.md で定義されたフォーマットに従ってください。",
+  "graders": {
+    "code_based": {
+      "type": "ground-truth-match",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.6
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": ["MUST FIX|SHOULD FIX|CONSIDER"],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}
