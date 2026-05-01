@@ -246,6 +246,23 @@ def run_eval_trial(
 
     full_response = "\n".join(messages)
 
+    # ストリーミングで取得した messages が少ない場合、events から補完する
+    # エージェントが bash でファイルに書き出すパターンに対応
+    if len(full_response) < 200:
+        event_texts = []
+        for ev in all_events:
+            if ev.get("type") == "agent.message":
+                for text in ev.get("content", []):
+                    if isinstance(text, str) and text.strip():
+                        event_texts.append(text)
+            elif ev.get("type") == "agent.tool_result":
+                preview = ev.get("content_preview", "")
+                if preview:
+                    event_texts.append(preview)
+        event_response = "\n".join(event_texts)
+        if len(event_response) > len(full_response):
+            full_response = event_response
+
     # クリーンアップ
     try:
         _cleanup(client, session.id, env.id, agent.id)
