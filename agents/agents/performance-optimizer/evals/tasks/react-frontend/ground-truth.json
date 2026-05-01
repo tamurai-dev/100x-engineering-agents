@@ -13,7 +13,7 @@
       "id": "lodash-full-import",
       "file": "Dashboard.tsx",
       "line_range": [2, 2],
-      "type": "bundle-size",
+      "type": "lodash-full-import",
       "severity": "high",
       "category": "must_find",
       "description": "lodash を全量インポートしている。lodash/sortBy のような個別インポートまたは lodash-es で tree-shaking を有効にすべき"
@@ -22,7 +22,7 @@
       "id": "moment-heavy",
       "file": "Dashboard.tsx",
       "line_range": [3, 3],
-      "type": "bundle-size",
+      "type": "moment-bundle",
       "severity": "high",
       "category": "must_find",
       "description": "moment.js（300KB+）を使用。date-fns や dayjs（数KB）への置き換えを推奨"
@@ -40,7 +40,7 @@
       "id": "format-date-recompute",
       "file": "Dashboard.tsx",
       "line_range": [51, 53],
-      "type": "redundant-computation",
+      "type": "format-function-recompute",
       "severity": "medium",
       "category": "should_find",
       "description": "formatDate が各行のレンダリング毎に moment オブジェクトを生成。結果のキャッシュまたは軽量ライブラリ使用を推奨"
@@ -49,7 +49,7 @@
       "id": "departments-set-recompute",
       "file": "Dashboard.tsx",
       "line_range": [48, 48],
-      "type": "redundant-computation",
+      "type": "set-recompute",
       "severity": "low",
       "category": "should_find",
       "description": "departments の Set 生成がレンダリング毎に実行される。stats と共に useMemo 内で計算すべき"

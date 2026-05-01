@@ -172,11 +172,18 @@ def _get_type_keywords(issue_type: str) -> list[str]:
         "n-plus-1-query": ["n+1", "n + 1", "n+1クエリ", "n+1 query", "個別クエリ", "ループ内でクエリ", "ループ内のクエリ"],
         "select-star": ["select *", "全カラム取得", "不要なカラム", "必要なカラムのみ"],
         "inefficient-algorithm": ["bubble sort", "バブルソート", "o(n²)", "o(n^2)", "二重ループ", "計算量", "非効率なアルゴリズム"],
+        "bubble-sort": ["bubble sort", "バブルソート", "o(n²)", "o(n^2)", "sorted()", "ソートアルゴリズム"],
+        "quadratic-search": ["o(n²)", "o(n^2)", "二重ループ", "総当たり", "重複検出", "quadratic"],
+        "inefficient-merge": ["再ソート", "マージ", "ソート済み", "sorted()", "merge"],
         "unindexable-query": ["like '%", "インデックスが効かない", "フルスキャン", "full scan", "先頭ワイルドカード"],
         "redundant-computation": ["redundant computation", "不要な再計算", "無駄な取得", "全件取得", "冗長な計算", "毎回計算"],
         "sequential-processing": ["sequential", "逐次処理", "並行処理", "promise.all", "asyncio", "threadpool", "直列"],
         "missing-memoization": ["usememo", "メモ化", "memoiz", "メモ化されていない", "キャッシュ"],
         "bundle-size": ["バンドルサイズ", "bundle size", "tree-shaking", "tree shaking", "全量インポート"],
+        "lodash-full-import": ["lodash", "全量インポート", "個別インポート", "lodash-es", "tree-shaking", "lodash/"],
+        "moment-bundle": ["moment", "moment.js", "date-fns", "dayjs", "300kb", "軽量ライブラリ"],
+        "format-function-recompute": ["formatdate", "フォーマット関数", "moment オブジェクト", "日付フォーマット", "毎回生成"],
+        "set-recompute": ["set 生成", "departments", "new set", "usememo", "集合の再生成"],
         "unnecessary-rerender": ["再レンダリング", "re-render", "usecallback", "inline callback", "インラインコールバック", "インライン関数"],
     }
     return keyword_map.get(issue_type, [issue_type.replace("-", " ")])

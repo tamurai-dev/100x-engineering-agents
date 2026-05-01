@@ -22,7 +22,7 @@
       "id": "bubble-sort",
       "file": "app.py",
       "line_range": [91, 94],
-      "type": "inefficient-algorithm",
+      "type": "bubble-sort",
       "severity": "high",
       "category": "must_find",
       "description": "バブルソート O(n²) を使用。sorted() の O(n log n) を使うべき"
@@ -31,7 +31,7 @@
       "id": "duplicate-check-quadratic",
       "file": "app.py",
       "line_range": [102, 106],
-      "type": "inefficient-algorithm",
+      "type": "quadratic-search",
       "severity": "high",
       "category": "must_find",
       "description": "O(n²) の総当たりで重複メール検出。辞書またはSQLのGROUP BYで O(n) に改善可能"
@@ -67,7 +67,7 @@
       "id": "merge-resort",
       "file": "utils.py",
       "line_range": [36, 38],
-      "type": "inefficient-algorithm",
+      "type": "inefficient-merge",
       "severity": "low",
       "category": "should_find",
       "description": "ソート済みリストのマージを O(n log n) の再ソートで実装。O(n) のマージ操作で済む"
