@@ -122,6 +122,12 @@ agent:
 │   │   ├── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
 │   │   ├── bundle_blueprint.py        #     Bundle Blueprint 生成（Task + QA Agent + bundle.json）
 │   │   └── skill_resolver.py          #     Skill Resolver（プリビルト + コミュニティスキル自動選択）
+│   ├── security/                      #   セキュリティスクリーニングモジュール（Lakera Guard 統合）
+│   │   ├── __init__.py                #     パブリック API（get_guard(), screen_text()）
+│   │   ├── base.py                    #     SecurityProvider プロトコル、ScreeningResult/ThreatDetail 型
+│   │   ├── config.py                  #     セキュリティ設定管理（環境変数 + security.json）
+│   │   ├── lakera_provider.py         #     Lakera Guard v2 API 実装
+│   │   └── noop_provider.py           #     No-op フォールバックプロバイダー
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
@@ -144,6 +150,7 @@ agent:
 │   ├── test_bundle_factory.py        #   Bundle Factory テストスイート
 │   ├── test_run_bundle.py            #   Bundle ワークフロー実行エンジンテストスイート
 │   ├── test_skill_resolver.py        #   Skill Resolver テストスイート
+│   ├── test_security.py              #   セキュリティスクリーニングテストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
 │
@@ -238,10 +245,11 @@ make check-all
 | 6 | `make test-bundle-factory` | Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開） |
 | 7 | `make test-run-bundle` | Bundle ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
 | 8 | `make test-skill-resolver` | Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決） |
-| 9 | `make check-template` | テンプレート整合性チェック |
-| 10 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 11 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 12 | `make report` | バリデーションレポート (JSON) 生成 |
+| 9 | `make security-test` | セキュリティスクリーニングテストスイート（Lakera Guard 統合） |
+| 10 | `make check-template` | テンプレート整合性チェック |
+| 11 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 12 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 13 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 
