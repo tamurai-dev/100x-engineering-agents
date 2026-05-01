@@ -11,3 +11,11 @@ repos:
           - jsonschema
         pass_filenames: true
         description: "Claude Code subagent の YAML frontmatter が仕様に準拠しているか検証する"
+
+      - id: verify-subagent-manifest
+        name: "Subagent マニフェスト検証（HMAC署名）"
+        entry: python scripts/manifest.py verify-staged
+        language: python
+        files: ^agents/agents/.*\.md$
+        pass_filenames: false
+        description: "新規 subagent が create-subagent.sh 経由で作成されたか HMAC 署名で検証する"
