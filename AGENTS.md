@@ -213,7 +213,45 @@ Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）
 }
 ```
 
-### 4.4 禁止事項（再掲・厳守）
+### 4.4 動作検証証跡（Evidence）
+
+新しいスクリプトやエージェントを作成・変更した場合、動作検証の証跡を必ず記録する。
+証跡は `evidence/entries/` に JSON 形式で保存され、HMAC-SHA256 で改竄を検出する。
+
+#### 証跡の2つのモード
+
+**スクリプト証跡（自動キャプチャ）** — コマンドを実行し、出力を自動記録:
+```bash
+python scripts/record-evidence.py run \
+  --subject scripts/create-subagent.sh \
+  --type new-script \
+  --name "正常系: 新規エージェント作成" \
+  -- make create-agent NAME=test-agent
+```
+
+**セッション証跡（手動記録）** — subagent 等の動作確認結果を報告:
+```bash
+python scripts/record-evidence.py log \
+  --subject agents/agents/code-reviewer.md \
+  --type new-agent \
+  --name "Claude Code セッションでの動作確認" \
+  --result pass \
+  --note "PRレビュー依頼に対して自動起動を確認"
+```
+
+#### 証跡の管理コマンド
+
+| コマンド | 用途 |
+|---------|------|
+| `make evidence-verify` | 全証跡の HMAC 署名検証 |
+| `make evidence-summary` | `evidence/SUMMARY.md` を再生成 |
+
+#### 証跡のフォーマット
+
+`evidence/schema/evidence.schema.json` で定義。JSON Schema で自動検証されるため、
+手書きで形式を間違えることは構造的に不可能（スクリプトが生成するため）。
+
+### 4.5 禁止事項（再掲・厳守）
 
 - `main` への直接プッシュ
 - 推測に基づくコード生成
