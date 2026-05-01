@@ -83,10 +83,7 @@ agent:
 │   ├── bundles/                      # Actor-Critic Bundle 定義
 │   │   └── code-review-bundle/       #   コードレビューバンドル（code-reviewer + code-review-qa）
 │   │       └── bundle.json           #     バンドル定義（Task/QA Agent 参照、QA ループ設定）
-│   ├── schemas/                      # バリデーションスキーマ
-│   │   ├── subagent-frontmatter.schema.json   # Claude Code 用
-│   │   ├── managed-agent-config.schema.json   # Managed Agents API 用
-│   │   └── bundle.schema.json                 # Actor-Critic Bundle 用
+│   ├── schemas/                      # （PR-2 で削除済。pydantic v2 モデルへ移行: src/duo_agents/schemas.py）
 │   ├── templates/                    # テンプレート
 │   │   ├── subagent.md.tmpl          #   agent.md テンプレート
 │   │   ├── config.json.tmpl          #   config.json テンプレート
