@@ -13,7 +13,9 @@ Usage:
 
 from __future__ import annotations
 
+import datetime
 import json
+import platform
 import re
 import sys
 from pathlib import Path
@@ -120,9 +122,43 @@ def validate_file(filepath: Path, schema: dict) -> tuple[bool, list[str]]:
     return True, []
 
 
+def generate_report(results: list, report_path: str) -> None:
+    """バリデーション結果をJSONレポートとして保存する。"""
+    report = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "python_version": platform.python_version(),
+        "platform": platform.system(),
+        "schema": str(SCHEMA_PATH.relative_to(REPO_ROOT)),
+        "summary": {
+            "total": len(results),
+            "passed": sum(1 for r in results if r["status"] == "PASS"),
+            "failed": sum(1 for r in results if r["status"] == "FAIL"),
+        },
+        "results": results,
+    }
+
+    report_file = Path(report_path)
+    report_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(report_file, "w", encoding="utf-8") as f:
+        json.dump(report, f, ensure_ascii=False, indent=2)
+
+
 def main():
     check_template = "--check-template" in sys.argv
-    explicit_files = [a for a in sys.argv[1:] if not a.startswith("--")]
+    report_path = None
+    explicit_files = []
+
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        if args[i] == "--report" and i + 1 < len(args):
+            report_path = args[i + 1]
+            i += 2
+        elif args[i].startswith("--"):
+            i += 1
+        else:
+            explicit_files.append(args[i])
+            i += 1
 
     schema = load_schema()
 
@@ -166,11 +202,14 @@ def main():
     print(f"対象: {total} ファイル")
     print("=" * 60)
 
+    report_results = []
+
     for filepath in targets:
         if not filepath.exists():
             print(f"\nFAIL: {filepath}")
             print(f"  ファイルが見つかりません")
             failed += 1
+            report_results.append({"file": str(filepath), "status": "FAIL", "errors": ["ファイルが見つかりません"]})
             continue
 
         success, messages = validate_file(filepath, schema)
@@ -179,14 +218,20 @@ def main():
         if success:
             print(f"\nPASS: {rel}")
             passed += 1
+            report_results.append({"file": str(rel), "status": "PASS", "errors": []})
         else:
             print(f"\nFAIL: {rel}")
             for msg in messages:
                 print(msg)
             failed += 1
+            report_results.append({"file": str(rel), "status": "FAIL", "errors": [m.strip() for m in messages]})
 
     print("\n" + "=" * 60)
     print(f"結果: {passed} passed / {failed} failed / {total} total")
+
+    if report_path:
+        generate_report(report_results, report_path)
+        print(f"レポート: {report_path}")
 
     sys.exit(1 if failed > 0 else 0)
 
