@@ -400,6 +400,8 @@ def run_bundle(
             print(f"    - {tc['name']}")
 
     task_output = task_result["response"]
+    task_tool_calls = task_result["tool_calls"]
+    task_usage = task_result["usage"]
     best_output = task_output
     best_score = 0.0
 
@@ -424,7 +426,7 @@ def run_bundle(
     for iteration in range(1, qa_settings["max_iterations"] + 1):
         print(f"\n[Phase C] QA ループ #{iteration}...")
 
-        # QA Agent を fresh-context で起動（新しいセッション）
+        # Launch QA Agent in fresh-context (new session)
         # Mount Task Agent output files into QA session if available
         qa_resources: list[dict] = []
         for f in task_output_files:
@@ -488,9 +490,9 @@ def run_bundle(
             "qa_summary": qa_parsed.get("summary", ""),
             "qa_findings_count": len(qa_parsed.get("findings", [])),
             "task_response_excerpt": task_output[:EVIDENCE_RESPONSE_LIMIT],
-            "task_tool_calls": [tc["name"] for tc in task_result["tool_calls"]],
+            "task_tool_calls": [tc["name"] for tc in task_tool_calls],
             "task_output_file_count": len(task_output_files),
-            "task_usage": task_result["usage"],
+            "task_usage": task_usage,
             "qa_usage": qa_result["usage"],
         }
         results["iterations"].append(iteration_result)
@@ -563,6 +565,8 @@ def run_bundle(
             )
             if not task_result["errors"]:
                 task_output = task_result["response"]
+                task_tool_calls = task_result["tool_calls"]
+                task_usage = task_result["usage"]
                 # Re-collect output files after retry
                 task_output_files = list_session_output_files(
                     client, task_session.id
