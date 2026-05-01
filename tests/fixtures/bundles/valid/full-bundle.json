@@ -30,7 +30,9 @@
       "max_iterations": 5,
       "pass_threshold": 0.85,
       "convergence_delta": 0.01,
-      "keep_best": true
+      "keep_best": true,
+      "escalation_threshold": 0.40,
+      "model_escalation": ["haiku", "sonnet"]
     }
   }
 }

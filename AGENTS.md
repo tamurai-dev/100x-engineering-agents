@@ -120,12 +120,14 @@ agent:
 │   ├── bundle-factory.py              #   Bundle Factory CLI（自然言語 → バンドル自動生成）
 │   ├── bundle_factory/                #   Bundle Factory コアモジュール
 │   │   ├── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
-│   │   └── bundle_blueprint.py        #     Bundle Blueprint 生成（Task + QA Agent + bundle.json）
+│   │   ├── bundle_blueprint.py        #     Bundle Blueprint 生成（Task + QA Agent + bundle.json）
+│   │   └── skill_resolver.py          #     Skill Resolver（プリビルト + コミュニティスキル自動選択）
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
 │   ├── validate-bundle.py            #   Bundle バリデーション
-│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン
+│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン v2
+│   ├── run_bundle_helpers.py          #   run-bundle.py テスト用ヘルパー
 │   └── setup-hooks.sh                #   初期セットアップ
 │
 ├── evidence/                         # テスト証跡（Managed Agents セッション）
@@ -140,6 +142,8 @@ agent:
 │   ├── test_validate_bundle.py       #   Bundle バリデーションテストスイート
 │   ├── test_qa_strategy.py           #   QA 戦略エンジンテストスイート
 │   ├── test_bundle_factory.py        #   Bundle Factory テストスイート
+│   ├── test_run_bundle.py            #   Bundle ワークフロー実行エンジンテストスイート
+│   ├── test_skill_resolver.py        #   Skill Resolver テストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
 │
@@ -155,6 +159,8 @@ agent:
 5. **Claude Code 互換**: `agents/agents/*/agent.md`, `agents/skills/`, `agents/rules/` 等は Claude Code が自動認識する
 6. **テスト駆動モデル選定**: haiku でタスク成功できるなら haiku を使う。テスト結果に基づく最安モデル選定
 7. **Actor-Critic 品質保証**: Task Agent（Actor）が成果物を生成し、QA Agent（Critic）が fresh-context で品質検査する。同意バイアスを構造的に排除し、フィードバックループで品質を収束させる
+8. **スキル自動選択**: Bundle 生成時に artifact_format から Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチし、マッチしない場合はコミュニティスキル候補を推薦。必要なパッケージ（npm/pip/apt）も Environment に自動設定する
+9. **モデル自動エスカレーション**: QA スコアが escalation_threshold（デフォルト 0.40）以下かつ改善なしの場合、haiku → sonnet に自動切替。コスト最適化と品質保証を両立する
 
 ## 3. ファイル参照ガイド
 
@@ -230,10 +236,12 @@ make check-all
 | 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
 | 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
 | 6 | `make test-bundle-factory` | Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開） |
-| 7 | `make check-template` | テンプレート整合性チェック |
-| 8 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 9 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 10 | `make report` | バリデーションレポート (JSON) 生成 |
+| 7 | `make test-run-bundle` | Bundle ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
+| 8 | `make test-skill-resolver` | Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決） |
+| 9 | `make check-template` | テンプレート整合性チェック |
+| 10 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 11 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 12 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 

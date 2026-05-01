@@ -205,9 +205,25 @@ make run-bundle-dry NAME=code-review-bundle
 # バンドルのワークフロー実行（ANTHROPIC_API_KEY 必須）
 make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード" MODEL=haiku
 
+# 詳細ログ付き実行（デバッグ用）
+make run-bundle NAME=code-review-bundle INPUT="..." MODEL=haiku VERBOSE=1
+
 # バンドルバリデーション
 make validate-bundle
 ```
+
+**ワークフロー実行エンジン v2 の特徴:**
+
+| 機能 | 説明 |
+|------|------|
+| **SKILL.md 注入** | バンドルの `skill.md` を Task Agent のプロンプトに自動注入 |
+| **Skills API 連携** | Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチ。artifact_format から最適なスキルを選択し Agent に自動アタッチ |
+| **Environment packages** | 必要なパッケージ（npm/pip/apt 等）を Environment に自動設定。プリビルトスキルでカバーされる場合は不要と判定 |
+| **モデル自動エスカレーション** | QA スコアが閾値（0.40）以下の場合、haiku → sonnet に自動切替。コスト最適化と品質を両立 |
+| **Files API 連携** | Task Agent が生成したファイルを QA Agent のセッションにマウント |
+| **フィードバック蓄積** | 全ラウンドの QA 指摘を累積し、同じ問題の再発を防止 |
+| **証跡詳細化** | task_response 抜粋、tool_calls、出力ファイル一覧を証跡に記録 |
+| **--verbose** | デバッグ用の詳細ログ出力 |
 
 ---
 
@@ -380,6 +396,8 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 | Actor-Critic Bundle | 完了（Vertical Slice — code-review-bundle） |
 | Bundle バリデーション | 完了（スキーマ + 整合性チェック + pre-commit + テストスイート17件） |
 | QA テンプレート + 戦略エンジン | 完了（presentation / html_ui / code / generic + 自動選択） |
+| Bundle Factory CLI | 完了（`make create-bundle SPEC="..."`） |
+| スキル自動選択 + Environment packages | 完了（Anthropic プリビルト pptx/xlsx/docx/pdf + コミュニティスキル推薦 + パッケージ自動設定） |
 | Getting Started ドキュメント | 完了（本README §0） |
 | エンタープライズ要件定義 | **未着手**（コア機能安定後に着手） |
 | 実プロジェクト適用事例 | **未着手** |
@@ -388,13 +406,12 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 
 ## 4. 次のステップ
 
-1. **Bundle Factory CLI** — `make create-bundle SPEC="..."` でバンドル全自動生成
-2. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
-3. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
-4. agents/rules/ にエンタープライズガードレールを定義
-5. agents/skills/ に再利用可能スキルを追加
-6. 他プロジェクト向けテンプレートの整備（agents/templates/）
-7. ドキュメント: ユースケース別ガイド（業務効率化、コード検査、データ処理等）
+1. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
+2. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
+3. agents/rules/ にエンタープライズガードレールを定義
+4. コミュニティスキルの Skills API アップロード自動化（Step 3 のカスタムスキル生成）
+5. 他プロジェクト向けテンプレートの整備（agents/templates/）
+6. ドキュメント: ユースケース別ガイド（業務効率化、コード検査、データ処理等）
 
 ---
 

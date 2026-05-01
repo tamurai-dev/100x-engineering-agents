@@ -23,6 +23,10 @@ from pathlib import Path
 
 from agent_factory.utils import extract_json, parse_json_lenient
 from bundle_factory.qa_strategy import resolve_qa_strategy
+from bundle_factory.skill_resolver import (
+    get_full_skill_catalog,
+    resolve_skills,
+)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
@@ -88,12 +92,22 @@ BUNDLE_BLUEPRINT_SYSTEM = textwrap.dedent("""\
 - Web 検索が必要: 上記 + ["web_search", "web_fetch"]
 
 以下の JSON のみを返してください。他のテキストは不要です。
+
+{skill_catalog}
 """)
 
 BUNDLE_BLUEPRINT_USER = textwrap.dedent("""\
 以下の仕様でバンドル（Task Agent + QA Agent ペア）を設計してください:
 
 {spec}
+
+## 利用可能なスキル一覧
+
+以下のスキルが利用可能です。タスクに適合する場合は `recommended_skills` に含めてください。
+プリビルトスキル（pptx/xlsx/docx/pdf）がある場合はそれを優先的に使用してください。
+プリビルトにない場合は、必要なパッケージを `required_packages` に指定してください。
+
+{skill_catalog}
 
 以下の JSON 形式で返してください:
 ```json
@@ -107,6 +121,13 @@ BUNDLE_BLUEPRINT_USER = textwrap.dedent("""\
   "task_tools": ["bash", "read", ...],
   "task_disallowed_tools": [],
   "skill_topics": ["タスクに必要なスキル・手順のトピック"],
+  "recommended_skills": [
+    {{“type”: “anthropic”, “skill_id”: “pptx”}}
+  ],
+  "required_packages": {{
+    "npm": ["package-name"],
+    "pip": ["package-name"]
+  }},
   "test_prompts": [
     {{
       "name": "テスト名",
@@ -117,6 +138,11 @@ BUNDLE_BLUEPRINT_USER = textwrap.dedent("""\
   ]
 }}
 ```
+
+注意:
+- `recommended_skills` が空の場合は `[]` を返してください
+- `required_packages` が不要の場合は `{{}}` を返してください
+- プリビルトスキルでカバーできる場合、同等のパッケージは `required_packages` に含めないでください
 """)
 
 # ── SKILL.md 生成プロンプト ─────────────────────────
@@ -239,6 +265,9 @@ def generate_bundle_blueprint(
 ) -> dict:
     """自然言語仕様から Bundle Blueprint を生成する。
 
+    LLM にスキルカタログを渡し、適切なプリビルトスキルとパッケージを
+    自動選択させる。
+
     Returns:
         Bundle Blueprint dict
     """
@@ -252,16 +281,22 @@ def generate_bundle_blueprint(
         "html_ui | media_image | media_video | environment_state"
     )
 
+    # Build skill catalog for LLM to reference
+    skill_catalog = get_full_skill_catalog()
+
+    system = BUNDLE_BLUEPRINT_SYSTEM.format(skill_catalog=skill_catalog)
+
     user = BUNDLE_BLUEPRINT_USER.format(
         spec=spec,
         valid_types=valid_types,
         valid_formats=valid_formats,
+        skill_catalog=skill_catalog,
     )
 
     response = client.messages.create(
         model=model,
         max_tokens=4096,
-        system=BUNDLE_BLUEPRINT_SYSTEM,
+        system=system,
         messages=[{"role": "user", "content": user}],
     )
 
@@ -270,6 +305,37 @@ def generate_bundle_blueprint(
     blueprint = parse_json_lenient(json_text)
 
     _validate_bundle_blueprint(blueprint)
+
+    # Merge LLM recommendations with programmatic skill resolution
+    skill_resolution = resolve_skills(
+        blueprint["artifact_format"], spec
+    )
+    llm_skills = blueprint.get("recommended_skills", [])
+    llm_packages = blueprint.get("required_packages", {})
+
+    # Prefer pre-built skills from resolver; merge LLM recommendations
+    final_skills = list(skill_resolution.skills)
+    seen_ids = {s["skill_id"] for s in final_skills}
+    for s in llm_skills:
+        if s.get("skill_id") and s["skill_id"] not in seen_ids:
+            final_skills.append(s)
+            seen_ids.add(s["skill_id"])
+
+    # Merge packages: resolver defaults + LLM recommendations
+    final_packages = dict(skill_resolution.packages)
+    for mgr, pkgs in llm_packages.items():
+        if mgr not in final_packages:
+            final_packages[mgr] = list(pkgs)
+        else:
+            existing = set(final_packages[mgr])
+            for p in pkgs:
+                if p not in existing:
+                    final_packages[mgr].append(p)
+
+    # Store resolved skills/packages in blueprint
+    blueprint["resolved_skills"] = final_skills
+    blueprint["resolved_packages"] = final_packages
+    blueprint["skill_resolution_summary"] = skill_resolution.summary
 
     return blueprint
 
@@ -408,7 +474,12 @@ def generate_bundle_json(blueprint: dict) -> dict:
     qa_name = bundle_name.removesuffix("-bundle") + "-qa"
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    return {
+    resolved_skills = blueprint.get("resolved_skills", [])
+    resolved_packages = blueprint.get("resolved_packages", {})
+    # Filter out empty package lists
+    resolved_packages = {k: v for k, v in resolved_packages.items() if v}
+
+    bundle_json: dict = {
         "name": bundle_name,
         "version": "1.0.0",
         "description": blueprint["description"],
@@ -439,9 +510,24 @@ def generate_bundle_json(blueprint: dict) -> dict:
                 "pass_threshold": 0.80,
                 "convergence_delta": 0.02,
                 "keep_best": True,
+                "escalation_threshold": 0.40,
+                "model_escalation": ["haiku", "sonnet"],
             },
         },
     }
+
+    # Add skills if resolved
+    if resolved_skills:
+        bundle_json["skills"] = resolved_skills
+
+    # Add environment if packages are needed
+    if resolved_packages:
+        bundle_json["environment"] = {
+            "packages": resolved_packages,
+            "networking": {"type": "unrestricted"},
+        }
+
+    return bundle_json
 
 
 def generate_workflow_md(blueprint: dict, bundle_json: dict) -> str:
