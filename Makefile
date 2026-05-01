@@ -178,6 +178,18 @@ ifndef INPUT
 endif
 	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
 
+run-bundle-multiagent: ## Multiagent モードでバンドル実行（共有ファイルシステム）(usage: make run-bundle-multiagent NAME=<bundle-name> INPUT="...")
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@echo '  例: make run-bundle-multiagent NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@exit 1
+endif
+ifndef INPUT
+	@echo "ERROR: INPUT を指定してください"
+	@exit 1
+endif
+	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" --multiagent $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
+
 run-bundle-dry: ## バンドルワークフローのドライラン (usage: make run-bundle-dry NAME=<bundle-name>)
 ifndef NAME
 	@echo "ERROR: NAME を指定してください"

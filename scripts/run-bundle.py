@@ -13,11 +13,13 @@ v2 改善点:
   - --verbose フラグ（デバッグ用詳細ログ）
   - Anthropic Skills API 連携（プリビルト pptx/xlsx/docx/pdf + カスタムスキル）
   - Environment packages 対応（apt/npm/pip 等のプリインストール）
+  - Multiagent Sessions 対応（共有ファイルシステムでの Actor-Critic）
 
 Usage:
     python scripts/run-bundle.py <bundle-name> --input "レビュー対象コード"
     python scripts/run-bundle.py <bundle-name> --input "..." --model haiku
     python scripts/run-bundle.py <bundle-name> --input "..." --verbose
+    python scripts/run-bundle.py <bundle-name> --input "..." --multiagent
     python scripts/run-bundle.py <bundle-name> --dry-run
 
 環境変数:
@@ -48,6 +50,7 @@ MODEL_MAP = {
 BETA_HEADER = "managed-agents-2026-04-01"
 FILES_BETA = "files-api-2025-04-14"
 SKILLS_BETA = "skills-2025-10-02"
+MULTIAGENT_BETA = "multiagent-2026-04-01"
 
 # Default model escalation order and threshold
 DEFAULT_MODEL_ESCALATION = ["haiku", "sonnet"]
@@ -56,6 +59,9 @@ ESCALATION_IMPROVEMENT_DELTA = 0.05
 
 # Max chars of task_response to store in evidence
 EVIDENCE_RESPONSE_LIMIT = 2000
+
+# QA loop iteration limit for orchestrator prompt
+ORCHESTRATOR_MAX_QA_PROMPT_CHARS = 4000
 
 
 def check_api_key() -> str:
@@ -322,6 +328,385 @@ def build_feedback_history(feedback_entries: list[dict]) -> str:
         )
         lines.append(f"{entry['feedback']}\n")
     return "\n".join(lines)
+
+
+def build_orchestrator_system(
+    bundle_name: str,
+    qa_settings: dict,
+    skill_content: str | None,
+) -> str:
+    """Build system prompt for the orchestrator agent in multiagent mode."""
+    max_iters = qa_settings["max_iterations"]
+    pass_threshold = qa_settings["pass_threshold"]
+    convergence_delta = qa_settings.get("convergence_delta", 0.02)
+    escalation_threshold = qa_settings.get(
+        "escalation_threshold", DEFAULT_ESCALATION_THRESHOLD
+    )
+
+    parts = [
+        f"You are a Bundle Orchestrator for '{bundle_name}'.\n\n",
+        "## Workflow\n\n",
+        "1. Delegate the user's task to the **Task Agent**.\n",
+        "2. After the Task Agent finishes, delegate QA to the **QA Agent** "
+        "with the task output as input. The QA Agent must evaluate the "
+        "actual files in /mnt/session/outputs/ (shared filesystem).\n",
+        "3. Parse the QA Agent's JSON response to extract `score` and "
+        "`feedback`.\n",
+        f"4. If score >= {pass_threshold}, report PASS and stop.\n",
+        f"5. If score <= {escalation_threshold} and no improvement "
+        "(delta < 0.05), note that model escalation is recommended.\n",
+        f"6. Otherwise, send the QA feedback to the Task Agent "
+        "and repeat from step 2.\n",
+        f"7. Maximum {max_iters} QA iterations. "
+        f"Stop if convergence detected (delta <= {convergence_delta}).\n\n",
+        "## Rules\n\n",
+        "- The Task Agent and QA Agent share the same filesystem. "
+        "Files saved by Task Agent at /mnt/session/outputs/ are directly "
+        "readable by QA Agent.\n",
+        "- Always delegate — never perform the task or QA yourself.\n",
+        "- Report the final status as a JSON block at the end:\n",
+        "```json\n",
+        '{"final_status": "passed|max_iterations_reached|converged", '
+        '"best_score": 0.0, "iterations_completed": 0}\n',
+        "```\n",
+    ]
+
+    if skill_content:
+        parts.append(
+            "\n## SKILL.md (pass to Task Agent)\n\n"
+            "When delegating to the Task Agent, include the following "
+            "skill guidance in your message:\n\n"
+            f"{skill_content[:ORCHESTRATOR_MAX_QA_PROMPT_CHARS]}\n"
+        )
+
+    return "".join(parts)
+
+
+def create_multiagent_session(
+    client,
+    task_config: dict,
+    qa_config: dict,
+    bundle_name: str,
+    qa_settings: dict,
+    current_model: str,
+    skill_content: str | None = None,
+    skills: list[dict] | None = None,
+    packages: dict[str, list[str]] | None = None,
+) -> tuple:
+    """Create orchestrator + callable agents for multiagent mode.
+
+    All agents share the same container and filesystem.
+    Returns (orchestrator_agent, task_agent, qa_agent, environment, session).
+    """
+    # Task Agent
+    task_create = {
+        "name": task_config["name"],
+        "model": MODEL_MAP.get(current_model, current_model),
+        "system": task_config.get("system", ""),
+    }
+    if task_config.get("description"):
+        task_create["description"] = task_config["description"]
+    if task_config.get("tools"):
+        task_create["tools"] = task_config["tools"]
+    if skills:
+        task_create["skills"] = skills
+
+    task_agent = client.beta.agents.create(**task_create)
+
+    # QA Agent
+    qa_create = {
+        "name": qa_config["name"],
+        "model": MODEL_MAP.get(
+            qa_config.get("model_short", "sonnet"),
+            qa_config.get("model", MODEL_MAP["sonnet"]),
+        ),
+        "system": qa_config.get("system", ""),
+    }
+    if qa_config.get("description"):
+        qa_create["description"] = qa_config["description"]
+    if qa_config.get("tools"):
+        qa_create["tools"] = qa_config["tools"]
+
+    qa_agent = client.beta.agents.create(**qa_create)
+
+    # Orchestrator — delegates to both
+    orchestrator_system = build_orchestrator_system(
+        bundle_name, qa_settings, skill_content
+    )
+    orchestrator = client.beta.agents.create(
+        name=f"orchestrator-{bundle_name}",
+        model=MODEL_MAP.get(current_model, current_model),
+        system=orchestrator_system,
+        tools=[{"type": "agent_toolset_20260401"}],
+        callable_agents=[
+            {
+                "type": "agent",
+                "id": task_agent.id,
+                "version": task_agent.version,
+            },
+            {
+                "type": "agent",
+                "id": qa_agent.id,
+                "version": qa_agent.version,
+            },
+        ],
+    )
+
+    # Shared environment
+    env_config: dict = {
+        "type": "cloud",
+        "networking": {"type": "unrestricted"},
+    }
+    if packages:
+        env_config["packages"] = packages
+
+    env = client.beta.environments.create(
+        name=f"multiagent-{bundle_name}-{int(time.time())}",
+        config=env_config,
+    )
+
+    session = client.beta.sessions.create(
+        agent=orchestrator.id,
+        environment_id=env.id,
+        title=f"Multiagent Bundle: {bundle_name}",
+    )
+
+    return orchestrator, task_agent, qa_agent, env, session
+
+
+def collect_multiagent_events(client, session_id: str) -> dict:
+    """Stream events from an orchestrator session and collect results.
+
+    The orchestrator internally delegates to Task and QA agents.
+    We collect the final orchestrator response.
+    """
+    messages: list[str] = []
+    tool_calls: list[dict] = []
+    agent_delegations: list[dict] = []
+    errors: list[str] = []
+
+    try:
+        with client.beta.sessions.events.stream(session_id) as stream:
+            for event in stream:
+                match event.type:
+                    case "agent.message":
+                        for block in event.content:
+                            if hasattr(block, "text"):
+                                messages.append(block.text)
+                    case "agent.tool_use":
+                        tool_calls.append({"name": event.name})
+                    case "agent.delegation_start":
+                        agent_delegations.append({
+                            "agent_name": (
+                                event.agent_name
+                                if hasattr(event, "agent_name")
+                                else "unknown"
+                            ),
+                            "status": "started",
+                        })
+                    case "agent.delegation_end":
+                        if agent_delegations:
+                            agent_delegations[-1]["status"] = "completed"
+                    case "session.error":
+                        err_msg = (
+                            str(event.error.message)
+                            if hasattr(event, "error")
+                            else "unknown error"
+                        )
+                        errors.append(err_msg)
+                    case "session.status_idle":
+                        break
+                    case "session.status_terminated":
+                        errors.append("session terminated")
+                        break
+    except Exception as e:
+        errors.append(f"stream error: {e}")
+
+    session_info = client.beta.sessions.retrieve(session_id)
+    usage = {
+        "input_tokens": (
+            session_info.usage.input_tokens
+            if hasattr(session_info, "usage") and session_info.usage
+            else 0
+        ),
+        "output_tokens": (
+            session_info.usage.output_tokens
+            if hasattr(session_info, "usage") and session_info.usage
+            else 0
+        ),
+    }
+
+    return {
+        "response": "\n".join(messages),
+        "tool_calls": tool_calls,
+        "agent_delegations": agent_delegations,
+        "errors": errors,
+        "usage": usage,
+    }
+
+
+def run_bundle_multiagent(
+    bundle_name: str,
+    user_input: str,
+    model: str | None = None,
+    verbose: bool = False,
+) -> dict:
+    """Run bundle workflow in multiagent mode.
+
+    The orchestrator agent coordinates Task + QA agents within a single
+    shared-filesystem session, solving the file handoff problem.
+    """
+    bundle = load_bundle(bundle_name)
+
+    print(f"=== Bundle 実行 (Multiagent): {bundle_name} ===")
+    print(f"  Task Agent: {bundle['task_agent']['name']}")
+    print(f"  QA Agent:   {bundle['qa_agent']['name']}")
+
+    workflow = bundle["workflow"]
+    qa_settings = workflow["qa"]
+    pre_task = workflow.get("pre_task", {})
+
+    skill_content = None
+    if pre_task.get("read_skills", True):
+        skill_content = load_skill_md(bundle_name)
+        if skill_content:
+            print(f"  SKILL.md: 読み込み済み ({len(skill_content)} chars)")
+
+    bundle_skills = bundle.get("skills", [])
+    bundle_env = bundle.get("environment", {})
+    bundle_packages = bundle_env.get("packages", {})
+    bundle_packages = {k: v for k, v in bundle_packages.items() if v}
+
+    if bundle_skills:
+        skill_ids = [s.get("skill_id", "") for s in bundle_skills]
+        print(f"  Skills: {', '.join(skill_ids)}")
+    print(f"  Mode: multiagent (shared filesystem)")
+    print()
+
+    check_api_key()
+    import anthropic
+
+    client = anthropic.Anthropic()
+
+    task_config = load_agent_config(bundle["task_agent"]["name"])
+    qa_config = load_agent_config(bundle["qa_agent"]["name"])
+
+    explicit_model = model is not None
+    escalation_order = qa_settings.get(
+        "model_escalation", DEFAULT_MODEL_ESCALATION
+    )
+    current_model = model or escalation_order[0]
+
+    results = {
+        "bundle": bundle_name,
+        "input": user_input,
+        "mode": "multiagent",
+        "model_override": model,
+        "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "skill_injected": skill_content is not None,
+        "skills_attached": [s.get("skill_id") for s in bundle_skills],
+        "packages_installed": bundle_packages,
+        "model_escalation": escalation_order if not explicit_model else None,
+        "iterations": [],
+        "best_score": 0.0,
+        "final_status": "incomplete",
+    }
+
+    print(f"[Phase B] Orchestrator 実行中 (model: {current_model})...")
+
+    orchestrator, task_agent, qa_agent, env, session = (
+        create_multiagent_session(
+            client,
+            task_config,
+            qa_config,
+            bundle_name,
+            qa_settings,
+            current_model,
+            skill_content=skill_content,
+            skills=bundle_skills or None,
+            packages=bundle_packages or None,
+        )
+    )
+
+    # Send user task to orchestrator — it will delegate internally
+    orchestrator_prompt = (
+        f"## Task\n\n{user_input}\n\n"
+        "Please delegate this task to the Task Agent, then have the "
+        "QA Agent evaluate the results. Follow the workflow in your "
+        "system prompt."
+    )
+
+    # Send the initial message to kick off the orchestrator
+    client.beta.sessions.events.send(
+        session.id,
+        events=[
+            {
+                "type": "user.message",
+                "content": [{"type": "text", "text": orchestrator_prompt}],
+            },
+        ],
+    )
+
+    result = collect_multiagent_events(client, session.id)
+
+    if result["errors"]:
+        print(f"  ERROR: Orchestrator でエラー発生: {result['errors']}")
+        results["final_status"] = "orchestrator_error"
+        results["errors"] = result["errors"]
+    else:
+        print(f"  Orchestrator 完了 (tokens: {result['usage']})")
+        if verbose:
+            print(f"  Delegations: {len(result['agent_delegations'])}")
+            for d in result["agent_delegations"]:
+                print(f"    - {d['agent_name']}: {d['status']}")
+
+        # Parse final result from orchestrator response
+        orchestrator_result = parse_qa_result(result["response"])
+        results["final_status"] = orchestrator_result.get(
+            "final_status", "unknown"
+        )
+        results["best_score"] = orchestrator_result.get("best_score", 0.0)
+        results["orchestrator_response_excerpt"] = result["response"][
+            :EVIDENCE_RESPONSE_LIMIT
+        ]
+        results["agent_delegations"] = result["agent_delegations"]
+
+    results["completed_at"] = datetime.datetime.now(
+        datetime.timezone.utc
+    ).isoformat()
+
+    # Collect session threads for evidence
+    try:
+        threads = client.beta.sessions.threads.list(session.id)
+        results["threads"] = [
+            {
+                "agent_name": t.agent_name,
+                "status": t.status,
+            }
+            for t in threads.data
+        ]
+    except Exception:
+        results["threads"] = []
+
+    # Evidence
+    EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    model_label = model or "default"
+    evidence_path = (
+        EVIDENCE_DIR / f"{timestamp}_{bundle_name}_multiagent_{model_label}.json"
+    )
+    with open(evidence_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+    print(f"\n=== Bundle 実行完了 (Multiagent) ===")
+    print(f"  最終ステータス: {results['final_status']}")
+    print(f"  ベストスコア:   {results['best_score']}")
+    if result.get("agent_delegations"):
+        print(f"  Agent 委譲回数: {len(result['agent_delegations'])}")
+    print(f"  証跡: {evidence_path}")
+
+    return results
 
 
 def should_escalate_model(
@@ -641,6 +1026,8 @@ def run_bundle(
                         f"  ESCALATE: {current_model} → {next_model}"
                         f" (score {score:.2f} <= threshold {escalation_threshold})"
                     )
+                    prev_model = current_model
+                    prev_task_session = task_session
                     current_model = next_model
                     iteration_result["escalated_to"] = next_model
                     results.setdefault("escalations", []).append({
@@ -685,6 +1072,15 @@ def run_bundle(
                             print(
                                 f"  出力ファイル: {len(task_output_files)} 件"
                             )
+                    else:
+                        # Escalation failed — fall back to previous session
+                        print(
+                            f"  WARN: エスカレーション先で"
+                            f"エラー発生、{prev_model} に復帰"
+                        )
+                        current_model = prev_model
+                        task_session = prev_task_session
+                        iteration_result["escalation_failed"] = True
                     continue
 
             print("  FAIL: フィードバックを Task Agent に渡して修正中...")
@@ -780,18 +1176,31 @@ def main() -> None:
         action="store_true",
         help="詳細なデバッグログを出力する",
     )
+    parser.add_argument(
+        "--multiagent",
+        action="store_true",
+        help="Multiagent Sessions モードで実行（共有ファイルシステム）",
+    )
     args = parser.parse_args()
 
     if not args.dry_run and not args.input:
         parser.error("--input は必須です（--dry-run 時を除く）")
 
-    run_bundle(
-        bundle_name=args.bundle_name,
-        user_input=args.input or "",
-        model=args.model,
-        dry_run=args.dry_run,
-        verbose=args.verbose,
-    )
+    if args.multiagent and not args.dry_run:
+        run_bundle_multiagent(
+            bundle_name=args.bundle_name,
+            user_input=args.input or "",
+            model=args.model,
+            verbose=args.verbose,
+        )
+    else:
+        run_bundle(
+            bundle_name=args.bundle_name,
+            user_input=args.input or "",
+            model=args.model,
+            dry_run=args.dry_run,
+            verbose=args.verbose,
+        )
 
 
 if __name__ == "__main__":

@@ -42,3 +42,7 @@ build_skill_preamble = _mod.build_skill_preamble
 build_feedback_history = _mod.build_feedback_history
 should_escalate_model = _mod.should_escalate_model
 run_bundle = _mod.run_bundle
+build_orchestrator_system = _mod.build_orchestrator_system
+MULTIAGENT_BETA = _mod.MULTIAGENT_BETA
+ORCHESTRATOR_MAX_QA_PROMPT_CHARS = _mod.ORCHESTRATOR_MAX_QA_PROMPT_CHARS
+run_bundle_multiagent = _mod.run_bundle_multiagent

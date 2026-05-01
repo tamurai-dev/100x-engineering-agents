@@ -283,6 +283,24 @@
         }
       },
       "description": "ワークフロー実行設定"
+    },
+    "multiagent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Multiagent Sessions モードを有効にする。Task Agent と QA Agent が同一コンテナ・同一ファイルシステムを共有する"
+        },
+        "orchestrator_model": {
+          "type": "string",
+          "enum": ["haiku", "sonnet", "opus"],
+          "default": "haiku",
+          "description": "Orchestrator Agent のモデル。Task/QA Agent への委譲を管理する"
+        }
+      },
+      "description": "Multiagent Sessions 設定（Research Preview）。有効にすると、Task Agent と QA Agent が同一サンドボックスで動作し、ファイルシステムを共有する"
     }
   }
 }

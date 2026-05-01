@@ -34,7 +34,10 @@ from run_bundle_helpers import (
     DEFAULT_MODEL_ESCALATION,
     ESCALATION_IMPROVEMENT_DELTA,
     EVIDENCE_RESPONSE_LIMIT,
+    MULTIAGENT_BETA,
+    ORCHESTRATOR_MAX_QA_PROMPT_CHARS,
     build_feedback_history,
+    build_orchestrator_system,
     build_skill_preamble,
     list_session_output_files,
     load_bundle,
@@ -397,6 +400,90 @@ class TestModelEscalation(unittest.TestCase):
         self.assertGreater(DEFAULT_ESCALATION_THRESHOLD, 0.0)
         self.assertLess(DEFAULT_ESCALATION_THRESHOLD, 1.0)
         self.assertGreater(ESCALATION_IMPROVEMENT_DELTA, 0.0)
+
+
+class TestMultiagent(unittest.TestCase):
+    """Multiagent Sessions mode tests."""
+
+    def test_multiagent_beta_header_defined(self):
+        """MULTIAGENT_BETA constant is defined."""
+        self.assertIsInstance(MULTIAGENT_BETA, str)
+        self.assertIn("multiagent", MULTIAGENT_BETA)
+
+    def test_orchestrator_max_qa_prompt_chars(self):
+        """ORCHESTRATOR_MAX_QA_PROMPT_CHARS is a positive integer."""
+        self.assertIsInstance(ORCHESTRATOR_MAX_QA_PROMPT_CHARS, int)
+        self.assertGreater(ORCHESTRATOR_MAX_QA_PROMPT_CHARS, 0)
+
+    def test_build_orchestrator_system_basic(self):
+        """build_orchestrator_system returns a non-empty string."""
+        qa_settings = {
+            "max_iterations": 3,
+            "pass_threshold": 0.80,
+            "convergence_delta": 0.02,
+        }
+        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        self.assertIsInstance(result, str)
+        self.assertIn("test-bundle", result)
+        self.assertIn("Task Agent", result)
+        self.assertIn("QA Agent", result)
+
+    def test_build_orchestrator_system_with_skill(self):
+        """build_orchestrator_system includes SKILL.md when provided."""
+        qa_settings = {
+            "max_iterations": 3,
+            "pass_threshold": 0.80,
+        }
+        skill = "Use pptxgenjs to generate slides."
+        result = build_orchestrator_system("test-bundle", qa_settings, skill)
+        self.assertIn("SKILL.md", result)
+        self.assertIn("pptxgenjs", result)
+
+    def test_build_orchestrator_system_truncates_long_skill(self):
+        """build_orchestrator_system truncates very long SKILL.md."""
+        qa_settings = {
+            "max_iterations": 3,
+            "pass_threshold": 0.80,
+        }
+        long_skill = "x" * (ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 1000)
+        result = build_orchestrator_system("test-bundle", qa_settings, long_skill)
+        # The skill content should be truncated
+        self.assertLessEqual(
+            result.count("x"), ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 10
+        )
+
+    def test_build_orchestrator_system_contains_workflow_params(self):
+        """build_orchestrator_system includes workflow parameters."""
+        qa_settings = {
+            "max_iterations": 5,
+            "pass_threshold": 0.90,
+            "convergence_delta": 0.03,
+            "escalation_threshold": 0.35,
+        }
+        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        self.assertIn("0.9", result)
+        self.assertIn("5", result)
+        self.assertIn("0.35", result)
+
+    def test_build_orchestrator_system_shared_filesystem(self):
+        """build_orchestrator_system mentions shared filesystem."""
+        qa_settings = {
+            "max_iterations": 3,
+            "pass_threshold": 0.80,
+        }
+        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        self.assertIn("filesystem", result.lower())
+        self.assertIn("/mnt/session/outputs/", result)
+
+    def test_build_orchestrator_system_json_block(self):
+        """build_orchestrator_system includes JSON output format."""
+        qa_settings = {
+            "max_iterations": 3,
+            "pass_threshold": 0.80,
+        }
+        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        self.assertIn("final_status", result)
+        self.assertIn("best_score", result)
 
 
 if __name__ == "__main__":

@@ -237,7 +237,7 @@ def resolve_community_candidates(
     """
     candidates = FORMAT_TO_COMMUNITY.get(artifact_format, [])
     if not spec:
-        return candidates
+        return list(candidates)
 
     spec_lower = spec.lower()
     scored = []
