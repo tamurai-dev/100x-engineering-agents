@@ -42,18 +42,6 @@
       "created_at": "2026-05-01T07:18:57.721012+00:00",
       "created_by": "create-subagent.sh",
       "hmac_sha256": "2f125352ddcf19f6b43aba1cf50bab639aa1bdf4da30b74077e3737f811d4627"
-    },
-    "quarterly-earnings-slide-generator": {
-      "file": "agents/agents/quarterly-earnings-slide-generator/agent.md",
-      "created_at": "2026-05-01T11:38:54.899005+00:00",
-      "created_by": "create-subagent.sh",
-      "hmac_sha256": "e3f36b7792616f2f074d892fd7676fb7ac626732872b7eb6584a0ac63abc53e1"
-    },
-    "quarterly-earnings-pptx-qa": {
-      "file": "agents/agents/quarterly-earnings-pptx-qa/agent.md",
-      "created_at": "2026-05-01T11:38:54.939742+00:00",
-      "created_by": "create-subagent.sh",
-      "hmac_sha256": "545947329a369010f6b48fd306a862359eba5948c2a2409fab1876c286ef06bc"
     }
   }
 }

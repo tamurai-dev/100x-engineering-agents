@@ -10,15 +10,19 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from bundle_factory.skill_resolver import (
     COMMUNITY_SKILLS,
+    CUSTOM_SKILLS,
     DEFAULT_PACKAGES,
     FORMAT_TO_COMMUNITY,
+    FORMAT_TO_CUSTOM,
     FORMAT_TO_PREBUILT,
     PREBUILT_SKILLS,
     SkillResolution,
     get_community_skill_catalog,
+    get_custom_skill_catalog,
     get_full_skill_catalog,
     get_prebuilt_skill_catalog,
     resolve_community_candidates,
+    resolve_custom_skills,
     resolve_packages,
     resolve_prebuilt_skills,
     resolve_skills,
@@ -105,26 +109,32 @@ class TestPackageResolution(unittest.TestCase):
     """Package resolution tests."""
 
     def test_presentation_packages_when_no_prebuilt(self):
-        packages = resolve_packages("presentation", prebuilt_matched=False)
+        packages = resolve_packages("presentation")
         self.assertIn("npm", packages)
         self.assertIn("pptxgenjs", packages["npm"])
 
     def test_presentation_no_packages_when_prebuilt(self):
-        packages = resolve_packages("presentation", prebuilt_matched=True)
+        packages = resolve_packages("presentation", matched_skill_ids=["pptx"])
         self.assertEqual(packages, {})
 
     def test_html_ui_packages(self):
-        packages = resolve_packages("html_ui", prebuilt_matched=False)
+        packages = resolve_packages("html_ui")
         self.assertIn("npm", packages)
 
     def test_text_no_packages(self):
-        packages = resolve_packages("text", prebuilt_matched=False)
+        packages = resolve_packages("text")
         self.assertEqual(packages, {})
 
     def test_media_video_packages(self):
-        packages = resolve_packages("media_video", prebuilt_matched=False)
+        packages = resolve_packages("media_video")
         self.assertIn("apt", packages)
         self.assertIn("ffmpeg", packages["apt"])
+
+    def test_structured_data_keeps_pandas_with_xlsx(self):
+        """xlsx replaces exceljs/openpyxl/xlsxwriter, but NOT pandas."""
+        packages = resolve_packages("structured_data", matched_skill_ids=["xlsx"])
+        self.assertIn("pip", packages)
+        self.assertIn("pandas", packages["pip"])
 
 
 class TestResolveSkills(unittest.TestCase):
@@ -143,7 +153,8 @@ class TestResolveSkills(unittest.TestCase):
         result = resolve_skills("structured_data", "Excel分析")
         self.assertTrue(result.prebuilt_matched)
         self.assertEqual(result.skills[0]["skill_id"], "xlsx")
-        self.assertEqual(result.packages, {})
+        # xlsx replaces exceljs/openpyxl/xlsxwriter, but NOT pandas
+        self.assertEqual(result.packages, {"pip": ["pandas"]})
 
     def test_html_ui_resolution(self):
         result = resolve_skills("html_ui", "React UIコンポーネント")
@@ -176,6 +187,47 @@ class TestResolveSkills(unittest.TestCase):
         self.assertTrue(result.prebuilt_matched)
         ids = {s["skill_id"] for s in result.skills}
         self.assertTrue(ids & {"docx", "pdf"})
+
+
+class TestCustomSkills(unittest.TestCase):
+    """Custom (self-hosted) skill resolution tests."""
+
+    def test_custom_skills_registry_is_dict(self):
+        self.assertIsInstance(CUSTOM_SKILLS, dict)
+
+    def test_format_to_custom_is_dict(self):
+        self.assertIsInstance(FORMAT_TO_CUSTOM, dict)
+
+    def test_resolve_custom_skills_empty_registry(self):
+        """No custom skills registered → empty result."""
+        result = resolve_custom_skills("presentation", "スライド生成")
+        self.assertEqual(result, [])
+
+    def test_resolve_skills_includes_custom_field(self):
+        """SkillResolution has custom_skills field."""
+        result = resolve_skills("presentation")
+        self.assertIsInstance(result.custom_skills, list)
+
+    def test_custom_catalog_empty_when_no_skills(self):
+        """Custom catalog returns empty string when no skills registered."""
+        catalog = get_custom_skill_catalog()
+        self.assertEqual(catalog, "")
+
+    def test_custom_skills_structure_when_registered(self):
+        """Validate that CUSTOM_SKILLS entries would have required fields."""
+        required = {"skill_id", "display_title", "description",
+                     "artifact_formats", "keywords"}
+        for name, info in CUSTOM_SKILLS.items():
+            self.assertTrue(
+                required.issubset(info.keys()),
+                f"{name}: missing fields {required - info.keys()}"
+            )
+
+    def test_format_to_custom_consistency(self):
+        for fmt, names in FORMAT_TO_CUSTOM.items():
+            for name in names:
+                self.assertIn(name, CUSTOM_SKILLS)
+                self.assertIn(fmt, CUSTOM_SKILLS[name]["artifact_formats"])
 
 
 class TestSkillCatalog(unittest.TestCase):

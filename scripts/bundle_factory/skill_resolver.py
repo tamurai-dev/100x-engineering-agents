@@ -133,6 +133,29 @@ for _name, _info in COMMUNITY_SKILLS.items():
         FORMAT_TO_COMMUNITY.setdefault(_fmt, []).append(_name)
 
 
+# ── Custom skills (self-hosted, registered via Skills API) ──────────
+# Add your organization's proprietary skills here.
+# These are uploaded to Anthropic's Skills API and referenced by skill_id.
+# Priority: PREBUILT > CUSTOM > COMMUNITY
+
+CUSTOM_SKILLS: dict[str, dict] = {
+    # Example entries — replace with actual registered skill_ids
+    # "tam-invoice-generator": {
+    #     "skill_id": "skill_abc123",
+    #     "display_title": "TAM 請求書生成",
+    #     "description": "TAM独自フォーマットの請求書を自動生成",
+    #     "artifact_formats": ["document", "structured_data"],
+    #     "keywords": ["invoice", "billing", "accounting", "tam"],
+    # },
+}
+
+# Mapping: artifact_format -> list of custom skill names
+FORMAT_TO_CUSTOM: dict[str, list[str]] = {}
+for _name, _info in CUSTOM_SKILLS.items():
+    for _fmt in _info["artifact_formats"]:
+        FORMAT_TO_CUSTOM.setdefault(_fmt, []).append(_name)
+
+
 # ── Common packages by artifact_format ──────────────────────────────
 
 DEFAULT_PACKAGES: dict[str, dict[str, list[str]]] = {
@@ -154,6 +177,8 @@ class SkillResolution:
     packages: dict[str, list[str]]
     # Whether a pre-built skill was matched
     prebuilt_matched: bool
+    # Custom skills matched (Managed Agents API format)
+    custom_skills: list[dict]
     # Matched community skill names (for reference/logging)
     community_candidates: list[str]
     # Resolution summary for logging
@@ -172,10 +197,41 @@ def resolve_prebuilt_skills(artifact_format: str) -> list[dict]:
     ]
 
 
+def resolve_custom_skills(
+    artifact_format: str, spec: str = ""
+) -> list[dict]:
+    """Step 2: Match custom (self-hosted) skills by artifact_format + keywords.
+
+    Returns list of skill dicts in Managed Agents API format,
+    sorted by keyword relevance.
+    """
+    names = FORMAT_TO_CUSTOM.get(artifact_format, [])
+    if not names:
+        return []
+
+    spec_lower = spec.lower() if spec else ""
+    scored = []
+    for name in names:
+        info = CUSTOM_SKILLS[name]
+        keyword_hits = sum(1 for kw in info["keywords"] if kw in spec_lower)
+        name_hit = 1 if name.replace("-", " ") in spec_lower else 0
+        scored.append((name, info, keyword_hits + name_hit))
+
+    scored.sort(key=lambda x: x[2], reverse=True)
+    return [
+        {
+            "type": "custom",
+            "skill_id": info["skill_id"],
+            "version": "latest",
+        }
+        for _name, info, _score in scored
+    ]
+
+
 def resolve_community_candidates(
     artifact_format: str, spec: str = ""
 ) -> list[str]:
-    """Step 2: Find community skill candidates for the artifact_format.
+    """Step 3: Find community skill candidates for the artifact_format.
 
     Returns list of community skill names, sorted by keyword relevance.
     """
@@ -198,16 +254,30 @@ def resolve_community_candidates(
 def resolve_packages(
     artifact_format: str,
     spec: str = "",
-    prebuilt_matched: bool = False,
+    matched_skill_ids: list[str] | None = None,
 ) -> dict[str, list[str]]:
     """Step 3: Determine packages to pre-install.
 
-    If a pre-built skill covers the format, packages for that format
-    are not needed (e.g., pptx skill replaces pptxgenjs).
+    Only filters out packages that are explicitly listed in the matched
+    pre-built skill's ``replaces_packages``. Packages not covered by
+    any matched skill are kept.
     """
-    if prebuilt_matched:
+    defaults = DEFAULT_PACKAGES.get(artifact_format, {})
+    if not defaults:
         return {}
-    return {k: list(v) for k, v in DEFAULT_PACKAGES.get(artifact_format, {}).items()}
+
+    # Collect all packages replaced by matched pre-built skills
+    replaced: set[str] = set()
+    for sid in matched_skill_ids or []:
+        skill_info = PREBUILT_SKILLS.get(sid, {})
+        replaced.update(skill_info.get("replaces_packages", []))
+
+    result: dict[str, list[str]] = {}
+    for mgr, pkgs in defaults.items():
+        filtered = [p for p in pkgs if p not in replaced]
+        if filtered:
+            result[mgr] = list(filtered)
+    return result
 
 
 def resolve_skills(
@@ -216,10 +286,11 @@ def resolve_skills(
 ) -> SkillResolution:
     """Resolve the optimal skill configuration for a bundle.
 
-    Three-step resolution:
+    Four-step resolution:
       1. Match pre-built Anthropic skills by artifact_format
-      2. Find community skill candidates for reference
-      3. Determine required packages (only if no pre-built match)
+      2. Match custom (self-hosted) skills by artifact_format + keywords
+      3. Find community skill candidates for reference
+      4. Determine required packages (filter by replaces_packages)
 
     Args:
         artifact_format: Bundle artifact format (e.g., "presentation")
@@ -231,18 +302,28 @@ def resolve_skills(
     # Step 1: Pre-built match
     prebuilt = resolve_prebuilt_skills(artifact_format)
     prebuilt_matched = len(prebuilt) > 0
+    matched_ids = [s["skill_id"] for s in prebuilt]
 
-    # Step 2: Community candidates
+    # Step 2: Custom (self-hosted) skills
+    custom = resolve_custom_skills(artifact_format, spec)
+
+    # Step 3: Community candidates
     community = resolve_community_candidates(artifact_format, spec)
 
-    # Step 3: Packages (skipped if pre-built matched)
-    packages = resolve_packages(artifact_format, spec, prebuilt_matched)
+    # Step 4: Packages (filter out only those replaced by matched skills)
+    packages = resolve_packages(artifact_format, spec, matched_ids)
+
+    # Merge all skills: prebuilt + custom
+    all_skills = prebuilt + custom
 
     # Build summary
     parts = []
     if prebuilt:
         ids = [s["skill_id"] for s in prebuilt]
         parts.append(f"Pre-built: {', '.join(ids)}")
+    if custom:
+        ids = [s["skill_id"] for s in custom]
+        parts.append(f"Custom: {', '.join(ids)}")
     if community:
         parts.append(f"Community candidates: {', '.join(community[:3])}")
     if packages:
@@ -256,9 +337,10 @@ def resolve_skills(
     summary = " | ".join(parts)
 
     return SkillResolution(
-        skills=prebuilt,
+        skills=all_skills,
         packages=packages,
         prebuilt_matched=prebuilt_matched,
+        custom_skills=custom,
         community_candidates=community,
         summary=summary,
     )
@@ -294,6 +376,28 @@ def get_community_skill_catalog() -> str:
     return "\n".join(lines)
 
 
+def get_custom_skill_catalog() -> str:
+    """Return a formatted catalog of custom (self-hosted) skills for LLM prompts."""
+    if not CUSTOM_SKILLS:
+        return ""
+    lines = ["## Custom Skills (organization-specific)\n"]
+    for name, info in CUSTOM_SKILLS.items():
+        lines.append(
+            f"- **{name}** ({info['display_title']}): {info['description']}"
+        )
+        lines.append(
+            f"  Artifact formats: {', '.join(info['artifact_formats'])}"
+        )
+        lines.append(f"  Keywords: {', '.join(info['keywords'])}")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def get_full_skill_catalog() -> str:
     """Return a combined catalog of all available skills for LLM prompts."""
-    return get_prebuilt_skill_catalog() + "\n" + get_community_skill_catalog()
+    parts = [get_prebuilt_skill_catalog()]
+    custom = get_custom_skill_catalog()
+    if custom:
+        parts.append(custom)
+    parts.append(get_community_skill_catalog())
+    return "\n".join(parts)

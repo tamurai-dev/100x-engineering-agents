@@ -176,7 +176,7 @@ ifndef INPUT
 	@echo '  例: make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード"'
 	@exit 1
 endif
-	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" --model $(or $(MODEL),haiku) $(if $(VERBOSE),--verbose,)
+	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
 
 run-bundle-dry: ## バンドルワークフローのドライラン (usage: make run-bundle-dry NAME=<bundle-name>)
 ifndef NAME
