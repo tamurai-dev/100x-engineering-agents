@@ -7,6 +7,12 @@ test-generator エージェント専用。
 
 from __future__ import annotations
 
+import re
+
+_PYTEST_SUMMARY_RE = re.compile(
+    r"=+\s*(?:(\d+)\s+passed)?(?:,?\s*(\d+)\s+failed)?(?:,?\s*(\d+)\s+error)?.*=+"
+)
+
 
 def grade_test_execution(events: list[dict]) -> dict:
     """
@@ -82,8 +88,6 @@ def _is_test_command(text: str) -> bool:
         "pytest",
         "python -m pytest",
         "python3 -m pytest",
-        "python -c",
-        "python3 -c",
         "npm test",
         "npx jest",
         "npx vitest",
@@ -98,26 +102,32 @@ def _check_test_passed(output: str) -> bool:
         return False
     output_lower = output.lower()
 
-    fail_indicators = [
-        "failed",
-        "failure",
-        "error",
-        "traceback",
-        "assertion error",
-        "assertionerror",
-        "exit code: 1",
-        "exit code: 2",
+    # pytest のサマリー行を解析（最も信頼性が高い）
+    m = _PYTEST_SUMMARY_RE.search(output)
+    if m:
+        passed_count = int(m.group(1) or 0)
+        failed_count = int(m.group(2) or 0)
+        error_count = int(m.group(3) or 0)
+        return failed_count == 0 and error_count == 0 and passed_count > 0
+
+    # pytest サマリーが見つからない場合のフォールバック
+    fail_patterns = [
+        r"\d+\s+failed",
+        r"FAILED\s+",
+        r"= FAILURES =",
+        r"= ERRORS =",
+        r"Traceback \(most recent call last\)",
+        r"exit code: [12]",
     ]
-    pass_indicators = [
-        "passed",
-        "ok",
-        "exit code: 0",
-        "tests passed",
-        "all tests passed",
+    pass_patterns = [
+        r"\d+\s+passed",
+        r"exit code: 0",
+        r"all tests passed",
+        r"tests passed",
     ]
 
-    has_failure = any(ind in output_lower for ind in fail_indicators)
-    has_pass = any(ind in output_lower for ind in pass_indicators)
+    has_failure = any(re.search(pat, output, re.IGNORECASE) for pat in fail_patterns)
+    has_pass = any(re.search(pat, output, re.IGNORECASE) for pat in pass_patterns)
 
     if has_pass and not has_failure:
         return True
