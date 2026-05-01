@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry
+.PHONY: help validate validate-config test check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -96,7 +96,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test check-template manifest-verify report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -128,6 +128,30 @@ ifndef NAME
 	@exit 1
 endif
 	@$(PYTHON) scripts/agent-factory.py --improve $(NAME) --model $(or $(MODEL),haiku)
+
+# ── Bundle ────────────────────────────────────────
+validate-bundle: ## 全バンドルの bundle.json をバリデーション
+	@$(PYTHON) scripts/validate-bundle.py
+
+run-bundle: ## バンドルワークフロー実行 (usage: make run-bundle NAME=<bundle-name> INPUT="..." [MODEL=haiku])
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@echo '  例: make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@exit 1
+endif
+ifndef INPUT
+	@echo "ERROR: INPUT を指定してください"
+	@echo '  例: make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@exit 1
+endif
+	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" --model $(or $(MODEL),haiku)
+
+run-bundle-dry: ## バンドルワークフローのドライラン (usage: make run-bundle-dry NAME=<bundle-name>)
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@exit 1
+endif
+	@$(PYTHON) scripts/run-bundle.py $(NAME) --dry-run
 
 # ── セットアップ ─────────────────────────────────
 setup: ## 開発環境セットアップ（依存パッケージ + pre-commit hook）
