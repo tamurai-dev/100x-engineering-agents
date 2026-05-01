@@ -141,11 +141,21 @@ def create_agent_and_session(
     }
     if agent_config.get("description"):
         create_params["description"] = agent_config["description"]
-    if agent_config.get("tools"):
-        create_params["tools"] = agent_config["tools"]
+    tools = agent_config.get("tools", [])
+    # Skills require the full agent_toolset_20260401 with read enabled.
+    # If skills are attached, replace any restrictive toolset config with
+    # the full toolset so all skill-dependent tools are available.
+    if skills:
+        tools = [{"type": "agent_toolset_20260401"}]
+    if tools:
+        create_params["tools"] = tools
     # Attach skills to the agent (pre-built and/or custom)
+    betas_list = []
     if skills:
         create_params["skills"] = skills
+        betas_list.append(SKILLS_BETA)
+    if betas_list:
+        create_params["betas"] = betas_list
 
     agent = client.beta.agents.create(**create_params)
 
@@ -1138,8 +1148,11 @@ def run_bundle(
                             print(
                                 f"  出力ファイル: {len(task_output_files)} 件"
                             )
+                        # Escalation succeeded — skip normal retry path
+                        continue
                     else:
                         # Escalation failed — fall back to previous session
+                        # and let the normal retry path send feedback
                         print(
                             f"  WARN: エスカレーション先で"
                             f"エラー発生、{prev_model} に復帰"
@@ -1147,7 +1160,6 @@ def run_bundle(
                         current_model = prev_model
                         task_session = prev_task_session
                         iteration_result["escalation_failed"] = True
-                    continue
 
             print("  FAIL: フィードバックを Task Agent に渡して修正中...")
 
