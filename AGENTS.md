@@ -4,14 +4,14 @@
 # Claude Code subagent 書式準拠
 # ============================================================
 
-name: 100x-engineering-agents
+name: duo-agents
 description: >
-  ANTHROPIC_API_KEY ひとつで、AIエージェントの作成・テスト・評価が
-  ローカル完結で行えるフレームワーク。
+  ANTHROPIC_API_KEY ひとつで、自分専用の AI エージェント（Task + QA のペア）を
+  ローカルで作れるフレームワーク。
   技術スタック非依存。GitHub リポジトリ不要。
   本ファイルは全エージェントがセッション開始時に必読する指示書である。
 owner: YoshibaTakumu
-repo: tamurai-dev/100x-engineering-agents
+repo: tamurai-dev/duo-agents
 status: active
 
 document:
@@ -40,7 +40,9 @@ agent:
   effort: high
 ---
 
-# 100x Engineering Agents — エージェント指示書
+# Duo Agents — エージェント指示書
+
+> **旧名**: 100x Engineering Agents (リファクタリング中。描画・名称を v1.0 に向けて順次更新中)
 
 ## 1. このドキュメントの役割
 
