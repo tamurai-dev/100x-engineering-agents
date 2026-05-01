@@ -53,6 +53,7 @@ agent:
 ├── CLAUDE.md                         # Claude Code 用エントリポイント（AGENTS.md への参照）
 ├── README.md                         # プロジェクトビジョン・開発規約
 │
+├── Makefile                          # 開発タスクランナー（make check-all, make create-agent 等）
 ├── agents/                           # 全エージェント資産の格納場所（= .claude/ の実体）
 │   ├── agents/                       # Subagent 定義（Claude Code 読み取り対象）
 │   │   ├── code-reviewer.md          #   コードレビュー専門
@@ -60,14 +61,27 @@ agent:
 │   │   ├── test-generator.md         #   テスト生成専門
 │   │   ├── doc-writer.md             #   ドキュメント生成専門
 │   │   └── task-planner.md           #   タスク分解・計画専門
+│   ├── schemas/                      # バリデーションスキーマ
+│   │   └── subagent-frontmatter.schema.json
+│   ├── templates/                    # Subagent テンプレート
+│   │   └── subagent.md.tmpl          #   新規作成時のベース
 │   ├── skills/                       # 再利用可能スキル定義
 │   ├── commands/                     # カスタムスラッシュコマンド
 │   ├── rules/                        # トピック別ルール（パスゲート対応）
 │   ├── output-styles/                # 出力スタイル定義
 │   ├── agent-memory/                 # エージェント永続メモリ（自動生成）
 │   ├── settings.json                 # Claude Code 設定
-│   ├── templates/                    # 他プロジェクト向けエージェントテンプレート
 │   └── evaluations/                  # エージェント品質評価フレームワーク
+│
+├── scripts/                          # 開発スクリプト
+│   ├── validate_subagents.py         #   Frontmatter バリデーション
+│   ├── create-subagent.sh            #   新規 Subagent 作成
+│   └── setup-hooks.sh                #   pre-commit セットアップ
+│
+├── tests/                            # テスト
+│   ├── test_validate_subagents.py    #   バリデーションテストスイート
+│   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
+│   └── reports/                      #   バリデーションレポート（自動生成）
 │
 └── .claude -> agents                 # Symlink（Claude Code 互換）
 ```
@@ -107,10 +121,77 @@ agent:
 4. 1 PR = 1 論理的変更。PRタイトル・本文は日本語
 5. ドキュメント義務（§2.6）を確認し、必要なドキュメントを更新する
 
-### 4.3 禁止事項（再掲・厳守）
+### 4.3 検証フロー（絶対遵守）
+
+**原則: コードで書かれた検証を通過しないものはマージしない。**
+
+文書ルールは読み飛ばされる可能性がある。以下の検証メカニズムはコードレベルで強制されるため、バイパスできない。
+
+#### 新規 Subagent 作成時
+
+```bash
+# 必ずこのコマンドで作成する（手動コピー禁止）
+make create-agent NAME=<agent-name>
+```
+
+スクリプトが自動的に以下を実行する:
+1. テンプレート (`agents/templates/subagent.md.tmpl`) からコピー
+2. `name` フィールドをエージェント名に置換
+3. 即時バリデーション実行
+
+#### コード変更後の検証
+
+```bash
+# 全チェック実行（CI と同等の内容をローカルで実行）
+make check-all
+```
+
+`make check-all` は以下を順番に実行する:
+
+| ステップ | コマンド | 内容 |
+|---------|---------|------|
+| 1 | `make validate` | 全 subagent の frontmatter バリデーション |
+| 2 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
+| 3 | `make check-template` | テンプレート整合性チェック |
+| 4 | `make report` | バリデーションレポート (JSON) 生成 |
+
+#### 強制メカニズム（多層防御）
+
+```
+Layer 4 [最強] ── Branch Protection (required status checks)
+                   → CI 未通過 = マージ不可能
+Layer 3 ────────── GitHub Actions CI
+                   → push/PR 時に 3OS × 2Python で自動実行
+Layer 2 ────────── pre-commit hook
+                   → コミット時にバリデーション自動実行
+Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）
+                   → エージェントへのコンテキスト提供
+```
+
+上位層が下位層のバイパスをカバーする設計。
+
+#### バリデーションレポート
+
+`make report` を実行すると `tests/reports/validation-report.json` が生成される。
+このレポートは「検証を実際に実行した証拠」として機能する。
+
+```json
+{
+  "timestamp": "2026-04-30T23:00:00+00:00",
+  "python_version": "3.12.8",
+  "platform": "Linux",
+  "summary": { "total": 5, "passed": 5, "failed": 0 },
+  "results": [...]
+}
+```
+
+### 4.4 禁止事項（再掲・厳守）
 
 - `main` への直接プッシュ
 - 推測に基づくコード生成
 - テストの改変による通過
 - `AGENTS.md` / `README.md` の無断変更
 - `.claude/` 配下への直接ファイル作成（`agents/` に作成すること）
+- **`make check-all` を実行せずにPRを作成すること**
+- **`agents/agents/` 配下のファイルを `make create-agent` を使わずに手動作成すること**
+- **バリデーション失敗を無視してコミットすること**
