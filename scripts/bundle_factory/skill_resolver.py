@@ -207,7 +207,7 @@ def resolve_packages(
     """
     if prebuilt_matched:
         return {}
-    return dict(DEFAULT_PACKAGES.get(artifact_format, {}))
+    return {k: list(v) for k, v in DEFAULT_PACKAGES.get(artifact_format, {}).items()}
 
 
 def resolve_skills(
