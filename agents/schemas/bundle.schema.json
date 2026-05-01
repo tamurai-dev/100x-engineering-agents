@@ -258,6 +258,25 @@
               "type": "boolean",
               "default": true,
               "description": "全ラウンドの成果物を保存し、最高スコア版を最終成果物とする"
+            },
+            "escalation_threshold": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0,
+              "default": 0.40,
+              "description": "モデルエスカレーション閾値。QAスコアがこの値以下かつ改善なしの場合、上位モデルに自動切替"
+            },
+            "model_escalation": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["haiku", "sonnet", "opus"]
+              },
+              "minItems": 1,
+              "maxItems": 3,
+              "uniqueItems": true,
+              "default": ["haiku", "sonnet"],
+              "description": "モデルエスカレーション順序。スコアが escalation_threshold 以下の場合に次のモデルへ自動切替"
             }
           },
           "description": "QA ループ設定"

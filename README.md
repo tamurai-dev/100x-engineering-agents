@@ -219,6 +219,7 @@ make validate-bundle
 | **SKILL.md 注入** | バンドルの `skill.md` を Task Agent のプロンプトに自動注入 |
 | **Skills API 連携** | Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチ。artifact_format から最適なスキルを選択し Agent に自動アタッチ |
 | **Environment packages** | 必要なパッケージ（npm/pip/apt 等）を Environment に自動設定。プリビルトスキルでカバーされる場合は不要と判定 |
+| **モデル自動エスカレーション** | QA スコアが閾値（0.40）以下の場合、haiku → sonnet に自動切替。コスト最適化と品質を両立 |
 | **Files API 連携** | Task Agent が生成したファイルを QA Agent のセッションにマウント |
 | **フィードバック蓄積** | 全ラウンドの QA 指摘を累積し、同じ問題の再発を防止 |
 | **証跡詳細化** | task_response 抜粋、tool_calls、出力ファイル一覧を証跡に記録 |

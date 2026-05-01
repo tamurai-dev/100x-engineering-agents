@@ -160,6 +160,7 @@ agent:
 6. **テスト駆動モデル選定**: haiku でタスク成功できるなら haiku を使う。テスト結果に基づく最安モデル選定
 7. **Actor-Critic 品質保証**: Task Agent（Actor）が成果物を生成し、QA Agent（Critic）が fresh-context で品質検査する。同意バイアスを構造的に排除し、フィードバックループで品質を収束させる
 8. **スキル自動選択**: Bundle 生成時に artifact_format から Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチし、マッチしない場合はコミュニティスキル候補を推薦。必要なパッケージ（npm/pip/apt）も Environment に自動設定する
+9. **モデル自動エスカレーション**: QA スコアが escalation_threshold（デフォルト 0.40）以下かつ改善なしの場合、haiku → sonnet に自動切替。コスト最適化と品質保証を両立する
 
 ## 3. ファイル参照ガイド
 

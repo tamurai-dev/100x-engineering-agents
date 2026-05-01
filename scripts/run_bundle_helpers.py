@@ -24,6 +24,9 @@ MODEL_MAP = _mod.MODEL_MAP
 BUNDLES_DIR = _mod.BUNDLES_DIR
 AGENTS_DIR = _mod.AGENTS_DIR
 EVIDENCE_DIR = _mod.EVIDENCE_DIR
+DEFAULT_MODEL_ESCALATION = _mod.DEFAULT_MODEL_ESCALATION
+DEFAULT_ESCALATION_THRESHOLD = _mod.DEFAULT_ESCALATION_THRESHOLD
+ESCALATION_IMPROVEMENT_DELTA = _mod.ESCALATION_IMPROVEMENT_DELTA
 
 check_api_key = _mod.check_api_key
 load_bundle = _mod.load_bundle
@@ -37,4 +40,5 @@ download_file_content = _mod.download_file_content
 parse_qa_result = _mod.parse_qa_result
 build_skill_preamble = _mod.build_skill_preamble
 build_feedback_history = _mod.build_feedback_history
+should_escalate_model = _mod.should_escalate_model
 run_bundle = _mod.run_bundle

@@ -510,6 +510,8 @@ def generate_bundle_json(blueprint: dict) -> dict:
                 "pass_threshold": 0.80,
                 "convergence_delta": 0.02,
                 "keep_best": True,
+                "escalation_threshold": 0.40,
+                "model_escalation": ["haiku", "sonnet"],
             },
         },
     }

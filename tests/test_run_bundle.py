@@ -30,6 +30,9 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 # Import target module functions
 from run_bundle_helpers import (
+    DEFAULT_ESCALATION_THRESHOLD,
+    DEFAULT_MODEL_ESCALATION,
+    ESCALATION_IMPROVEMENT_DELTA,
     EVIDENCE_RESPONSE_LIMIT,
     build_feedback_history,
     build_skill_preamble,
@@ -38,6 +41,7 @@ from run_bundle_helpers import (
     load_agent_config,
     load_skill_md,
     parse_qa_result,
+    should_escalate_model,
 )
 
 
@@ -305,6 +309,94 @@ class TestEvidenceResponseLimit(unittest.TestCase):
         """制限値が合理的な範囲内。"""
         self.assertGreater(EVIDENCE_RESPONSE_LIMIT, 100)
         self.assertLessEqual(EVIDENCE_RESPONSE_LIMIT, 10000)
+
+
+class TestModelEscalation(unittest.TestCase):
+    """モデル自動エスカレーションのテスト。"""
+
+    def test_escalate_when_score_below_threshold(self):
+        """スコアが閾値以下で改善なしの場合、エスカレーションする。"""
+        result = should_escalate_model(
+            current_model="haiku",
+            score=0.15,
+            prev_score=None,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertEqual(result, "sonnet")
+
+    def test_no_escalate_when_score_above_threshold(self):
+        """スコアが閾値以上の場合、エスカレーションしない。"""
+        result = should_escalate_model(
+            current_model="haiku",
+            score=0.50,
+            prev_score=None,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertIsNone(result)
+
+    def test_no_escalate_when_improving(self):
+        """スコアが改善している場合、閾値以下でもエスカレーションしない。"""
+        result = should_escalate_model(
+            current_model="haiku",
+            score=0.30,
+            prev_score=0.10,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertIsNone(result)
+
+    def test_escalate_when_not_improving_enough(self):
+        """改善幅が不十分な場合、エスカレーションする。"""
+        result = should_escalate_model(
+            current_model="haiku",
+            score=0.12,
+            prev_score=0.10,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertEqual(result, "sonnet")
+
+    def test_no_escalate_already_at_top(self):
+        """最上位モデルの場合、エスカレーションしない。"""
+        result = should_escalate_model(
+            current_model="sonnet",
+            score=0.10,
+            prev_score=None,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertIsNone(result)
+
+    def test_escalate_with_three_models(self):
+        """3段階エスカレーション（haiku→sonnet→opus）。"""
+        result = should_escalate_model(
+            current_model="sonnet",
+            score=0.10,
+            prev_score=None,
+            escalation_order=["haiku", "sonnet", "opus"],
+            threshold=0.40,
+        )
+        self.assertEqual(result, "opus")
+
+    def test_no_escalate_unknown_model(self):
+        """不明なモデルの場合、エスカレーションしない。"""
+        result = should_escalate_model(
+            current_model="unknown",
+            score=0.10,
+            prev_score=None,
+            escalation_order=["haiku", "sonnet"],
+            threshold=0.40,
+        )
+        self.assertIsNone(result)
+
+    def test_escalation_constants(self):
+        """エスカレーション定数が合理的な値。"""
+        self.assertEqual(DEFAULT_MODEL_ESCALATION, ["haiku", "sonnet"])
+        self.assertGreater(DEFAULT_ESCALATION_THRESHOLD, 0.0)
+        self.assertLess(DEFAULT_ESCALATION_THRESHOLD, 1.0)
+        self.assertGreater(ESCALATION_IMPROVEMENT_DELTA, 0.0)
 
 
 if __name__ == "__main__":

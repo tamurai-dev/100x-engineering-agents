@@ -49,6 +49,11 @@ BETA_HEADER = "managed-agents-2026-04-01"
 FILES_BETA = "files-api-2025-04-14"
 SKILLS_BETA = "skills-2025-10-02"
 
+# Default model escalation order and threshold
+DEFAULT_MODEL_ESCALATION = ["haiku", "sonnet"]
+DEFAULT_ESCALATION_THRESHOLD = 0.40
+ESCALATION_IMPROVEMENT_DELTA = 0.05
+
 # Max chars of task_response to store in evidence
 EVIDENCE_RESPONSE_LIMIT = 2000
 
@@ -319,6 +324,30 @@ def build_feedback_history(feedback_entries: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def should_escalate_model(
+    current_model: str,
+    score: float,
+    prev_score: float | None,
+    escalation_order: list[str],
+    threshold: float,
+) -> str | None:
+    """Determine whether to escalate to a higher-tier model.
+
+    Returns the next model name if escalation is needed, None otherwise.
+    """
+    if score > threshold:
+        return None
+    if prev_score is not None and (score - prev_score) >= ESCALATION_IMPROVEMENT_DELTA:
+        return None
+    try:
+        idx = escalation_order.index(current_model)
+    except ValueError:
+        return None
+    if idx + 1 >= len(escalation_order):
+        return None
+    return escalation_order[idx + 1]
+
+
 def run_bundle(
     bundle_name: str,
     user_input: str,
@@ -396,6 +425,17 @@ def run_bundle(
     qa_config = load_agent_config(bundle["qa_agent"]["name"])
     qa_settings = workflow["qa"]
 
+    # Model escalation settings
+    escalation_order = qa_settings.get(
+        "model_escalation", DEFAULT_MODEL_ESCALATION
+    )
+    escalation_threshold = qa_settings.get(
+        "escalation_threshold", DEFAULT_ESCALATION_THRESHOLD
+    )
+    # If user explicitly specified a model, disable escalation
+    explicit_model = model is not None
+    current_model = model or escalation_order[0]
+
     results = {
         "bundle": bundle_name,
         "input": user_input,
@@ -404,6 +444,8 @@ def run_bundle(
         "skill_injected": skill_content is not None,
         "skills_attached": [s.get("skill_id") for s in bundle_skills],
         "packages_installed": bundle_packages,
+        "model_escalation": escalation_order if not explicit_model else None,
+        "escalation_threshold": escalation_threshold if not explicit_model else None,
         "iterations": [],
         "best_iteration": None,
         "best_score": 0.0,
@@ -411,11 +453,11 @@ def run_bundle(
     }
 
     # ── Phase B: Task Agent 実行 ──
-    print("[Phase B] Task Agent 実行中...")
+    print(f"[Phase B] Task Agent 実行中 (model: {current_model})...")
     task_agent, task_env, task_session = create_agent_and_session(
         client,
         task_config,
-        model,
+        current_model,
         f"Bundle Task: {bundle_name}",
         skills=bundle_skills or None,
         packages=bundle_packages or None,
@@ -527,6 +569,7 @@ def run_bundle(
 
         iteration_result = {
             "iteration": iteration,
+            "model": current_model,
             "score": score,
             "passed": passed,
             "qa_summary": qa_parsed.get("summary", ""),
@@ -581,6 +624,69 @@ def run_bundle(
         })
 
         if iteration < qa_settings["max_iterations"]:
+            # ── Model escalation check ──
+            if not explicit_model:
+                prev_score_for_esc = (
+                    prev_valid_scores[-1] if prev_valid_scores else None
+                )
+                next_model = should_escalate_model(
+                    current_model,
+                    score,
+                    prev_score_for_esc,
+                    escalation_order,
+                    escalation_threshold,
+                )
+                if next_model:
+                    print(
+                        f"  ESCALATE: {current_model} → {next_model}"
+                        f" (score {score:.2f} <= threshold {escalation_threshold})"
+                    )
+                    current_model = next_model
+                    iteration_result["escalated_to"] = next_model
+                    results.setdefault("escalations", []).append({
+                        "from": escalation_order[
+                            escalation_order.index(next_model) - 1
+                        ],
+                        "to": next_model,
+                        "at_iteration": iteration,
+                        "trigger_score": score,
+                    })
+                    # Re-create Task Agent with upgraded model
+                    task_agent, task_env, task_session = (
+                        create_agent_and_session(
+                            client,
+                            task_config,
+                            current_model,
+                            f"Bundle Task (escalated): {bundle_name}",
+                            skills=bundle_skills or None,
+                            packages=bundle_packages or None,
+                        )
+                    )
+                    # Re-send initial prompt + feedback to new agent
+                    escalation_prompt = initial_prompt
+                    if feedback_history:
+                        escalation_prompt += (
+                            "\n\n---\n\n"
+                            + build_feedback_history(feedback_history)
+                            + "\n上記のフィードバックに基づいて"
+                            "高品質な成果物を生成してください。"
+                        )
+                    task_result = send_and_collect(
+                        client, task_session.id, escalation_prompt
+                    )
+                    if not task_result["errors"]:
+                        task_output = task_result["response"]
+                        task_tool_calls = task_result["tool_calls"]
+                        task_usage = task_result["usage"]
+                        task_output_files = list_session_output_files(
+                            client, task_session.id
+                        )
+                        if task_output_files:
+                            print(
+                                f"  出力ファイル: {len(task_output_files)} 件"
+                            )
+                    continue
+
             print("  FAIL: フィードバックを Task Agent に渡して修正中...")
 
             # Build retry prompt with accumulated feedback
