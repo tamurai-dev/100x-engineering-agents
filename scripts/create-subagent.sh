@@ -58,7 +58,11 @@ echo ""
 # テンプレートをコピーして name を置換
 sed "s/<agent-name>/$AGENT_NAME/g" "$TEMPLATE" > "$TARGET"
 
-echo "[1/3] テンプレートをコピーしました: $TARGET"
+echo "[1/4] テンプレートをコピーしました: $TARGET"
+
+# ── マニフェスト登録（HMAC 署名付き）────────────
+python3 "$REPO_ROOT/scripts/manifest.py" register "$AGENT_NAME"
+echo "[2/4] マニフェストに登録しました（HMAC-SHA256 署名付き）"
 echo ""
 echo "  次のステップ:"
 echo "    1. $TARGET を開いて description, tools 等を編集してください"
@@ -71,22 +75,23 @@ echo "       python scripts/validate_subagents.py $TARGET"
 echo ""
 
 # ── 即時バリデーション（テンプレート状態） ────────
-echo "[2/3] 現在の状態でバリデーションを実行..."
+echo "[3/4] 現在の状態でバリデーションを実行..."
 echo ""
 
 # テンプレート状態ではプレースホルダが残っているためFAILが期待される
 # ただしエラー内容を表示して、何を修正すべきか明確にする
 if python3 "$REPO_ROOT/scripts/validate_subagents.py" "$TARGET" 2>/dev/null; then
     echo ""
-    echo "[3/3] バリデーション PASS — このエージェントは有効です"
+    echo "[4/4] バリデーション PASS"
 else
     echo ""
-    echo "[3/3] バリデーション FAIL — 上記のエラーを修正してください"
+    echo "[4/4] バリデーション FAIL — 上記のエラーを修正してください"
     echo "  （テンプレートのプレースホルダが残っている場合は正常な動作です）"
 fi
 
 echo ""
 echo "=== 作成完了 ==="
-echo "  ファイル: $TARGET"
-echo "  検証:     make validate"
-echo "  レポート: make report"
+echo "  ファイル:       $TARGET"
+echo "  マニフェスト:   agents/agents/.manifest.json"
+echo "  検証:           make validate"
+echo "  レポート:       make report"
