@@ -1,35 +1,35 @@
 {
   "version": 1,
   "agents": {
-    "doc-writer": {
-      "file": "agents/agents/doc-writer.md",
-      "created_at": "2026-05-01T00:16:41.811095+00:00",
+    "code-reviewer": {
+      "file": "agents/agents/code-reviewer/agent.md",
+      "created_at": "2026-05-01T01:09:13.440788+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "959ac11761fd31c723d125ff4306ed7c1624277315e3a9ddc86b3729c9cfaec4"
+      "hmac_sha256": "5d9ab499b32b8e4366fde851f2a089e4c2903df474f805feb39ba069a46e1854"
+    },
+    "doc-writer": {
+      "file": "agents/agents/doc-writer/agent.md",
+      "created_at": "2026-05-01T01:09:13.440956+00:00",
+      "created_by": "initial-seed",
+      "hmac_sha256": "182f7266750254cf03da3a4db021b26757b80c0373ef848ee2f07c5b16c9b43c"
     },
     "security-auditor": {
-      "file": "agents/agents/security-auditor.md",
-      "created_at": "2026-05-01T00:16:41.811153+00:00",
+      "file": "agents/agents/security-auditor/agent.md",
+      "created_at": "2026-05-01T01:09:13.441224+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "5dd2ea9405c566dd4f7ec084241c0f92447a9b31a756ea3bbe37fb52c3880c58"
+      "hmac_sha256": "63a4dcc0b00f10048acc669dec452809969df00b1a320a7e667707c5bb8c6324"
     },
     "task-planner": {
-      "file": "agents/agents/task-planner.md",
-      "created_at": "2026-05-01T00:16:41.811215+00:00",
+      "file": "agents/agents/task-planner/agent.md",
+      "created_at": "2026-05-01T01:09:13.441433+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "e0c44bb8db0a1d72cd9dc23b8183f365c40f6fe857a3e18e34294c7ba3f60d4b"
+      "hmac_sha256": "7d0133155c3390a3c835d8e8aa357ed762fffcc469bed8a883ff856ca5ae1b76"
     },
     "test-generator": {
-      "file": "agents/agents/test-generator.md",
-      "created_at": "2026-05-01T00:16:41.811329+00:00",
+      "file": "agents/agents/test-generator/agent.md",
+      "created_at": "2026-05-01T01:09:13.441584+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "076cea1f6cf211f7c7d564556765c9b0b9f3e9d37dfae3cd37898dd367f0d067"
-    },
-    "code-reviewer": {
-      "file": "agents/agents/code-reviewer.md",
-      "created_at": "2026-05-01T00:17:35.955050+00:00",
-      "created_by": "initial-seed",
-      "hmac_sha256": "88cd72d9d7d1bc966e18edf9663e672755838b22b5faa88ee70ca0a34b4c39e8"
+      "hmac_sha256": "77e72ed38320d1c7f5f82db0c654127eba32247a5992bf3e9f0a91384c6cf6f1"
     }
   }
 }

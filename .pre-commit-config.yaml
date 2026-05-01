@@ -5,17 +5,28 @@ repos:
         name: "Subagent Frontmatter バリデーション"
         entry: python scripts/validate_subagents.py
         language: python
-        files: ^agents/agents/.*\.md$
+        files: ^agents/agents/.*/agent\.md$
         additional_dependencies:
           - pyyaml
           - jsonschema
         pass_filenames: true
         description: "Claude Code subagent の YAML frontmatter が仕様に準拠しているか検証する"
 
+      - id: validate-managed-agent-config
+        name: "Managed Agents config.json バリデーション"
+        entry: python scripts/validate-config.py
+        language: python
+        files: ^agents/agents/.*/config\.json$
+        additional_dependencies:
+          - pyyaml
+          - jsonschema
+        pass_filenames: false
+        description: "Managed Agents API の config.json がスキーマに準拠し agent.md と整合しているか検証する"
+
       - id: verify-subagent-manifest
         name: "Subagent マニフェスト検証（HMAC署名）"
         entry: python scripts/manifest.py verify-staged
         language: python
-        files: ^agents/agents/.*\.md$
+        files: ^agents/agents/.*/agent\.md$
         pass_filenames: false
         description: "新規 subagent が create-subagent.sh 経由で作成されたか HMAC 署名で検証する"

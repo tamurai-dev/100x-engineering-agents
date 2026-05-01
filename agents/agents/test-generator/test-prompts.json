@@ -1,0 +1,13 @@
+[
+  {
+    "name": "関数のテスト生成",
+    "prompt": "以下のPython関数に対するテストコードを生成してください:\n\ndef validate_email(email: str) -> bool:\n    import re\n    if not email or not isinstance(email, str):\n        return False\n    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n    return bool(re.match(pattern, email))\n\ndef normalize_email(email: str) -> str:\n    if not validate_email(email):\n        raise ValueError(f'Invalid email: {email}')\n    local, domain = email.split('@')\n    return f'{local.lower()}@{domain.lower()}'\n",
+    "expected_behaviors": [
+      "正常系テスト（有効なメールアドレス）",
+      "異常系テスト（無効なメールアドレス）",
+      "境界値テスト（空文字、None、型不正）",
+      "normalize_email の例外テスト"
+    ],
+    "success_criteria": "expected_behaviors の全てをカバーするテストコードを生成"
+  }
+]
