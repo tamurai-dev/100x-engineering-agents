@@ -9,12 +9,9 @@ from __future__ import annotations
 
 import re
 
-_PYTEST_SUMMARY_RE = re.compile(
-    r"=+\s*(?:(\d+)\s+passed)?(?:,?\s*(\d+)\s+failed)?(?:,?\s*(\d+)\s+error)?.*=+"
-)
-_PYTEST_SHORT_RE = re.compile(
-    r"(\d+)\s+passed(?:,\s*(\d+)\s+failed)?(?:,\s*(\d+)\s+error)?\s+in\s+[\d.]+s"
-)
+_PASSED_RE = re.compile(r"(\d+)\s+passed")
+_FAILED_RE = re.compile(r"(\d+)\s+failed")
+_ERROR_RE = re.compile(r"(\d+)\s+error")
 
 
 def grade_test_execution(events: list[dict]) -> dict:
@@ -113,12 +110,14 @@ def _check_test_passed(output: str) -> bool:
     inner_match = re.search(r"text='(.+?)(?:',\s*type=)", output, re.DOTALL)
     search_text = inner_match.group(1) if inner_match else output
 
-    # pytest のサマリー行を解析（最も信頼性が高い）
-    m = _PYTEST_SUMMARY_RE.search(search_text) or _PYTEST_SHORT_RE.search(search_text)
-    if m:
-        passed_count = int(m.group(1) or 0)
-        failed_count = int(m.group(2) or 0)
-        error_count = int(m.group(3) or 0)
+    # pytest の passed/failed/error カウントを個別に抽出（順序非依存）
+    passed_m = _PASSED_RE.search(search_text)
+    failed_m = _FAILED_RE.search(search_text)
+    error_m = _ERROR_RE.search(search_text)
+    if passed_m:
+        passed_count = int(passed_m.group(1))
+        failed_count = int(failed_m.group(1)) if failed_m else 0
+        error_count = int(error_m.group(1)) if error_m else 0
         return failed_count == 0 and error_count == 0 and passed_count > 0
 
     # pytest サマリーが見つからない場合のフォールバック
