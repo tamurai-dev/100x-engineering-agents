@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver
+.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -39,27 +39,6 @@ report: ## バリデーションレポート生成 (tests/reports/validation-rep
 	@$(PYTHON) scripts/validate_subagents.py --report $(REPORT)
 	@echo ""
 	@echo "レポート生成: $(REPORT)"
-
-# ── Managed Agents テスト ─────────────────────────
-test-agent: ## エージェントを Managed Agents API でテスト (usage: make test-agent NAME=<name> [MODEL=haiku|sonnet|all])
-ifndef NAME
-	@echo "ERROR: NAME を指定してください"
-	@echo "  例: make test-agent NAME=code-reviewer"
-	@echo "  例: make test-agent NAME=code-reviewer MODEL=haiku"
-	@echo "  例: make test-agent NAME=code-reviewer MODEL=all"
-	@exit 1
-endif
-	@$(PYTHON) scripts/test-agent.py $(NAME) --model $(or $(MODEL),sonnet)
-
-test-agent-dry: ## テスト予行（API を呼ばずに設定確認）(usage: make test-agent-dry NAME=<name>)
-ifndef NAME
-	@echo "ERROR: NAME を指定してください"
-	@exit 1
-endif
-	@$(PYTHON) scripts/test-agent.py $(NAME) --model $(or $(MODEL),sonnet) --dry-run
-
-test-all-agents: ## 全エージェントを Managed Agents API でテスト
-	@$(PYTHON) scripts/test-agent.py --all --model $(or $(MODEL),sonnet)
 
 # ── 品質評価（Eval） ──────────────────────────────
 eval-agent: ## エージェント品質評価 (usage: make eval-agent NAME=<name> [MODEL=haiku] [TRIALS=3])
@@ -110,24 +89,6 @@ ifndef NAME
 	@exit 1
 endif
 	@bash scripts/create-subagent.sh $(NAME)
-
-# ── Agent Factory（AI 自動生成） ─────────────────
-create-smart-agent: ## 自然言語からエージェント自動生成 + EDD (usage: make create-smart-agent SPEC="..." [MODEL=haiku] [SKIP_EDD=1])
-ifndef SPEC
-	@echo "ERROR: SPEC を指定してください"
-	@echo '  例: make create-smart-agent SPEC="請求書からスプレッドシートに正しい情報を転記するエージェント"'
-	@echo '  例: make create-smart-agent SPEC="..." MODEL=haiku SKIP_EDD=1'
-	@exit 1
-endif
-	@$(PYTHON) scripts/agent-factory.py --spec "$(SPEC)" --model $(or $(MODEL),haiku) $(if $(SKIP_EDD),--skip-edd,)
-
-improve-agent: ## 既存エージェントの EDD ループ実行 (usage: make improve-agent NAME=<name> [MODEL=haiku])
-ifndef NAME
-	@echo "ERROR: NAME を指定してください"
-	@echo "  例: make improve-agent NAME=code-reviewer"
-	@exit 1
-endif
-	@$(PYTHON) scripts/agent-factory.py --improve $(NAME) --model $(or $(MODEL),haiku)
 
 # ── Bundle Factory（バンドル自動生成）─────────────
 create-bundle: ## 自然言語からバンドル自動生成 (usage: make create-bundle SPEC="..." [MODEL=haiku] [FORMAT=presentation])
