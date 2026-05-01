@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver
+.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver security-test security-status
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -96,7 +96,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory test-run-bundle test-skill-resolver check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory test-run-bundle test-skill-resolver security-test check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -196,6 +196,13 @@ ifndef NAME
 	@exit 1
 endif
 	@$(PYTHON) scripts/run-bundle.py $(NAME) --dry-run
+
+# ── セキュリティ ─────────────────────────────────
+security-test: ## セキュリティモジュールのテストスイート実行
+	@$(PYTHON) tests/test_security.py
+
+security-status: ## Lakera Guard セキュリティレイヤーの設定状態を表示
+	@$(PYTHON) -c "from scripts.security import get_guard; from scripts.security.config import SecurityConfig; c = SecurityConfig.load(); g = get_guard(); print(f'Enabled: {c.is_enabled()}'); print(f'Provider: {type(g).__name__}'); print(f'Mode: {c.mode}'); print(f'Region: {c.region}')"
 
 # ── セットアップ ─────────────────────────────────
 setup: ## 開発環境セットアップ（依存パッケージ + pre-commit hook）
