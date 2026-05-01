@@ -1,8 +1,8 @@
 """
-No-op security provider.
+No-op セキュリティプロバイダー。
 
-Used when Lakera Guard is not configured (API key not set) or when
-the requests library is not installed. Always returns safe results.
+Lakera Guard が未設定（API キー未設定）または requests ライブラリが未インストールの場合に使用する。
+常に安全な結果を返す。
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from scripts.security.base import ScreeningResult
 
 
 class NoopProvider:
-    """No-op provider that always returns safe results."""
+    """常に安全な結果を返す No-op プロバイダー。"""
 
     def screen(
         self,
@@ -19,7 +19,7 @@ class NoopProvider:
         *,
         metadata: dict | None = None,
     ) -> ScreeningResult:
-        """Return a safe, non-flagged result without any API call."""
+        """API 呼び出しなしで安全な非フラグ結果を返す。"""
         return ScreeningResult(
             flagged=False,
             safe_to_proceed=True,
@@ -28,5 +28,5 @@ class NoopProvider:
         )
 
     def is_available(self) -> bool:
-        """NoopProvider is always available."""
+        """NoopProvider は常に利用可能。"""
         return True

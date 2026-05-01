@@ -1,8 +1,8 @@
 """
-Security configuration management.
+セキュリティ設定管理。
 
-Loads settings from environment variables and optional security.json file.
-Priority: environment variables > security.json > defaults.
+環境変数とオプショナルの security.json ファイルから設定を読み込む。
+優先順位: 環境変数 > security.json > デフォルト値。
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ DEFAULT_MESSAGES = {
 
 @dataclass
 class SecurityConfig:
-    """Security layer configuration."""
+    """セキュリティレイヤーの設定。"""
 
     api_key: str = ""
     project_id: str = ""
@@ -44,7 +44,7 @@ class SecurityConfig:
     messages: dict = field(default_factory=lambda: dict(DEFAULT_MESSAGES))
 
     def is_enabled(self) -> bool:
-        """Determine if security screening should be active."""
+        """セキュリティスクリーニングを有効にすべきか判定する。"""
         if self.enabled == "true":
             return bool(self.api_key)
         if self.enabled == "false":
@@ -53,18 +53,18 @@ class SecurityConfig:
         return bool(self.api_key)
 
     def should_screen(self, context: str, phase: str) -> bool:
-        """Check if a specific screening point is enabled.
+        """特定のスクリーニングポイントが有効かチェックする。
 
         Args:
-            context: "test_agent", "bundle", or "factory"
-            phase: e.g., "input", "output", "qa_output", "feedback", "spec_input"
+            context: "test_agent", "bundle", または "factory"
+            phase: 例: "input", "output", "qa_output", "feedback", "spec_input"
         """
         ctx_config = self.screening.get(context, {})
         return bool(ctx_config.get(phase, True))
 
     @classmethod
     def load(cls) -> SecurityConfig:
-        """Load configuration from environment variables and security.json."""
+        """環境変数と security.json から設定を読み込む。"""
         file_config = cls._load_json()
 
         return cls(
@@ -99,7 +99,7 @@ class SecurityConfig:
 
     @staticmethod
     def _load_json() -> dict:
-        """Load security.json if it exists."""
+        """security.json が存在する場合に読み込む。"""
         if SECURITY_JSON_PATH.exists():
             try:
                 with open(SECURITY_JSON_PATH, encoding="utf-8") as f:
@@ -110,7 +110,7 @@ class SecurityConfig:
 
     @staticmethod
     def _merge_screening(file_screening: dict) -> dict:
-        """Merge file-based screening config with defaults."""
+        """ファイルベースのスクリーニング設定をデフォルトとマージする。"""
         result = dict(DEFAULT_SCREENING)
         for key, val in file_screening.items():
             if key in result and isinstance(val, dict):

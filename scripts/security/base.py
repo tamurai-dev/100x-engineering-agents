@@ -1,7 +1,7 @@
 """
-Security screening base types and protocol.
+セキュリティスクリーニングの基本型とプロトコル。
 
-Defines the provider-agnostic interface that all security providers implement.
+全セキュリティプロバイダーが実装するプロバイダー非依存のインターフェースを定義する。
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from typing import Protocol
 
 @dataclass
 class ThreatDetail:
-    """Individual threat detection detail."""
+    """個別の脅威検出詳細。"""
 
     detector_type: str
     detected: bool
@@ -23,7 +23,7 @@ class ThreatDetail:
     labels: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
-        """Serialize to dict for evidence JSON."""
+        """evidence JSON 用に辞書へシリアライズする。"""
         d: dict = {"detector_type": self.detector_type, "detected": self.detected}
         if self.message_id is not None:
             d["message_id"] = self.message_id
@@ -40,7 +40,7 @@ class ThreatDetail:
 
 @dataclass
 class ScreeningResult:
-    """Result of a security screening operation."""
+    """セキュリティスクリーニング操作の結果。"""
 
     flagged: bool
     safe_to_proceed: bool
@@ -52,7 +52,7 @@ class ScreeningResult:
     skipped: bool = False
 
     def to_dict(self) -> dict:
-        """Serialize to dict for evidence JSON."""
+        """evidence JSON 用に辞書へシリアライズする。"""
         d: dict = {
             "flagged": self.flagged,
             "provider": self.provider,
@@ -70,7 +70,7 @@ class ScreeningResult:
 
 
 class SecurityProvider(Protocol):
-    """Security screening provider interface."""
+    """セキュリティスクリーニングプロバイダーのインターフェース。"""
 
     def screen(
         self,
@@ -78,9 +78,9 @@ class SecurityProvider(Protocol):
         *,
         metadata: dict | None = None,
     ) -> ScreeningResult:
-        """Screen messages for threats."""
+        """メッセージの脅威をスクリーニングする。"""
         ...
 
     def is_available(self) -> bool:
-        """Check if the provider is operational."""
+        """プロバイダーが稼働中かチェックする。"""
         ...

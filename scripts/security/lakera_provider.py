@@ -1,8 +1,8 @@
 """
-Lakera Guard API provider.
+Lakera Guard API プロバイダー。
 
-Implements the SecurityProvider protocol using the Lakera Guard v2 API.
-Handles all API communication, error handling, and response parsing.
+Lakera Guard v2 API を使用して SecurityProvider プロトコルを実装する。
+API 通信、エラーハンドリング、レスポンス解析をすべて処理する。
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ except ImportError:
 
 
 class LakeraGuardProvider:
-    """Lakera Guard API implementation."""
+    """Lakera Guard API 実装。"""
 
     REGION_ENDPOINTS = {
         "auto": "https://api.lakera.ai",
@@ -49,7 +49,7 @@ class LakeraGuardProvider:
         *,
         metadata: dict | None = None,
     ) -> ScreeningResult:
-        """Screen messages via Lakera Guard API."""
+        """Lakera Guard API 経由でメッセージをスクリーニングする。"""
         if not HAS_REQUESTS:
             return ScreeningResult(
                 flagged=False,
@@ -132,18 +132,18 @@ class LakeraGuardProvider:
         )
 
     def is_available(self) -> bool:
-        """Check if the provider is operational."""
+        """プロバイダーが稼働中かチェックする。"""
         return HAS_REQUESTS and self._disabled_reason is None
 
     def _get_session(self) -> requests.Session:
-        """Get or create a persistent HTTP session."""
+        """永続的な HTTP セッションを取得または作成する。"""
         if self._session is None:
             self._session = requests.Session()
         return self._session
 
     @staticmethod
     def _parse_threats(data: dict) -> list[ThreatDetail]:
-        """Parse threat details from API response."""
+        """API レスポンスから脅威詳細を解析する。"""
         threats: list[ThreatDetail] = []
 
         # Parse breakdown (detector-level results)

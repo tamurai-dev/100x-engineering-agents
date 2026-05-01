@@ -1,22 +1,21 @@
 """
-Security screening module for 100x-engineering-agents.
+100x-engineering-agents 用セキュリティスクリーニングモジュール。
 
-Provides transparent security screening for agent inputs and outputs
-using Lakera Guard. Falls back to a no-op provider when Lakera is
-not configured.
+Lakera Guard を使用してエージェントの入出力に透過的なセキュリティスクリーニングを提供する。
+Lakera が未設定の場合は No-op プロバイダーにフォールバックする。
 
-Usage:
+使用例:
     from scripts.security import get_guard, screen_text
 
-    # Get the singleton guard instance
+    # シングルトンガードインスタンスを取得
     guard = get_guard()
-    result = guard.screen([{"role": "user", "content": "test input"}])
+    result = guard.screen([{"role": "user", "content": "テスト入力"}])
 
-    # Or use the convenience function
-    result = screen_text("test input", direction="input")
+    # または便利関数を使用
+    result = screen_text("テスト入力", direction="input")
 
-Environment:
-    LAKERA_GUARD_API_KEY  — Set to enable Lakera Guard (unset = disabled)
+環境変数:
+    LAKERA_GUARD_API_KEY  — 設定すると Lakera Guard が有効になる（未設定 = 無効）
 """
 
 from __future__ import annotations
@@ -42,7 +41,7 @@ _logged_messages: set[str] = set()
 
 
 def _log(level: str, message: str, *, config: SecurityConfig | None = None) -> None:
-    """Log a security message to stderr."""
+    """セキュリティメッセージを stderr にログ出力する。"""
     log_level = (config.log_level if config else "info").lower()
     if log_level == "quiet":
         return
@@ -52,16 +51,16 @@ def _log(level: str, message: str, *, config: SecurityConfig | None = None) -> N
 
 
 def _log_once(message: str, *, config: SecurityConfig | None = None) -> None:
-    """Log a message only once per session."""
+    """セッション中に1回だけメッセージをログ出力する。"""
     if message not in _logged_messages:
         _logged_messages.add(message)
         _log("INFO", message, config=config)
 
 
 def get_guard(*, _force_reload: bool = False) -> SecurityProvider:
-    """Get or create the singleton SecurityProvider.
+    """シングルトン SecurityProvider を取得または作成する。
 
-    Returns LakeraGuardProvider if configured, NoopProvider otherwise.
+    設定済みの場合 LakeraGuardProvider、それ以外は NoopProvider を返す。
     """
     global _guard_instance
     if _guard_instance is not None and not _force_reload:
@@ -108,17 +107,17 @@ def screen_text(
     context: str | None = None,
     metadata: dict | None = None,
 ) -> ScreeningResult:
-    """Screen a single text string for threats.
+    """単一のテキスト文字列の脅威をスクリーニングする。
 
     Args:
-        text: The text to screen.
-        direction: "input" (user content) or "output" (assistant content).
-        role: Override the message role (default: "user" for input, "assistant" for output).
-        context: Optional system prompt context to include.
-        metadata: Optional metadata (session_id, user_id, etc.).
+        text: スクリーニング対象のテキスト。
+        direction: "input"（ユーザーコンテンツ）または "output"（アシスタントコンテンツ）。
+        role: メッセージロールのオーバーライド（デフォルト: input="user", output="assistant"）。
+        context: システムプロンプトのコンテキスト（任意）。
+        metadata: メタデータ（session_id, user_id 等）（任意）。
 
     Returns:
-        ScreeningResult with flagged status and threat details.
+        フラグ状態と脅威詳細を含む ScreeningResult。
     """
     guard = get_guard()
     msg_role = role or ("user" if direction == "input" else "assistant")

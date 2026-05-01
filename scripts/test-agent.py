@@ -81,6 +81,38 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
     if model_override:
         agent_config["model"] = MODEL_MAP.get(model_override, model_override)
 
+    # Security screening (input) — API リソース作成前に実行
+    from scripts.security import screen_text
+    from scripts.security.config import SecurityConfig
+
+    security_config = SecurityConfig.load()
+    security_data: dict = {"provider": "noop"}
+    if security_config.should_screen("test_agent", "input"):
+        input_screening = screen_text(
+            test_prompt["prompt"],
+            direction="input",
+            metadata={"context": "test_agent", "agent": agent_config["name"]},
+        )
+        security_data["input"] = input_screening.to_dict()
+        security_data["provider"] = input_screening.provider
+        if not input_screening.safe_to_proceed:
+            return {
+                "test_name": test_prompt["name"],
+                "model": agent_config["model"],
+                "agent_id": None,
+                "session_id": None,
+                "environment_id": None,
+                "status": "blocked_by_security",
+                "response_preview": security_config.messages.get("blocked", ""),
+                "tool_calls": [],
+                "expected_behaviors": test_prompt.get("expected_behaviors", []),
+                "matched_behaviors": [],
+                "errors": ["Security screening blocked this input"],
+                "usage": {"input_tokens": 0, "output_tokens": 0},
+                "events": [],
+                "security": security_data,
+            }
+
     # エージェント作成
     create_params = {
         "name": agent_config["name"],
@@ -110,38 +142,6 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
         environment_id=env.id,
         title=f"Test: {test_prompt['name']}",
     )
-
-    # Security screening (input)
-    from scripts.security import screen_text
-    from scripts.security.config import SecurityConfig
-
-    security_config = SecurityConfig.load()
-    security_data: dict = {"provider": "noop"}
-    if security_config.should_screen("test_agent", "input"):
-        input_screening = screen_text(
-            test_prompt["prompt"],
-            direction="input",
-            metadata={"context": "test_agent", "agent": agent_config["name"]},
-        )
-        security_data["input"] = input_screening.to_dict()
-        security_data["provider"] = input_screening.provider
-        if not input_screening.safe_to_proceed:
-            return {
-                "test_name": test_prompt["name"],
-                "model": agent_config["model"],
-                "agent_id": agent.id,
-                "session_id": session.id,
-                "environment_id": env.id,
-                "status": "blocked_by_security",
-                "response_preview": security_config.messages.get("blocked", ""),
-                "tool_calls": [],
-                "expected_behaviors": test_prompt.get("expected_behaviors", []),
-                "matched_behaviors": [],
-                "errors": ["Security screening blocked this input"],
-                "usage": {"input_tokens": 0, "output_tokens": 0},
-                "events": [],
-                "security": security_data,
-            }
 
     # プロンプト送信 & ストリーミング
     messages = []
