@@ -12,6 +12,9 @@ import re
 _PYTEST_SUMMARY_RE = re.compile(
     r"=+\s*(?:(\d+)\s+passed)?(?:,?\s*(\d+)\s+failed)?(?:,?\s*(\d+)\s+error)?.*=+"
 )
+_PYTEST_SHORT_RE = re.compile(
+    r"(\d+)\s+passed(?:,\s*(\d+)\s+failed)?(?:,\s*(\d+)\s+error)?\s+in\s+[\d.]+s"
+)
 
 
 def grade_test_execution(events: list[dict]) -> dict:
@@ -106,13 +109,12 @@ def _check_test_passed(output: str) -> bool:
         return False
     output_lower = output.lower()
 
+    # BetaManagedAgentsTextBlock wrapper を除去
+    inner_match = re.search(r"text='(.+?)(?:',\s*type=)", output, re.DOTALL)
+    search_text = inner_match.group(1) if inner_match else output
+
     # pytest のサマリー行を解析（最も信頼性が高い）
-    m = _PYTEST_SUMMARY_RE.search(output)
-    # BetaManagedAgentsTextBlock wrapper の中身も検索
-    if not m:
-        inner = re.search(r"text=['\"](.+)['\"]\)", output, re.DOTALL)
-        if inner:
-            m = _PYTEST_SUMMARY_RE.search(inner.group(1))
+    m = _PYTEST_SUMMARY_RE.search(search_text) or _PYTEST_SHORT_RE.search(search_text)
     if m:
         passed_count = int(m.group(1) or 0)
         failed_count = int(m.group(2) or 0)
