@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry
+.PHONY: help validate validate-config test check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -110,6 +110,24 @@ ifndef NAME
 	@exit 1
 endif
 	@bash scripts/create-subagent.sh $(NAME)
+
+# ── Agent Factory（AI 自動生成） ─────────────────
+create-smart-agent: ## 自然言語からエージェント自動生成 + EDD (usage: make create-smart-agent SPEC="..." [MODEL=haiku] [SKIP_EDD=1])
+ifndef SPEC
+	@echo "ERROR: SPEC を指定してください"
+	@echo '  例: make create-smart-agent SPEC="請求書からスプレッドシートに正しい情報を転記するエージェント"'
+	@echo '  例: make create-smart-agent SPEC="..." MODEL=haiku SKIP_EDD=1'
+	@exit 1
+endif
+	@$(PYTHON) scripts/agent-factory.py --spec "$(SPEC)" --model $(or $(MODEL),haiku) $(if $(SKIP_EDD),--skip-edd,)
+
+improve-agent: ## 既存エージェントの EDD ループ実行 (usage: make improve-agent NAME=<name> [MODEL=haiku])
+ifndef NAME
+	@echo "ERROR: NAME を指定してください"
+	@echo "  例: make improve-agent NAME=code-reviewer"
+	@exit 1
+endif
+	@$(PYTHON) scripts/agent-factory.py --improve $(NAME) --model $(or $(MODEL),haiku)
 
 # ── セットアップ ─────────────────────────────────
 setup: ## 開発環境セットアップ（依存パッケージ + pre-commit hook）

@@ -143,6 +143,10 @@ def run_eval_trial(
         create_params["description"] = agent_config["description"]
     if agent_config.get("tools"):
         create_params["tools"] = agent_config["tools"]
+    if agent_config.get("mcp_servers"):
+        create_params["mcp_servers"] = agent_config["mcp_servers"]
+    if agent_config.get("skills"):
+        create_params["skills"] = agent_config["skills"]
 
     agent = client.beta.agents.create(**create_params)
 
