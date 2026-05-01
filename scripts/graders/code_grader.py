@@ -129,7 +129,7 @@ def _match_issue(issue: dict, output_lower: str, line_tolerance: int) -> str | N
                 max(1, line_range[0] - line_tolerance),
                 line_range[-1] + line_tolerance + 1,
             ):
-                if f":{line_num}" in output_lower or f"行{line_num}" in output_lower:
+                if re.search(rf":{line_num}(?!\d)", output_lower) or re.search(rf"行\s*{line_num}(?!\d)", output_lower):
                     return f"type_keyword + line={line_num}"
 
     if file_mentioned and issue.get("description"):
