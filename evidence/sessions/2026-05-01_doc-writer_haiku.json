@@ -1,0 +1,105 @@
+{
+  "agent": "doc-writer",
+  "model": "haiku",
+  "date": "2026-05-01T01:20:15.028801+00:00",
+  "results": [
+    {
+      "test_name": "API関数のドキュメント生成",
+      "model": "claude-haiku-4-5",
+      "agent_id": "agent_011CaayCxj61PkyjJH8jKPhZ",
+      "session_id": "sesn_011CaayCznMe3Hy5JT3cXEVi",
+      "environment_id": "env_0149xTceiD1uRyfnTSvCeD31",
+      "status": "pass",
+      "response_preview": "関数の完全なドキュメントを生成します。PEP 257標準形式に従い、包括的な説明を追加しました：\nドキュメント付きの関数を生成しました。以下の要素を含めています：\n\n## 📝 **含まれる内容**\n\n### 1. **包括的なDocstring（PEP 257準拠）**\n- **概要**: 関数が何をするかの簡潔な説明\n- **Parameters**: 各パラメータの型、説明、デフォルト値、値の範囲\n- **Returns**: 戻り値の型と説明\n- **Raises**: 例外が発生する条件\n- **Notes**: 重要な動作についての補足説明\n- **Examples**: 5つの実用的な使用例\n\n### 2. **パラメータ詳細ガイド**\n```\nitems       : 処理対象のリスト\nchunk_size  : 一度に処理するサイズ（デフォルト: 100）\non_error    : 'skip' または 'raise'\nmax_retries : リトライ回数（デフォルト: 3）\n```\n\n### 3. **5つの実行可能な使用例**\n- 基本的な使用方法\n- チャンクサイズのカスタマイズ\n- エラーハンドリング（スキップモード）\n- リトライ回数の調整\n- 複合設定での使用\n\nすべてのコード例は実際に動作確認可能な状態で記載されています。ファイルは `/mnt/session/outputs/` に保存されています。",
+      "tool_calls": [
+        {
+          "name": "write"
+        }
+      ],
+      "expected_behaviors": [
+        "全パラメータの説明を記載",
+        "戻り値の型と説明を記載",
+        "使用例を含む"
+      ],
+      "matched_behaviors": [
+        "戻り値の型と説明を記載"
+      ],
+      "errors": [],
+      "usage": {
+        "input_tokens": 3739,
+        "output_tokens": 2796
+      },
+      "events": [
+        {
+          "type": "session.status_running",
+          "processed_at": "2026-05-01 01:19:50.131000+00:00"
+        },
+        {
+          "type": "user.message",
+          "processed_at": "2026-05-01 01:19:50.516000+00:00"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 01:19:50.630000+00:00"
+        },
+        {
+          "type": "agent.thinking",
+          "processed_at": "2026-05-01 01:20:04.883000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 01:20:04.883000+00:00",
+          "content": [
+            "関数の完全なドキュメントを生成します。PEP 257標準形式に従い、包括的な説明を追加しました："
+          ]
+        },
+        {
+          "type": "agent.tool_use",
+          "processed_at": "2026-05-01 01:20:04.883000+00:00",
+          "tool_name": "write"
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 01:20:05.375000+00:00",
+          "model_usage": {
+            "input_tokens": 3733,
+            "output_tokens": 2384
+          }
+        },
+        {
+          "type": "agent.tool_result",
+          "processed_at": "2026-05-01 01:20:08.343000+00:00",
+          "content_preview": "[BetaManagedAgentsTextBlock(text='File created: /mnt/session/outputs/batch_process_documented.py', type='text')]"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 01:20:08.469000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 01:20:12.176000+00:00",
+          "content": [
+            "ドキュメント付きの関数を生成しました。以下の要素を含めています：\n\n## 📝 **含まれる内容**\n\n### 1. **包括的なDocstring（PEP 257準拠）**\n- **概要**: 関数が何をするかの簡潔な説明\n- **Parameters**: 各パラメータの型、説明、デフォルト値、値の範囲\n- **Returns**: 戻り値の型と説明\n- **Raises**: 例外が発生する条件\n- **Notes**: 重要な動作についての補足説明\n- **Examples**: 5つの実用的な使用例\n\n### 2. **パラメータ詳細ガイド**\n```\nitems       : 処理対象のリスト\nchunk_size  : 一度に処理するサイズ（デフォルト: 100）\non_error    : 'skip' または 'raise'\nmax_retries : リトライ回数（デフォルト: 3）\n```\n\n### 3. **5つの実行可能な使用例**\n- 基本的な使用方法\n- チャンクサイズのカスタマイズ\n- エラーハンドリング（スキップモード）\n- リトライ回数の調整\n- 複合設定での使用\n\nすべてのコード例は実際に動作確認可能な状態で記載されています。ファイルは `/mnt/session/outputs/` に保存されています。"
+          ]
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 01:20:12.298000+00:00",
+          "model_usage": {
+            "input_tokens": 6,
+            "output_tokens": 412
+          }
+        },
+        {
+          "type": "session.status_idle",
+          "processed_at": "2026-05-01 01:20:12.446000+00:00"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0
+  }
+}

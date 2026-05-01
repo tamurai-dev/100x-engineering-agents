@@ -1,0 +1,76 @@
+{
+  "agent": "security-auditor",
+  "model": "haiku",
+  "date": "2026-05-01T01:20:41.100169+00:00",
+  "results": [
+    {
+      "test_name": "複合脆弱性の検出",
+      "model": "claude-haiku-4-5",
+      "agent_id": "agent_011CaayF22ab8xjVJpgbRrPo",
+      "session_id": "sesn_011CaayF4TgKL9PzE4XoJnKR",
+      "environment_id": "env_01JjnxMcXbaqdsmrMrpModKJ",
+      "status": "pass",
+      "response_preview": "セキュリティ監査を実施しました。複数の重大な脆弱性が見つかっています。\n\n## 監査結果\n\n---\n\n### **[CRITICAL] CWE-327 シークレット・認証情報のハードコード**\n**ファイルパス: 行3-4**\n\n```javascript\nconst SECRET = 'mysecret123';\n```\n\n**脆弱性の説明:**\n- JWTシークレットがソースコード内にハードコードされている\n- バージョン管理システムに含まれる可能性があり、リポジトリへのアクセス者が機密情報を取得可能\n- シークレットの変更がコード変更になり、本番運用が困難\n\n**推奨される修正方法:**\n```javascript\nconst SECRET = process.env.JWT_SECRET;\n\n// 環境変数が設定されていることを検証\nif (!SECRET) {\n  throw new Error('JWT_SECRET environment variable is not set');\n}\n```\n\n---\n\n### **[CRITICAL] CWE-89 SQLインジェクション**\n**ファイルパス: 行6-7**\n\n```javascript\nconst query = `SELECT * FROM users WHERE id = ${req.params.id}`;\n```\n\n**脆弱性の説明:**\n- ユーザー入力が検証・エスケープなしでSQLクエリに直接挿入されている\n- 攻撃者が任意のSQLを実行可能（例: `1 OR 1=1 --`で全ユーザー情報を取得可能）\n- データベース完全破壊やデータ流出の危険\n\n**推奨される修正方法:**\n```javascript\napp.get('/user/:id', (req, res) => {\n  const userId = parseInt(req.params.id, 10);\n  \n  if (isNaN(userId) || userId <= 0) {\n    return res.status(400).json({ error: 'Invalid user ID' });\n  }\n  \n  // プリペアドステートメントを使用\n  const query = 'SELECT * FROM users WHERE id = ?';\n  db.query(query, [userId], (err, result) => {\n    if (err) {\n      console.error('Database error:', err);\n      return res.status(500).json({ error: 'Internal server error' });\n    }\n    res.json(result);\n  });\n});\n```\n\n---\n\n### **[CRITICAL] CWE-352 認証不足・認可チェック欠落**\n**ファイルパス: 行6（/user/:id）**\n\n**脆弱性の説明:**\n- `/user/:id`エンドポイントに認証・認可チェックがない\n- 任意のユーザーが他のユーザー情報にアクセス可能（ID列挙攻撃）\n- トークン検証がない\n\n**推奨される修正方法:**\n```javascript\n// 認証ミドルウェア\nconst verifyToken = (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  \n  if (!token) {\n    return res.status(401).json({ error: 'Missing token' });\n  }\n  \n  jwt.verify(token, SECRET, (err, decoded) => {\n    if (err) {\n      return res.status(403).json({ error: 'Invalid token' });\n    }\n    req.user = decoded;\n    next();\n  });\n};\n\napp.get('/user/:id', verifyToken, (req, res) => {\n  // 自身のデータのみアクセス可能に\n  if (req.user.id !== req.params.id) {\n    return res.status(403).json({ error: 'Unauthorized' });\n  }\n  // ...",
+      "tool_calls": [],
+      "expected_behaviors": [
+        "SQLインジェクション（パラメータ化されていないクエリ）",
+        "ハードコードされたJWTシークレット",
+        "パスワードのレスポンス漏洩",
+        "スタックトレースの本番環境露出",
+        "認証チェックの欠如"
+      ],
+      "matched_behaviors": [
+        "パスワードのレスポンス漏洩",
+        "スタックトレースの本番環境露出",
+        "認証チェックの欠如"
+      ],
+      "errors": [],
+      "usage": {
+        "input_tokens": 9,
+        "output_tokens": 3483
+      },
+      "events": [
+        {
+          "type": "session.status_running",
+          "processed_at": "2026-05-01 01:20:18.115000+00:00"
+        },
+        {
+          "type": "user.message",
+          "processed_at": "2026-05-01 01:20:18.465000+00:00"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 01:20:18.617000+00:00"
+        },
+        {
+          "type": "agent.thinking",
+          "processed_at": "2026-05-01 01:20:39.109000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 01:20:39.109000+00:00",
+          "content": [
+            "セキュリティ監査を実施しました。複数の重大な脆弱性が見つかっています。\n\n## 監査結果\n\n---\n\n### **[CRITICAL] CWE-327 シークレット・認証情報のハードコード**\n**ファイルパス: 行3-4**\n\n```javascript\nconst SECRET = 'mysecret123';\n```\n\n**脆弱性の説明:**\n- JWTシークレットがソースコード内にハードコードされている\n- バージョン管理システムに含まれる可能性があり、リポジトリへのアクセス者が機密情報を取得可能\n- シークレットの変更がコード変更になり、本番運用が困難\n\n**推奨される修正方法:**\n```javascript\nconst SECRET = process.env.JWT_SECRET;\n\n// 環境変数が設定されていることを検証\nif (!SECRET) {\n  throw new Error('JWT_SECRET environment variable is not set');\n}\n```\n\n---\n\n### **[CRITICAL] CWE-89 SQLインジェクション**\n**ファイルパス: 行6-7**\n\n```javascript\nconst query = `SELECT * FROM users WHERE id = ${req.params.id}`;\n```\n\n**脆弱性の説明:**\n- ユーザー入力が検証・エスケープなしでSQLクエリに直接挿入されている\n- 攻撃者が任意のSQLを実行可能（例: `1 OR 1=1 --`で全ユーザー情報を取得可能）\n- データベース完全破壊やデータ流出の危険\n\n**推奨される修正方法:**\n```javascript\napp.get('/user/:id', (req, res) => {\n  const userId = parseInt(req.params.id, 10);\n  \n  if (isNaN(userId) || userId <= 0) {\n    return res.status(400).json({ error: 'Invalid user ID' });\n  }\n  \n  // プリペアドステートメントを使用\n  const query = 'SELECT * FROM users WHERE id = ?';\n  db.query(query, [userId], (err, result) => {\n    if (err) {\n      console.error('Database error:', err);\n      return res.status(500).json({ error: 'Internal server error' });\n    }\n    res.json(result);\n  });\n});\n```\n\n---\n\n### **[CRITICAL] CWE-352 認証不足・認可チェック欠落**\n**ファイルパス: 行6（/user/:id）**\n\n**脆弱性の説明:**\n- `/user/:id`エンドポイントに認証・認可チェックがない\n- 任意のユーザーが他のユーザー情報にアクセス可能（ID列挙攻撃）\n- トークン検証がない\n\n**推奨される修正方法:**\n```javascript\n// 認証ミドルウェア\nconst verifyToken = (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  \n  if (!token) {\n    return res.status(401).json({ error: 'Missing token' });\n  }\n  \n  jwt.verify(token, SECRET, (err, decoded) => {\n    if (err) {\n      return res.status(403).json({ error: 'Invalid token' });\n    }\n    req.user = decoded;\n    next();\n  });\n};\n\napp.get('/user/:id', verifyToken, (req, res) => {\n  // 自身のデータのみアクセス可能に\n  if (req.user.id !== req.params.id) {\n    return res.status(403).json({ error: 'Unauthorized' });\n  }\n  // ... クエリ実行\n});\n```\n\n---\n\n### **[CRITICAL] CWE-215 機密情報のエラーメッセージ露出**\n**ファイルパス: 行18-20（エラーハンドラー）**\n\n```javascript\napp.use((err, req, res, next) => {\n  res.status(500).json({ error: err.message, stack: err.stack });\n});\n```\n\n**脆弱性の説明:**\n- スタックトレースをクライアントに返送している\n- ファイルパス、データベース情報、内部処理フローが露出\n- 攻撃者が脆弱性を特定しやすくなる\n\n**推奨される修正方法:**\n```javascript\napp.use((err, req, res, next) => {\n  console.error('Error:', err); // サーバーログに記録\n  \n  const isDevelopment = process.env.NODE_ENV === 'development';\n  const errorResponse = {\n    error: 'Internal server error'\n  };\n  \n  if (isDevelopment) {\n    errorResponse.message = err.message;\n  }\n  \n  res.status(500).json(errorResponse);\n});\n```\n\n---\n\n### **[CRITICAL] CWE-532 ログイン応答でパスワードを返却**\n**ファイルパス: 行13-16**\n\n```javascript\nres.json({ token, debug: { password, query: `logged in ${username}` } });\n```\n\n**脆弱性の説明:**\n- クライアント応答にパスワードが含まれている\n- ネットワークログ・ブラウザキャッシュ・ローカルストレージに平文保存\n- XSSやセッションハイジャック時のパスワード流出リスク\n\n**推奨される修正方法:**\n```javascript\napp.post('/login', (req, res) => {\n  const { username, password } = req.body;\n  \n  // パスワード検証（bcryptなど使用）\n  // const isValid = await bcrypt.compare(password, hashedPassword);\n  \n  const token = jwt.sign({ username }, SECRET, { expiresIn: '1h' });\n  \n  // パスワードやデバッグ情報は返さない\n  res.json({ token });\n});\n```\n\n---\n\n### **[HIGH] CWE-327 パスワードのハッシュ化不足**\n**ファイルパス: 行13（ログイン処理）**\n\n**脆弱性の説明:**\n- パスワード検証ロジックがない\n- パスワードが平文で保存されている可能性がある\n\n**推奨される修正方法:**\n```javascript\nconst bcrypt = require('bcrypt');\n\napp.post('/login', async (req, res) => {\n  const { username, password } = req.body;\n  \n  // バリデーション\n  if (!username || !password) {\n    return res.status(400).json({ error: 'Username and password required' });\n  }\n  \n  const user = await User.findOne({ username });\n  \n  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {\n    return res.status(401).json({ error: 'Invalid credentials' });\n  }\n  \n  const token = jwt.sign({ id: user.id, username }, SECRET, { expiresIn: '1h' });\n  res.json({ token });\n});\n```\n\n---\n\n### **[MEDIUM] CWE-400 入力バリデーション欠落**\n**ファイルパス: 行13（ログイン処理）**\n\n**脆弱性の説明:**\n- リクエスト本体のバリデーションがない\n- 予期しないデータ型が処理される可能性\n\n**推奨される修正方法:**\n```javascript\nconst { body, validationResult } = require('express-validator');\n\napp.post('/login', [\n  body('username').trim().notEmpty().isLength({ max: 50 }),\n  body('password').notEmpty().isLength({ min: 1, max: 500 })\n], async (req, res) => {\n  const errors = validationResult(req);\n  if (!errors.isEmpty()) {\n    return res.status(400).json({ errors: errors.array() });\n  }\n  // ... ログイン処理\n});\n```\n\n---\n\n## 修正されたコード例\n\n```javascript\nconst express = require('express');\nconst app = express();\nconst jwt = require('jsonwebtoken');\nconst bcrypt = require('bcrypt');\nconst { body, validationResult } = require('express-validator');\n\n// 環境変数から取得\nconst SECRET = process.env.JWT_SECRET || (() => {\n  throw new Error('JWT_SECRET environment variable is required');\n})();\n\n// リクエスト本体解析\napp.use(express.json());\n\n// 認証ミドルウェア\nconst verifyToken = (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  \n  if (!token) {\n    return res.status(401).json({ error: 'Authentication required' });\n  }\n  \n  jwt.verify(token, SECRET, (err, decoded) => {\n    if (err) {\n      return res.status(403).json({ error: 'Invalid token' });\n    }\n    req.user = decoded;\n    next();\n  });\n};\n\n// セキュアなログイン\napp.post('/login', [\n  body('username').trim().notEmpty().isLength({ max: 50 }),\n  body('password').notEmpty().isLength({ min: 1, max: 500 })\n], async (req, res) => {\n  const errors = validationResult(req);\n  if (!errors.isEmpty()) {\n    return res.status(400).json({ error: 'Invalid input' });\n  }\n  \n  const { username, password } = req.body;\n  \n  // データベースからユーザーを検索し、パスワードを検証\n  // const user = await User.findOne({ username });\n  // if (!user || !(await bcrypt.compare(password, user.passwordHash))) {\n  //   return res.status(401).json({ error: 'Invalid credentials' });\n  // }\n  \n  const token = jwt.sign({ id: 'user.id', username }, SECRET, { expiresIn: '1h' });\n  res.json({ token });\n});\n\n// セキュアなユーザー取得\napp.get('/user/:id', verifyToken, (req, res) => {\n  const userId = parseInt(req.params.id, 10);\n  \n  if (isNaN(userId) || userId <= 0) {\n    return res.status(400).json({ error: 'Invalid user ID' });\n  }\n  \n  // 自身のデータのみ取得可能\n  if (req.user.id !== userId) {\n    return res.status(403).json({ error: 'Unauthorized' });\n  }\n  \n  const query = 'SELECT id, username, email FROM users WHERE id = ?';\n  db.query(query, [userId], (err, result) => {\n    if (err) {\n      console.error('Database error:', err);\n      return res.status(500).json({ error: 'Internal server error' });\n    }\n    res.json(result);\n  });\n});\n\n// セキュアなエラーハンドリング\napp.use((err, req, res, next) => {\n  console.error('Error:', err);\n  \n  const isDevelopment = process.env.NODE_ENV === 'development';\n  res.status(500).json({\n    error: 'Internal server error',\n    ...(isDevelopment && { message: err.message })\n  });\n});\n\napp.listen(3000, () => console.log('Server running on port 3000'));\n```\n\n---\n\n## 優先対応順序\n\n1. **SQLインジェクション対応** → プリペアドステートメント導入\n2. **認証チェック追加** → JWT検証ミドルウェア実装\n3. **シークレット外部化** → 環境変数に移行\n4. **エラーハンドリング改善** → スタックトレース非露出\n5. **パスワードハッシュ化** → bcrypt導入\n6. **入力バリデーション** → express-validatorで実装"
+          ]
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 01:20:39.548000+00:00",
+          "model_usage": {
+            "input_tokens": 9,
+            "output_tokens": 3483
+          }
+        },
+        {
+          "type": "session.status_idle",
+          "processed_at": "2026-05-01 01:20:39.705000+00:00"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "passed": 1,
+    "failed": 0
+  }
+}

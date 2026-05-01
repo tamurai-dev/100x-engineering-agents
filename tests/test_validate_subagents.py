@@ -108,9 +108,9 @@ def main():
     print()
 
     # === 既存エージェント ===
-    print("[既存エージェント] agents/agents/*.md の検証:")
+    print("[既存エージェント] agents/agents/*/agent.md の検証:")
     agents_dir = REPO_ROOT / "agents" / "agents"
-    for filepath in sorted(agents_dir.glob("*.md")):
+    for filepath in sorted(agents_dir.glob("*/agent.md")):
         schema = get_schema()
         data, parse_error = extract_frontmatter(filepath)
         if parse_error:
