@@ -88,7 +88,12 @@ agent:
 │   ├── templates/                    # テンプレート
 │   │   ├── subagent.md.tmpl          #   agent.md テンプレート
 │   │   ├── config.json.tmpl          #   config.json テンプレート
-│   │   └── test-prompts.json.tmpl    #   テストケーステンプレート
+│   │   ├── test-prompts.json.tmpl    #   テストケーステンプレート
+│   │   ├── qa-presentation.md.tmpl   #   QA テンプレート: presentation（ビジュアル品質検査）
+│   │   ├── qa-html-ui.md.tmpl        #   QA テンプレート: html_ui（UI 品質検査）
+│   │   ├── qa-code.md.tmpl           #   QA テンプレート: code（コード品質検査）
+│   │   ├── qa-generic.md.tmpl        #   QA テンプレート: generic（汎用品質検査）
+│   │   └── qa-config.json.tmpl       #   QA Agent config.json テンプレート
 │   ├── skills/                       # 再利用可能スキル定義
 │   ├── commands/                     # カスタムスラッシュコマンド
 │   ├── rules/                        # トピック別ルール（パスゲート対応）
@@ -111,6 +116,8 @@ agent:
 │   │   ├── blueprint.py              #     Phase 1: Blueprint 生成
 │   │   ├── eval_suite.py             #     Phase 2: Eval Suite 生成
 │   │   └── edd_loop.py               #     Phase 4: EDD ループ
+│   ├── bundle_factory/                #   Bundle Factory コアモジュール
+│   │   └── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
@@ -127,6 +134,8 @@ agent:
 │
 ├── tests/                            # テスト
 │   ├── test_validate_subagents.py    #   バリデーションテストスイート
+│   ├── test_validate_bundle.py       #   Bundle バリデーションテストスイート
+│   ├── test_qa_strategy.py           #   QA 戦略エンジンテストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
 │
@@ -215,10 +224,11 @@ make check-all
 | 2 | `make validate-config` | 全 config.json バリデーション + agent.md との整合性チェック |
 | 3 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
 | 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
-| 5 | `make check-template` | テンプレート整合性チェック |
-| 6 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 7 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 8 | `make report` | バリデーションレポート (JSON) 生成 |
+| 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
+| 6 | `make check-template` | テンプレート整合性チェック |
+| 7 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 8 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 9 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 

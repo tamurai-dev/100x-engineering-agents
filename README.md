@@ -170,6 +170,17 @@ Task Agent（Actor）          QA Agent（Critic）
 - QA Agent は **fresh-context**（タスク実行の過程を知らない状態）で検査する。これにより「自分が作ったものだから正しいはず」という同意バイアスを構造的に排除する
 - 各ラウンドの成果物を保存し、最高スコア版を最終成果物として採用する
 
+**QA 戦略の自動選択:**
+
+バンドルの `artifact_format` に応じて、最適な QA テンプレートが自動選択される:
+
+| artifact_format | QA テンプレート | QA パイプライン |
+|----------------|---------------|---------------|
+| `presentation` | qa-presentation.md.tmpl | PPTX → PDF → PNG → Vision API |
+| `html_ui` | qa-html-ui.md.tmpl | Playwright screenshot → Vision API |
+| `code` | qa-code.md.tmpl | lint + test execution + 静的解析 |
+| その他 | qa-generic.md.tmpl | 汎用テキスト分析 |
+
 ```bash
 # バンドルの検証（API 不要）
 make run-bundle-dry NAME=code-review-bundle
@@ -350,6 +361,8 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 | 品質評価フレームワーク | 完了（3層 Grader + EDD ループ） |
 | CI/CD パイプライン | 完了（GitHub Actions） |
 | Actor-Critic Bundle | 完了（Vertical Slice — code-review-bundle） |
+| Bundle バリデーション | 完了（スキーマ + 整合性チェック + pre-commit + テストスイート17件） |
+| QA テンプレート + 戦略エンジン | 完了（presentation / html_ui / code / generic + 自動選択） |
 | Getting Started ドキュメント | 完了（本README §0） |
 | エンタープライズ要件定義 | **未着手**（コア機能安定後に着手） |
 | 実プロジェクト適用事例 | **未着手** |
@@ -358,7 +371,7 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 
 ## 4. 次のステップ
 
-1. **Actor-Critic Bundle 拡充** — QA テンプレート・戦略エンジン・ Bundle Factory CLI（`make create-bundle SPEC="..."`）
+1. **Bundle Factory CLI** — `make create-bundle SPEC="..."` でバンドル全自動生成
 2. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
 3. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
 4. agents/rules/ にエンタープライズガードレールを定義
