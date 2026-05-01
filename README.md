@@ -181,6 +181,23 @@ Task Agent（Actor）          QA Agent（Critic）
 | `code` | qa-code.md.tmpl | lint + test execution + 静的解析 |
 | その他 | qa-generic.md.tmpl | 汎用テキスト分析 |
 
+**Bundle Factory（バンドル自動生成）:**
+
+Agent Factory がシングルエージェントを自動生成するように、Bundle Factory は Actor-Critic ペアをセットで自動生成する:
+
+```bash
+# 自然言語からバンドルを全自動生成
+make create-bundle SPEC="pptxgenjsでプレゼンスライドを生成"
+
+# artifact_format を明示指定（LLM 推論をスキップ）
+make create-bundle SPEC="..." FORMAT=presentation
+
+# ドライラン（API 不要、コスト確認）
+make create-bundle-dry SPEC="..." FORMAT=presentation
+```
+
+Bundle Factory は Task Agent + QA Agent + bundle.json + SKILL.md + workflow.md を1コマンドで生成し、マニフェスト登録とバリデーションまで自動で行う。
+
 ```bash
 # バンドルの検証（API 不要）
 make run-bundle-dry NAME=code-review-bundle

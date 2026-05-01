@@ -28,6 +28,9 @@ import re
 import textwrap
 from pathlib import Path
 
+from agent_factory.utils import extract_json as _extract_json_shared
+from agent_factory.utils import parse_json_lenient as _parse_json_lenient_shared
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
 
@@ -338,56 +341,13 @@ def _generate_weakness_fixture(
 
 
 def _parse_json_lenient(text: str) -> dict:
-    """JSON パースを試み、失敗時はよくある LLM 出力エラーを修正してリトライする。"""
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
-
-    # Trailing commas before } or ]
-    cleaned = re.sub(r",\s*([}\]])", r"\1", text)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError:
-        pass
-
-    # Truncated JSON: close open delimiters in reverse stack order
-    fixed = cleaned.rstrip().rstrip(",")
-    stack: list[str] = []
-    in_string = False
-    escape = False
-    for ch in fixed:
-        if escape:
-            escape = False
-            continue
-        if ch == "\\":
-            escape = True
-            continue
-        if ch == '"':
-            in_string = not in_string
-            continue
-        if in_string:
-            continue
-        if ch in ("{", "["):
-            stack.append("}" if ch == "{" else "]")
-        elif ch in ("}", "]") and stack:
-            stack.pop()
-    fixed += "".join(reversed(stack))
-    return json.loads(fixed)
+    """JSON パース（共通ユーティリティに委譲）。"""
+    return _parse_json_lenient_shared(text)
 
 
 def _extract_json(text: str) -> str:
-    """テキストから JSON ブロックを抽出する。"""
-    match = re.search(r"```json\s*\n(.*?)\n\s*```", text, re.DOTALL)
-    if match:
-        return match.group(1)
-
-    start = text.find("{")
-    end = text.rfind("}")
-    if start != -1 and end != -1:
-        return text[start : end + 1]
-
-    raise ValueError(f"JSON が見つかりません:\n{text[:500]}")
+    """JSON ブロック抽出（共通ユーティリティに委譲）。"""
+    return _extract_json_shared(text)
 
 
 def _verify_fixture(fixture_data: dict, agent_type: str) -> list[str]:
