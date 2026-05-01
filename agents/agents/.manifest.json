@@ -42,6 +42,12 @@
       "created_at": "2026-05-01T07:18:57.721012+00:00",
       "created_by": "create-subagent.sh",
       "hmac_sha256": "2f125352ddcf19f6b43aba1cf50bab639aa1bdf4da30b74077e3737f811d4627"
+    },
+    "supabase-schema-designer": {
+      "file": "agents/agents/supabase-schema-designer/agent.md",
+      "created_at": "2026-05-01T10:30:32.456456+00:00",
+      "created_by": "create-subagent.sh",
+      "hmac_sha256": "bd4b9c0ccb5bce9ad9aa5d8b571e1e617caa0d98b79aacd3d15dc97010313302"
     }
   }
 }

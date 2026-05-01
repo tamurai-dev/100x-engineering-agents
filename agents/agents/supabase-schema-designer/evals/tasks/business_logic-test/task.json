@@ -1,0 +1,44 @@
+{
+  "name": "business_logic-test",
+  "category": "weakness-test",
+  "difficulty": "medium",
+  "prompt": "以下の要件ドキュメントを読み、Supabase本番レベルのDBスキーマを設計してください。\n\nRLS・インデックス・トリガー・マイグレーションSQL・Mermaid ER図をすべて生成すること。\nマルチテナント対応（organization_id による行分離）を徹底してください。\n\n特に以下のビジネスルールをSQL/トリガーで完全に実装してください：\n1. サブスクリプションプランの利用枠制限（freePlanは同時アクティブプロジェクト3件まで、proPlanは無制限）\n2. 請求計算：月途中キャンセル時は日割り計算で返金額を算出し、refunds テーブルに自動挿入する\n3. プロジェクト削除時は論理削除（deleted_at）のみ許可し、物理削除を禁止するトリガーを実装する\n4. 同一 organization 内でプロジェクト名の重複を禁止する（削除済みを除く）\n5. ユーザーが organization を退会する際、そのユーザーがオーナーであれば退会を拒否する\n\n要件ドキュメント: requirements.md",
+  "graders": {
+    "code_based": {
+      "type": "keyword-check",
+      "keywords": [
+        "free",
+        "active",
+        "deleted_at IS NULL",
+        "RAISE EXCEPTION",
+        "BEFORE DELETE",
+        "refunds",
+        "FLOOR",
+        "organization_id",
+        "UNIQUE",
+        "owner",
+        "organization_members",
+        "ENABLE ROW LEVEL SECURITY",
+        "erDiagram"
+      ]
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": [
+        "(?i)```mermaid\\nerDiagram[\\s\\S]+?```",
+        "(?i)CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
+        "(?i)ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
+        "(?i)CREATE POLICY",
+        "(?i)CREATE OR REPLACE FUNCTION",
+        "(?i)CREATE TRIGGER"
+      ],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}

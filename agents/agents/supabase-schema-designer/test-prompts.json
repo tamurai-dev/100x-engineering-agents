@@ -1,0 +1,42 @@
+[
+  {
+    "name": "SaaS受発注管理ワークフロー",
+    "prompt": "以下の業務ワークフローからSupabaseのDBスキーマを設計してください。\n\n【業務概要】マルチテナントSaaS受発注管理システム\n\n【ワークフロー】\n1. 顧客（Customer）が注文（Order）を作成する\n2. 注文には複数の注文明細（OrderItem）が含まれる\n3. 注文明細は商品マスタ（Product）を参照する\n4. 注文は「下書き→確定→出荷済→完了→キャンセル」のステータス遷移を持つ\n5. 担当者（Staff）が注文を担当し、ステータス変更時に担当者IDを記録する\n6. 注文ステータスの変更履歴（OrderStatusHistory）を保持する\n\n【要件】\n- Supabase Auth でのユーザー認証（auth.users との連携）\n- テナントごとの完全なデータ分離\n- 注文金額の合計はトリガーで自動計算\n- 商品の在庫数（stock_quantity）の更新はトリガーで管理",
+    "expected_behaviors": [
+      "設計サマリーに前提事項とAMBIGUITY/ASSUMPTIONが記載されている",
+      "Mermaid erDiagram が生成され、tenants / customers / orders / order_items / products / staffs / order_status_histories の7テーブル以上が含まれている",
+      "全テーブルに tenant_id と RLS ポリシー（SELECT/INSERT/UPDATE/DELETE）が定義されている",
+      "order_status ENUM 型（draft/confirmed/shipped/completed/cancelled）が CREATE TYPE で定義されている",
+      "注文金額合計を更新するトリガー関数が生成されている",
+      "在庫数を更新するトリガー関数が生成されている",
+      "Up マイグレーションと Down マイグレーションの両方が生成されている",
+      "インデックス一覧表に各インデックスの根拠が記載されている"
+    ],
+    "success_criteria": "7テーブル以上が設計され、RLS・トリガー・インデックス・Mermaid ER図・Up/Down マイグレーションSQL がすべて出力され、マルチテナント分離が全テーブルに適用されていること"
+  },
+  {
+    "name": "プロジェクト管理ツール",
+    "prompt": "以下の要件でDBスキーマを設計してください。\n\n【業務】マルチテナント対応プロジェクト管理ツール\n\n【エンティティと関係】\n- プロジェクト（Project）にはメンバー（ProjectMember）が所属し、役割（role: owner/admin/member/viewer）を持つ\n- プロジェクト内にタスク（Task）があり、親子関係（サブタスク）を持てる\n- タスクにはコメント（Comment）を複数付けられる\n- タスクにはファイル添付（Attachment）ができ、Supabase Storage の URL を保存する\n- タスクにはラベル（Label）を複数付けられる（多対多）\n- タスクの優先度は high/medium/low、ステータスは todo/in_progress/in_review/done\n\n【非機能要件】\n- 削除済みタスクは論理削除で管理する\n- コメントの全文検索を実現したい",
+    "expected_behaviors": [
+      "タスクの自己参照（parent_task_id）が正しく定義されている",
+      "TaskLabel 中間テーブルが多対多関係として設計されている",
+      "論理削除カラム deleted_at TIMESTAMPTZ が Task テーブルに追加されている",
+      "コメント全文検索のための tsvector カラムまたは GIN インデックスが定義されている",
+      "role ENUM と priority ENUM と status ENUM が CREATE TYPE で定義されている",
+      "deleted_at IS NULL を条件とした部分インデックスが生成されている",
+      "ProjectMember の role を考慮した RLS ポリシーが設計されているか、またはその前提がASSUMPTIONとして記録されている"
+    ],
+    "success_criteria": "自己参照・多対多・論理削除・全文検索インデックスが正しく設計され、Mermaid ER図とマイグレーションSQLが完全に出力されること"
+  },
+  {
+    "name": "曖昧要件での前提明示",
+    "prompt": "ECサイトのDBを作ってください。商品、注文、ユーザーが必要です。マルチテナントで。",
+    "expected_behaviors": [
+      "AMBIGUITY または ASSUMPTION として不明点（決済方法、配送管理の有無、レビュー機能の有無、在庫管理の有無等）が明示されている",
+      "最低限の設計（tenants / users / products / orders / order_items テーブル）が生成されている",
+      "前提事項に基づいた設計であることがサマリーに記載されている",
+      "追加推奨事項に拡張提案が記載されている"
+    ],
+    "success_criteria": "曖昧な要件に対してAMBIGUITY/ASSUMPTIONを明示した上で、合理的な最小スキーマが設計され、Mermaid ER図とマイグレーションSQLが生成されること"
+  }
+]

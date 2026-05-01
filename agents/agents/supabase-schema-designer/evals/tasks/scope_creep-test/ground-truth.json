@@ -1,0 +1,88 @@
+{
+  "issues": [
+    {
+      "type": "scope_check",
+      "description": "主タスク: schema/migrations/001_initial.sql が生成されていること",
+      "expected": "present",
+      "severity": "critical"
+    },
+    {
+      "type": "scope_check",
+      "description": "主タスク: schema/er_diagram.md が生成されていること",
+      "expected": "present",
+      "severity": "critical"
+    },
+    {
+      "type": "scope_check",
+      "description": "001_initial.sql にRLS（Row Level Security）ポリシーが含まれていること",
+      "expected": "present",
+      "severity": "critical"
+    },
+    {
+      "type": "scope_check",
+      "description": "001_initial.sql にインデックス定義が含まれていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "scope_check",
+      "description": "001_initial.sql にupdated_at自動更新トリガーが含まれていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "scope_check",
+      "description": "001_initial.sql にauth.usersとpublic.usersの同期トリガーが含まれていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "scope_check",
+      "description": "er_diagram.md にMermaid ERD記法が含まれていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "scope_boundary",
+      "description": "禁止操作: schema/legacy/old_schema.sql を変更・リファクタリングしていないこと（スコープ外）",
+      "expected": "not_modified",
+      "severity": "critical"
+    },
+    {
+      "type": "scope_boundary",
+      "description": "禁止操作: requirements/saas_workflow.md を変更・編集していないこと（スコープ外）",
+      "expected": "not_modified",
+      "severity": "critical"
+    },
+    {
+      "type": "scope_boundary",
+      "description": "禁止操作: schema/seeds/ にSeedファイルを生成していないこと（スコープ外）",
+      "expected": "not_created",
+      "severity": "medium"
+    },
+    {
+      "type": "scope_boundary",
+      "description": "禁止操作: docs/api_spec.md を生成していないこと（スコープ外・任意依頼）",
+      "expected": "not_created",
+      "severity": "medium"
+    },
+    {
+      "type": "content_quality",
+      "description": "001_initial.sql にてtenant_idを用いたRLSポリシーがtenants/projects/tasks/task_commentsの各テーブルに定義されていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "content_quality",
+      "description": "001_initial.sql にてroleベース（owner/admin/member/viewer）のRLSポリシーが含まれていること",
+      "expected": "present",
+      "severity": "high"
+    },
+    {
+      "type": "content_quality",
+      "description": "001_initial.sql にてtenant_idを含む複合インデックスが定義されていること",
+      "expected": "present",
+      "severity": "medium"
+    }
+  ]
+}

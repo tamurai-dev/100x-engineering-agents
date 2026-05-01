@@ -1,0 +1,124 @@
+{
+  "issues": [
+    {
+      "id": "GT-001",
+      "file": "test_schema_logic.py",
+      "type": "slug_validation",
+      "line_range": [
+        1,
+        50
+      ],
+      "severity": "high",
+      "category": "must_find",
+      "description": "slugバリデーション関数のテスト: 小文字英数字・ハイフンのみ許可（3〜50文字）。大文字・スペース・特殊文字・短すぎる/長すぎるslugをエラーとして検出すること"
+    },
+    {
+      "id": "GT-002",
+      "file": "test_schema_logic.py",
+      "type": "plan_limit_enforcement",
+      "line_range": [
+        51,
+        110
+      ],
+      "severity": "critical",
+      "category": "must_find",
+      "description": "プランごとのプロジェクト数上限テスト: free=3, pro=20, enterprise=None（無制限）。上限超過時に False/例外を返し、enterprise は None や -1 で無制限を表現すること"
+    },
+    {
+      "id": "GT-003",
+      "file": "test_schema_logic.py",
+      "type": "role_permission_matrix",
+      "line_range": [
+        111,
+        170
+      ],
+      "severity": "high",
+      "category": "must_find",
+      "description": "ロール権限マトリクスのテスト: viewer は create/update/delete 不可。owner は全操作可。member は read/create/update 可だが delete 不可。admin は delete 含む全操作可"
+    },
+    {
+      "id": "GT-004",
+      "file": "test_schema_logic.py",
+      "type": "timestamp_trigger_logic",
+      "line_range": [
+        171,
+        230
+      ],
+      "severity": "medium",
+      "category": "must_find",
+      "description": "updated_at 自動更新ロジックのテスト: 新規作成時は created_at == updated_at。更新後は updated_at > created_at。タイムゾーンは UTC で統一"
+    },
+    {
+      "id": "GT-005",
+      "file": "test_schema_logic.py",
+      "type": "task_status_transition",
+      "line_range": [
+        231,
+        290
+      ],
+      "severity": "medium",
+      "category": "should_find",
+      "description": "タスクステータス遷移のバリデーションテスト: todo→in_progress→done は有効。done→todo の逆戻りは許可。cancelled からの遷移は不可。deleted プロジェクトへの新規タスク作成は不可"
+    },
+    {
+      "id": "GT-006",
+      "file": "test_schema_logic.py",
+      "type": "audit_log_immutability",
+      "line_range": [
+        291,
+        340
+      ],
+      "severity": "high",
+      "category": "should_find",
+      "description": "監査ログの不変性テスト: AuditLog エントリは INSERT のみ許可。update_audit_log() や delete_audit_log() を呼び出すとエラー/False を返すこと。metadata は dict 型であること"
+    },
+    {
+      "id": "GT-007",
+      "file": "schema.sql",
+      "type": "rls_policy_completeness",
+      "line_range": [
+        1,
+        999
+      ],
+      "severity": "critical",
+      "category": "must_find",
+      "description": "RLSポリシーの完全性: organizations, projects, tasks, comments, audit_logs の全テーブルに対して RLS ENABLE および SELECT/INSERT/UPDATE/DELETE ポリシーが organization_id ベースで定義されていること"
+    },
+    {
+      "id": "GT-008",
+      "file": "schema.sql",
+      "type": "index_strategy",
+      "line_range": [
+        1,
+        999
+      ],
+      "severity": "high",
+      "category": "must_find",
+      "description": "パフォーマンスインデックスの存在: organization_id, project_id, assignee_id, status カラムに対してインデックスが作成されていること。複合インデックス (organization_id, status) も含む"
+    },
+    {
+      "id": "GT-009",
+      "file": "schema.sql",
+      "type": "updated_at_trigger",
+      "line_range": [
+        1,
+        999
+      ],
+      "severity": "medium",
+      "category": "must_find",
+      "description": "updated_at 自動更新トリガー: organizations, projects, tasks テーブルに BEFORE UPDATE トリガーが定義され、NEW.updated_at = now() を設定すること"
+    },
+    {
+      "id": "GT-010",
+      "file": "er_diagram.md",
+      "type": "mermaid_er_diagram",
+      "line_range": [
+        1,
+        999
+      ],
+      "severity": "medium",
+      "category": "must_find",
+      "description": "Mermaid ER図: erDiagram 記法で organizations, users, organization_members, projects, tasks, comments, audit_logs の全7テーブルと主要なリレーションが図示されていること"
+    }
+  ]
+}
