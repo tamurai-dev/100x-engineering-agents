@@ -5,7 +5,7 @@ Covers the high-level validator functions used by the CLI shims:
 * :func:`extract_frontmatter`
 * :func:`validate_subagent_frontmatter`
 * :func:`validate_agent_config`
-* :func:`validate_bundle_dir`
+* :func:`validate_duet_dir`
 * :func:`load_manifest`
 
 These tests rely on the existing fixtures under ``tests/fixtures/``.
@@ -30,13 +30,13 @@ from duo_agents.validators import (  # noqa: E402
     extract_frontmatter,
     load_manifest,
     validate_agent_config,
-    validate_bundle_dir,
+    validate_duet_dir,
     validate_subagent_frontmatter,
 )
 
 FIXTURES = REPO_ROOT / "tests" / "fixtures"
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
-BUNDLES_DIR = REPO_ROOT / "agents" / "bundles"
+DUETS_DIR = REPO_ROOT / "agents" / "duets"
 
 
 # ── extract_frontmatter ─────────────────────────────────────────────────────
@@ -107,28 +107,28 @@ class TestValidateAgentConfig:
         assert any("JSON" in e for e in errors)
 
 
-# ── validate_bundle_dir ─────────────────────────────────────────────────────
+# ── validate_duet_dir ─────────────────────────────────────────────────────
 
 
-class TestValidateBundleDir:
-    def test_real_bundles_pass(self):
+class TestValidateDuetDir:
+    def test_real_duets_pass(self):
         manifest = load_manifest()
-        for bundle_dir in sorted(BUNDLES_DIR.iterdir()):
-            if not bundle_dir.is_dir():
+        for duet_dir in sorted(DUETS_DIR.iterdir()):
+            if not duet_dir.is_dir():
                 continue
-            errors = validate_bundle_dir(bundle_dir, manifest)
-            assert errors == [], f"{bundle_dir.name}: {errors}"
+            errors = validate_duet_dir(duet_dir, manifest)
+            assert errors == [], f"{duet_dir.name}: {errors}"
 
-    def test_missing_bundle_json(self, tmp_path):
-        bundle_dir = tmp_path / "fake-bundle"
-        bundle_dir.mkdir()
-        errors = validate_bundle_dir(bundle_dir, {})
-        assert any("bundle.json" in e for e in errors)
+    def test_missing_duet_json(self, tmp_path):
+        duet_dir = tmp_path / "fake-duet"
+        duet_dir.mkdir()
+        errors = validate_duet_dir(duet_dir, {})
+        assert any("duet.json" in e for e in errors)
 
     def test_task_qa_must_differ(self):
         manifest = load_manifest()
-        bundle_data = {
-            "name": "same-agent-bundle",
+        duet_data = {
+            "name": "same-agent-duet",
             "version": "1.0.0",
             "description": "Both Task and QA point to the same agent.",
             "artifact_format": "text",
@@ -137,16 +137,16 @@ class TestValidateBundleDir:
             "workflow": {"qa": {"max_iterations": 3, "pass_threshold": 0.80}},
         }
         with tempfile.TemporaryDirectory() as tmpdir:
-            bundle_dir = Path(tmpdir) / "same-agent-bundle"
-            bundle_dir.mkdir()
-            (bundle_dir / "bundle.json").write_text(json.dumps(bundle_data))
-            errors = validate_bundle_dir(bundle_dir, manifest)
+            duet_dir = Path(tmpdir) / "same-agent-duet"
+            duet_dir.mkdir()
+            (duet_dir / "duet.json").write_text(json.dumps(duet_data))
+            errors = validate_duet_dir(duet_dir, manifest)
             assert any("同一です" in e for e in errors)
 
     def test_bad_qa_logic(self):
         manifest = load_manifest()
-        bundle_data = {
-            "name": "bad-qa-bundle",
+        duet_data = {
+            "name": "bad-qa-duet",
             "version": "1.0.0",
             "description": "convergence_delta is greater than pass_threshold.",
             "artifact_format": "text",
@@ -161,10 +161,10 @@ class TestValidateBundleDir:
             },
         }
         with tempfile.TemporaryDirectory() as tmpdir:
-            bundle_dir = Path(tmpdir) / "bad-qa-bundle"
-            bundle_dir.mkdir()
-            (bundle_dir / "bundle.json").write_text(json.dumps(bundle_data))
-            errors = validate_bundle_dir(bundle_dir, manifest)
+            duet_dir = Path(tmpdir) / "bad-qa-duet"
+            duet_dir.mkdir()
+            (duet_dir / "duet.json").write_text(json.dumps(duet_data))
+            errors = validate_duet_dir(duet_dir, manifest)
             assert any("convergence_delta" in e for e in errors)
 
 
@@ -175,11 +175,11 @@ class TestValidateAgentRef:
     def test_ref_tail_must_match_name(self):
         manifest = load_manifest()
         agent = {"name": "wrong-name", "ref": "agents/agents/code-reviewer"}
-        errors = _validate_agent_ref("test-bundle", "Task Agent", agent, manifest)
+        errors = _validate_agent_ref("test-duet", "Task Agent", agent, manifest)
         assert any("ref 末尾" in e for e in errors)
 
     def test_unregistered_agent_caught(self):
         manifest = {"version": 1, "agents": {}}
         agent = {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"}
-        errors = _validate_agent_ref("test-bundle", "Task Agent", agent, manifest)
+        errors = _validate_agent_ref("test-duet", "Task Agent", agent, manifest)
         assert any("マニフェストに未登録" in e for e in errors)

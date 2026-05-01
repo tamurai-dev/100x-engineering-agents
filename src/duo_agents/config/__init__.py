@@ -30,7 +30,7 @@ from duo_agents.config.models import (
 )
 from duo_agents.config.paths import (
     AGENTS_ASSETS_DIR,
-    BUNDLES_DIR,
+    DUETS_DIR,
     EVIDENCE_DIR,
     MANIFEST_KEY_PATH,
     MANIFEST_PATH,
@@ -75,7 +75,7 @@ __all__ = [
     "ModelTier",
     # paths
     "AGENTS_ASSETS_DIR",
-    "BUNDLES_DIR",
+    "DUETS_DIR",
     "EVIDENCE_DIR",
     "MANIFEST_KEY_PATH",
     "MANIFEST_PATH",

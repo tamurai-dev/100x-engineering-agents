@@ -6,7 +6,7 @@ These tests cover:
 * Field-level constraints (regex, min/max length, value enums)
 * Cross-field invariants (tools XOR disallowedTools, convergence_delta < pass_threshold)
 * additionalProperties: false enforcement
-* Bundle / ManagedAgentConfig structural validation
+* Duet / ManagedAgentConfig structural validation
 """
 
 from __future__ import annotations
@@ -25,15 +25,15 @@ if str(SRC_DIR) not in sys.path:
 
 from duo_agents.schemas import (  # noqa: E402
     AgentRef,
-    Bundle,
-    BundleQA,
+    Duet,
+    DuetQA,
     ManagedAgentConfig,
     SubagentFrontmatter,
 )
 
 FIXTURES = REPO_ROOT / "tests" / "fixtures"
-BUNDLES_VALID = FIXTURES / "bundles" / "valid"
-BUNDLES_INVALID = FIXTURES / "bundles" / "invalid"
+DUETS_VALID = FIXTURES / "duets" / "valid"
+DUETS_INVALID = FIXTURES / "duets" / "invalid"
 
 
 # ── SubagentFrontmatter ──────────────────────────────────────────────────────
@@ -133,44 +133,44 @@ class TestManagedAgentConfig:
             )
 
 
-# ── Bundle ───────────────────────────────────────────────────────────────────
+# ── Duet ───────────────────────────────────────────────────────────────────
 
 
-class TestBundle:
-    def test_real_bundle_validates(self):
-        for bundle_path in (REPO_ROOT / "agents" / "bundles").glob("*/bundle.json"):
-            with bundle_path.open() as f:
-                Bundle.model_validate(json.load(f))
+class TestDuet:
+    def test_real_duet_validates(self):
+        for duet_path in (REPO_ROOT / "agents" / "duets").glob("*/duet.json"):
+            with duet_path.open() as f:
+                Duet.model_validate(json.load(f))
 
     def test_minimal_fixture(self):
-        with (BUNDLES_VALID / "minimal-bundle.json").open() as f:
-            Bundle.model_validate(json.load(f))
+        with (DUETS_VALID / "minimal-duet.json").open() as f:
+            Duet.model_validate(json.load(f))
 
     def test_full_fixture(self):
-        with (BUNDLES_VALID / "full-bundle.json").open() as f:
-            Bundle.model_validate(json.load(f))
+        with (DUETS_VALID / "full-duet.json").open() as f:
+            Duet.model_validate(json.load(f))
 
-    def test_bundle_name_must_end_with_bundle(self):
+    def test_duet_name_must_end_with_duet(self):
         with pytest.raises(ValidationError, match="should match pattern"):
-            self._build_bundle(name="my-cool-thing")
+            self._build_duet(name="my-cool-thing")
 
     def test_artifact_format_must_be_known(self):
         with pytest.raises(ValidationError, match="artifact_format"):
-            self._build_bundle(artifact_format="bogus")
+            self._build_duet(artifact_format="bogus")
 
     def test_invalid_fixtures_all_fail(self):
-        for fixture in BUNDLES_INVALID.glob("*.json"):
+        for fixture in DUETS_INVALID.glob("*.json"):
             with fixture.open() as f:
                 data = json.load(f)
             with pytest.raises(ValidationError):
-                Bundle.model_validate(data)
+                Duet.model_validate(data)
 
     @staticmethod
-    def _build_bundle(**overrides):
+    def _build_duet(**overrides):
         base = {
-            "name": "code-review-bundle",
+            "name": "code-review-duet",
             "version": "1.0.0",
-            "description": "Test bundle for unit tests.",
+            "description": "Test duet for unit tests.",
             "artifact_format": "text",
             "task_agent": {
                 "name": "code-reviewer",
@@ -183,29 +183,29 @@ class TestBundle:
             "workflow": {"qa": {"max_iterations": 3, "pass_threshold": 0.80}},
         }
         base.update(overrides)
-        return Bundle.model_validate(base)
+        return Duet.model_validate(base)
 
 
-class TestBundleQA:
+class TestDuetQA:
     def test_defaults(self):
-        qa = BundleQA(max_iterations=3, pass_threshold=0.8)
+        qa = DuetQA(max_iterations=3, pass_threshold=0.8)
         assert qa.convergence_delta == 0.02
         assert qa.escalation_threshold == 0.40
         assert qa.model_escalation == ["haiku", "sonnet"]
 
     def test_iterations_in_range(self):
         with pytest.raises(ValidationError):
-            BundleQA(max_iterations=0, pass_threshold=0.8)
+            DuetQA(max_iterations=0, pass_threshold=0.8)
         with pytest.raises(ValidationError):
-            BundleQA(max_iterations=11, pass_threshold=0.8)
+            DuetQA(max_iterations=11, pass_threshold=0.8)
 
     def test_threshold_in_unit_interval(self):
         with pytest.raises(ValidationError):
-            BundleQA(max_iterations=3, pass_threshold=1.5)
+            DuetQA(max_iterations=3, pass_threshold=1.5)
 
     def test_model_escalation_unique(self):
         with pytest.raises(ValidationError, match="unique"):
-            BundleQA(
+            DuetQA(
                 max_iterations=3,
                 pass_threshold=0.8,
                 model_escalation=["haiku", "haiku"],

@@ -2,19 +2,19 @@
 # ============================================================
 # QA Agent テンプレート: presentation（スライド・プレゼン資料）
 #
-# Actor-Critic Bundle の Critic 側テンプレート。
+# Actor-Critic Duet の Critic 側テンプレート。
 # PPTX / PDF / 画像化されたスライドのビジュアル品質を検査する。
 #
 # 使い方:
-#   Bundle Factory が自動的にこのテンプレートを選択する。
-#   artifact_format: "presentation" のバンドルで使用される。
+#   Duet Factory が自動的にこのテンプレートを選択する。
+#   artifact_format: "presentation" のデュエットで使用される。
 # ============================================================
 
-name: <bundle-name>-qa
+name: <duet-name>-qa
 description: >
-  <bundle-description> の成果物（プレゼンテーション）を品質検査する QA エージェント。
+  <duet-description> の成果物（プレゼンテーション）を品質検査する QA エージェント。
   スライドのビジュアル品質・構造・内容を fresh-context で検証する。
-  バンドルワークフローの QA フェーズで PROACTIVELY 起動される。
+  デュエットワークフローの QA フェーズで PROACTIVELY 起動される。
 model: sonnet
 disallowedTools:
   - Write

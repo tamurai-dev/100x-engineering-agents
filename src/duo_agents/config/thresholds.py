@@ -1,6 +1,6 @@
 """Default thresholds for QA loops, EDD loops and model escalation.
 
-These values are *defaults* — individual bundle.json / duet.json files can
+These values are *defaults* — individual duet.json / duet.json files can
 override them. Centralizing here lets us tune quality vs. cost trade-offs in
 one place.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Final
 
 # ── QA loop (per-execution) ──────────────────────────────────────────────────
-# Used by the Bundle Runner when invoking the QA Agent on each Task Agent
+# Used by the Duet Runner when invoking the QA Agent on each Task Agent
 # artifact. The runner retries the Task Agent up to ``DEFAULT_QA_MAX_ITERATIONS``
 # times until the QA score reaches ``DEFAULT_QA_PASS_THRESHOLD``.
 DEFAULT_QA_PASS_THRESHOLD: Final[float] = 0.80

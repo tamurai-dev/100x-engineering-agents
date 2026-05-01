@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bundle ワークフロー実行エンジン v2
+Duet ワークフロー実行エンジン v2
 
 Task Agent → QA Agent（fresh-context）→ フィードバック → 再実行 の
 ワークフローを Managed Agents API で実行する。
@@ -16,11 +16,11 @@ v2 改善点:
   - Multiagent Sessions 対応（共有ファイルシステムでの Actor-Critic）
 
 Usage:
-    python scripts/run-bundle.py <bundle-name> --input "レビュー対象コード"
-    python scripts/run-bundle.py <bundle-name> --input "..." --model haiku
-    python scripts/run-bundle.py <bundle-name> --input "..." --verbose
-    python scripts/run-bundle.py <bundle-name> --input "..." --multiagent
-    python scripts/run-bundle.py <bundle-name> --dry-run
+    python scripts/run-duet.py <duet-name> --input "レビュー対象コード"
+    python scripts/run-duet.py <duet-name> --input "..." --model haiku
+    python scripts/run-duet.py <duet-name> --input "..." --verbose
+    python scripts/run-duet.py <duet-name> --input "..." --multiagent
+    python scripts/run-duet.py <duet-name> --dry-run
 
 環境変数:
     ANTHROPIC_API_KEY  — Anthropic API キー（--dry-run 以外は必須）
@@ -37,9 +37,9 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-BUNDLES_DIR = REPO_ROOT / "agents" / "bundles"
+DUETS_DIR = REPO_ROOT / "agents" / "duets"
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
-EVIDENCE_DIR = REPO_ROOT / "evidence" / "bundles"
+EVIDENCE_DIR = REPO_ROOT / "evidence" / "duets"
 
 MODEL_MAP = {
     "haiku": "claude-haiku-4-5",
@@ -88,13 +88,13 @@ def check_api_key() -> str:
     return key
 
 
-def load_bundle(bundle_name: str) -> dict:
-    """bundle.json を読み込む。"""
-    bundle_path = BUNDLES_DIR / bundle_name / "bundle.json"
-    if not bundle_path.exists():
-        print(f"ERROR: バンドルが見つかりません: {bundle_path}")
+def load_duet(duet_name: str) -> dict:
+    """duet.json を読み込む。"""
+    duet_path = DUETS_DIR / duet_name / "duet.json"
+    if not duet_path.exists():
+        print(f"ERROR: デュエットが見つかりません: {duet_path}")
         sys.exit(1)
-    with open(bundle_path, encoding="utf-8") as f:
+    with open(duet_path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -108,13 +108,13 @@ def load_agent_config(agent_name: str) -> dict:
         return json.load(f)
 
 
-def load_skill_md(bundle_name: str) -> str | None:
-    """バンドルの SKILL.md を読み込む（存在する場合）。"""
-    skill_path = BUNDLES_DIR / bundle_name / "skill.md"
+def load_skill_md(duet_name: str) -> str | None:
+    """デュエットの SKILL.md を読み込む（存在する場合）。"""
+    skill_path = DUETS_DIR / duet_name / "skill.md"
     if skill_path.exists():
         return skill_path.read_text(encoding="utf-8")
     # Check uppercase variant
-    skill_path_upper = BUNDLES_DIR / bundle_name / "SKILL.md"
+    skill_path_upper = DUETS_DIR / duet_name / "SKILL.md"
     if skill_path_upper.exists():
         return skill_path_upper.read_text(encoding="utf-8")
     return None
@@ -158,7 +158,7 @@ def create_agent_and_session(
         env_config["packages"] = packages
 
     env = client.beta.environments.create(
-        name=f"bundle-{agent_config['name']}-{int(time.time())}",
+        name=f"duet-{agent_config['name']}-{int(time.time())}",
         config=env_config,
     )
 
@@ -346,7 +346,7 @@ def build_feedback_history(feedback_entries: list[dict]) -> str:
 
 
 def build_orchestrator_system(
-    bundle_name: str,
+    duet_name: str,
     qa_settings: dict,
     skill_content: str | None,
 ) -> str:
@@ -359,7 +359,7 @@ def build_orchestrator_system(
     )
 
     parts = [
-        f"You are a Bundle Orchestrator for '{bundle_name}'.\n\n",
+        f"You are a Duet Orchestrator for '{duet_name}'.\n\n",
         "## Workflow\n\n",
         "1. Delegate the user's task to the **Task Agent**.\n",
         "2. After the Task Agent finishes, delegate QA to the **QA Agent** "
@@ -401,7 +401,7 @@ def create_multiagent_session(
     client,
     task_config: dict,
     qa_config: dict,
-    bundle_name: str,
+    duet_name: str,
     qa_settings: dict,
     current_model: str,
     skill_content: str | None = None,
@@ -443,12 +443,12 @@ def create_multiagent_session(
 
     # Orchestrator — delegates to both
     orchestrator_system = build_orchestrator_system(
-        bundle_name, qa_settings, skill_content
+        duet_name, qa_settings, skill_content
     )
     # callable_agents is a Research Preview parameter — pass via extra_body
     # to support SDK versions that don't have it as a named parameter yet.
     orchestrator = client.beta.agents.create(
-        name=f"orchestrator-{bundle_name}",
+        name=f"orchestrator-{duet_name}",
         model=MODEL_MAP.get(current_model, current_model),
         system=orchestrator_system,
         tools=[{"type": "agent_toolset_20260401"}],
@@ -478,14 +478,14 @@ def create_multiagent_session(
         env_config["packages"] = packages
 
     env = client.beta.environments.create(
-        name=f"multiagent-{bundle_name}-{int(time.time())}",
+        name=f"multiagent-{duet_name}-{int(time.time())}",
         config=env_config,
     )
 
     session = client.beta.sessions.create(
         agent=orchestrator.id,
         environment_id=env.id,
-        title=f"Multiagent Bundle: {bundle_name}",
+        title=f"Multiagent Duet: {duet_name}",
     )
 
     return orchestrator, task_agent, qa_agent, env, session
@@ -577,40 +577,40 @@ def collect_multiagent_events(
     }
 
 
-def run_bundle_multiagent(
-    bundle_name: str,
+def run_duet_multiagent(
+    duet_name: str,
     user_input: str,
     model: str | None = None,
     verbose: bool = False,
 ) -> dict:
-    """Run bundle workflow in multiagent mode.
+    """Run duet workflow in multiagent mode.
 
     The orchestrator agent coordinates Task + QA agents within a single
     shared-filesystem session, solving the file handoff problem.
     """
-    bundle = load_bundle(bundle_name)
+    duet = load_duet(duet_name)
 
-    print(f"=== Bundle 実行 (Multiagent): {bundle_name} ===")
-    print(f"  Task Agent: {bundle['task_agent']['name']}")
-    print(f"  QA Agent:   {bundle['qa_agent']['name']}")
+    print(f"=== Duet 実行 (Multiagent): {duet_name} ===")
+    print(f"  Task Agent: {duet['task_agent']['name']}")
+    print(f"  QA Agent:   {duet['qa_agent']['name']}")
 
-    workflow = bundle["workflow"]
+    workflow = duet["workflow"]
     qa_settings = workflow["qa"]
     pre_task = workflow.get("pre_task", {})
 
     skill_content = None
     if pre_task.get("read_skills", True):
-        skill_content = load_skill_md(bundle_name)
+        skill_content = load_skill_md(duet_name)
         if skill_content:
             print(f"  SKILL.md: 読み込み済み ({len(skill_content)} chars)")
 
-    bundle_skills = bundle.get("skills", [])
-    bundle_env = bundle.get("environment", {})
-    bundle_packages = bundle_env.get("packages", {})
-    bundle_packages = {k: v for k, v in bundle_packages.items() if v}
+    duet_skills = duet.get("skills", [])
+    duet_env = duet.get("environment", {})
+    duet_packages = duet_env.get("packages", {})
+    duet_packages = {k: v for k, v in duet_packages.items() if v}
 
-    if bundle_skills:
-        skill_ids = [s.get("skill_id", "") for s in bundle_skills]
+    if duet_skills:
+        skill_ids = [s.get("skill_id", "") for s in duet_skills]
         print(f"  Skills: {', '.join(skill_ids)}")
     print(f"  Mode: multiagent (shared filesystem)")
     print()
@@ -620,8 +620,8 @@ def run_bundle_multiagent(
 
     client = anthropic.Anthropic()
 
-    task_config = load_agent_config(bundle["task_agent"]["name"])
-    qa_config = load_agent_config(bundle["qa_agent"]["name"])
+    task_config = load_agent_config(duet["task_agent"]["name"])
+    qa_config = load_agent_config(duet["qa_agent"]["name"])
 
     explicit_model = model is not None
     escalation_order = qa_settings.get(
@@ -630,14 +630,14 @@ def run_bundle_multiagent(
     current_model = model or escalation_order[0]
 
     results = {
-        "bundle": bundle_name,
+        "duet": duet_name,
         "input": user_input,
         "mode": "multiagent",
         "model_override": model,
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "skill_injected": skill_content is not None,
-        "skills_attached": [s.get("skill_id") for s in bundle_skills],
-        "packages_installed": bundle_packages,
+        "skills_attached": [s.get("skill_id") for s in duet_skills],
+        "packages_installed": duet_packages,
         "model_escalation": escalation_order if not explicit_model else None,
         "iterations": [],
         "best_score": 0.0,
@@ -652,12 +652,12 @@ def run_bundle_multiagent(
                 client,
                 task_config,
                 qa_config,
-                bundle_name,
+                duet_name,
                 qa_settings,
                 current_model,
                 skill_content=skill_content,
-                skills=bundle_skills or None,
-                packages=bundle_packages or None,
+                skills=duet_skills or None,
+                packages=duet_packages or None,
             )
         )
     except Exception as e:
@@ -686,7 +686,7 @@ def run_bundle_multiagent(
         model_label = model or "default"
         evidence_path = (
             EVIDENCE_DIR
-            / f"{timestamp}_{bundle_name}_multiagent_{model_label}.json"
+            / f"{timestamp}_{duet_name}_multiagent_{model_label}.json"
         )
         with open(evidence_path, "w", encoding="utf-8") as f:
             json.dump(results, f, ensure_ascii=False, indent=2)
@@ -749,13 +749,13 @@ def run_bundle_multiagent(
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     model_label = model or "default"
     evidence_path = (
-        EVIDENCE_DIR / f"{timestamp}_{bundle_name}_multiagent_{model_label}.json"
+        EVIDENCE_DIR / f"{timestamp}_{duet_name}_multiagent_{model_label}.json"
     )
     with open(evidence_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
-    print(f"\n=== Bundle 実行完了 (Multiagent) ===")
+    print(f"\n=== Duet 実行完了 (Multiagent) ===")
     print(f"  最終ステータス: {results['final_status']}")
     print(f"  ベストスコア:   {results['best_score']}")
     if result.get("agent_delegations"):
@@ -789,46 +789,46 @@ def should_escalate_model(
     return escalation_order[idx + 1]
 
 
-def run_bundle(
-    bundle_name: str,
+def run_duet(
+    duet_name: str,
     user_input: str,
     model: str | None = None,
     dry_run: bool = False,
     verbose: bool = False,
 ) -> dict:
-    """バンドルワークフローを実行する。"""
-    bundle = load_bundle(bundle_name)
+    """デュエットワークフローを実行する。"""
+    duet = load_duet(duet_name)
 
-    print(f"=== Bundle 実行: {bundle_name} ===")
-    print(f"  Task Agent: {bundle['task_agent']['name']}")
-    print(f"  QA Agent:   {bundle['qa_agent']['name']}")
-    print(f"  Max QA iterations: {bundle['workflow']['qa']['max_iterations']}")
-    print(f"  Pass threshold:    {bundle['workflow']['qa']['pass_threshold']}")
+    print(f"=== Duet 実行: {duet_name} ===")
+    print(f"  Task Agent: {duet['task_agent']['name']}")
+    print(f"  QA Agent:   {duet['qa_agent']['name']}")
+    print(f"  Max QA iterations: {duet['workflow']['qa']['max_iterations']}")
+    print(f"  Pass threshold:    {duet['workflow']['qa']['pass_threshold']}")
 
     # ── Phase A: Pre-task ──
-    workflow = bundle["workflow"]
+    workflow = duet["workflow"]
     pre_task = workflow.get("pre_task", {})
 
     skill_content = None
     if pre_task.get("read_skills", True):
-        skill_content = load_skill_md(bundle_name)
+        skill_content = load_skill_md(duet_name)
         if skill_content:
             print(f"  SKILL.md: 読み込み済み ({len(skill_content)} chars)")
         elif verbose:
             print("  SKILL.md: なし")
 
-    # Load skills and environment from bundle.json
-    bundle_skills = bundle.get("skills", [])
-    bundle_env = bundle.get("environment", {})
-    bundle_packages = bundle_env.get("packages", {})
+    # Load skills and environment from duet.json
+    duet_skills = duet.get("skills", [])
+    duet_env = duet.get("environment", {})
+    duet_packages = duet_env.get("packages", {})
     # Filter out empty package lists
-    bundle_packages = {k: v for k, v in bundle_packages.items() if v}
+    duet_packages = {k: v for k, v in duet_packages.items() if v}
 
-    if bundle_skills:
-        skill_ids = [s.get("skill_id", "") for s in bundle_skills]
+    if duet_skills:
+        skill_ids = [s.get("skill_id", "") for s in duet_skills]
         print(f"  Skills: {', '.join(skill_ids)}")
-    if bundle_packages:
-        pkg_strs = [f"{m}: {', '.join(p)}" for m, p in bundle_packages.items()]
+    if duet_packages:
+        pkg_strs = [f"{m}: {', '.join(p)}" for m, p in duet_packages.items()]
         print(f"  Packages: {'; '.join(pkg_strs)}")
 
     if verbose and pre_task.get("verify_packages"):
@@ -837,8 +837,8 @@ def run_bundle(
     print()
 
     if dry_run:
-        task_config = load_agent_config(bundle["task_agent"]["name"])
-        qa_config = load_agent_config(bundle["qa_agent"]["name"])
+        task_config = load_agent_config(duet["task_agent"]["name"])
+        qa_config = load_agent_config(duet["qa_agent"]["name"])
         print("  [dry-run] Task Agent config: OK")
         print(f"    model: {task_config.get('model')}")
         print(f"    system: {task_config.get('system', '')[:80]}...")
@@ -848,10 +848,10 @@ def run_bundle(
         print(f"    system: {qa_config.get('system', '')[:80]}...")
         if skill_content:
             print(f"\n  [dry-run] SKILL.md: {len(skill_content)} chars")
-        if bundle_skills:
-            print(f"  [dry-run] Skills: {[s.get('skill_id') for s in bundle_skills]}")
-        if bundle_packages:
-            print(f"  [dry-run] Packages: {bundle_packages}")
+        if duet_skills:
+            print(f"  [dry-run] Skills: {[s.get('skill_id') for s in duet_skills]}")
+        if duet_packages:
+            print(f"  [dry-run] Packages: {duet_packages}")
         print()
         print("  [dry-run] ワークフロー検証完了。API 呼び出しはスキップしました。")
         return {"dry_run": True, "status": "ok"}
@@ -862,8 +862,8 @@ def run_bundle(
 
     client = anthropic.Anthropic()
 
-    task_config = load_agent_config(bundle["task_agent"]["name"])
-    qa_config = load_agent_config(bundle["qa_agent"]["name"])
+    task_config = load_agent_config(duet["task_agent"]["name"])
+    qa_config = load_agent_config(duet["qa_agent"]["name"])
     qa_settings = workflow["qa"]
 
     # Model escalation settings
@@ -875,7 +875,7 @@ def run_bundle(
     )
     # If user explicitly specified a model, disable escalation
     explicit_model = model is not None
-    artifact_format = bundle.get("artifact_format", "")
+    artifact_format = duet.get("artifact_format", "")
     if not explicit_model and artifact_format in FORMAT_REQUIRES_SONNET:
         # Complex artifact formats start with sonnet for higher success rate
         default_model = "sonnet" if "sonnet" in escalation_order else escalation_order[0]
@@ -885,13 +885,13 @@ def run_bundle(
         current_model = model or escalation_order[0]
 
     results = {
-        "bundle": bundle_name,
+        "duet": duet_name,
         "input": user_input,
         "model_override": model,
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "skill_injected": skill_content is not None,
-        "skills_attached": [s.get("skill_id") for s in bundle_skills],
-        "packages_installed": bundle_packages,
+        "skills_attached": [s.get("skill_id") for s in duet_skills],
+        "packages_installed": duet_packages,
         "model_escalation": escalation_order if not explicit_model else None,
         "escalation_threshold": escalation_threshold if not explicit_model else None,
         "iterations": [],
@@ -906,9 +906,9 @@ def run_bundle(
         client,
         task_config,
         current_model,
-        f"Bundle Task: {bundle_name}",
-        skills=bundle_skills or None,
-        packages=bundle_packages or None,
+        f"Duet Task: {duet_name}",
+        skills=duet_skills or None,
+        packages=duet_packages or None,
     )
 
     # Build initial prompt with skill preamble + file output instructions
@@ -973,7 +973,7 @@ def run_bundle(
             client,
             qa_config,
             model,
-            f"Bundle QA #{iteration}: {bundle_name}",
+            f"Duet QA #{iteration}: {duet_name}",
             resources=qa_resources if qa_resources else None,
         )
 
@@ -1110,9 +1110,9 @@ def run_bundle(
                             client,
                             task_config,
                             current_model,
-                            f"Bundle Task (escalated): {bundle_name}",
-                            skills=bundle_skills or None,
-                            packages=bundle_packages or None,
+                            f"Duet Task (escalated): {duet_name}",
+                            skills=duet_skills or None,
+                            packages=duet_packages or None,
                         )
                     )
                     # Re-send initial prompt + feedback to new agent
@@ -1199,13 +1199,13 @@ def run_bundle(
     timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     model_label = model or "default"
     evidence_path = (
-        EVIDENCE_DIR / f"{timestamp}_{bundle_name}_{model_label}.json"
+        EVIDENCE_DIR / f"{timestamp}_{duet_name}_{model_label}.json"
     )
     with open(evidence_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
-    print(f"\n=== Bundle 実行完了 ===")
+    print(f"\n=== Duet 実行完了 ===")
     print(f"  最終ステータス: {results['final_status']}")
     print(
         f"  ベストスコア:   {best_score:.2f} "
@@ -1220,9 +1220,9 @@ def run_bundle(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Bundle ワークフロー実行エンジン v2"
+        description="Duet ワークフロー実行エンジン v2"
     )
-    parser.add_argument("bundle_name", help="バンドル名")
+    parser.add_argument("duet_name", help="デュエット名")
     parser.add_argument(
         "--input", required=False, help="Task Agent への入力"
     )
@@ -1253,15 +1253,15 @@ def main() -> None:
         parser.error("--input は必須です（--dry-run 時を除く）")
 
     if args.multiagent and not args.dry_run:
-        run_bundle_multiagent(
-            bundle_name=args.bundle_name,
+        run_duet_multiagent(
+            duet_name=args.duet_name,
             user_input=args.input or "",
             model=args.model,
             verbose=args.verbose,
         )
     else:
-        run_bundle(
-            bundle_name=args.bundle_name,
+        run_duet(
+            duet_name=args.duet_name,
             user_input=args.input or "",
             model=args.model,
             dry_run=args.dry_run,

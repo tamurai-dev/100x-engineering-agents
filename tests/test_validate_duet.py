@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-validate-bundle.py の自動テスト
+validate-duet.py の自動テスト
 
 各テストケースが期待通り PASS/FAIL するかを検証する。
 
 Usage:
-    python -m pytest tests/test_validate_bundle.py -v
-    python tests/test_validate_bundle.py  # pytest なしでも実行可能
+    python -m pytest tests/test_validate_duet.py -v
+    python tests/test_validate_duet.py  # pytest なしでも実行可能
 """
 
 import json
@@ -20,23 +20,23 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 import importlib.util
 
-# validate-bundle.py をハイフン付きファイル名なので動的インポート
+# validate-duet.py をハイフン付きファイル名なので動的インポート
 _spec = importlib.util.spec_from_file_location(
-    "validate_bundle",
-    REPO_ROOT / "scripts" / "validate-bundle.py",
+    "validate_duet",
+    REPO_ROOT / "scripts" / "validate-duet.py",
 )
-validate_bundle_mod = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(validate_bundle_mod)
+validate_duet_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(validate_duet_mod)
 
-load_schema = validate_bundle_mod.load_schema
-load_manifest = validate_bundle_mod.load_manifest
-validate_bundle = validate_bundle_mod.validate_bundle
-_validate_agent_ref = validate_bundle_mod._validate_agent_ref
+load_schema = validate_duet_mod.load_schema
+load_manifest = validate_duet_mod.load_manifest
+validate_duet = validate_duet_mod.validate_duet
+_validate_agent_ref = validate_duet_mod._validate_agent_ref
 
-from duo_agents.schemas import Bundle  # noqa: E402
+from duo_agents.schemas import Duet  # noqa: E402
 from pydantic import ValidationError  # noqa: E402
 
-FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "bundles"
+FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "duets"
 VALID_DIR = FIXTURES_DIR / "valid"
 INVALID_DIR = FIXTURES_DIR / "invalid"
 
@@ -45,9 +45,9 @@ def _schema_only_validate(fixture_path: Path) -> list[str]:
     """フィクスチャファイルをスキーマのみで検証する（ファイルシステムチェックなし）。"""
     errors: list[str] = []
     with open(fixture_path, encoding="utf-8") as f:
-        bundle = json.load(f)
+        duet = json.load(f)
     try:
-        Bundle.model_validate(bundle)
+        Duet.model_validate(duet)
     except ValidationError as exc:
         for err in exc.errors():
             errors.append(err.get("msg", str(exc)))
@@ -55,11 +55,11 @@ def _schema_only_validate(fixture_path: Path) -> list[str]:
 
 
 def _full_validate(fixture_name: str) -> list[str]:
-    """実際のバンドルディレクトリに対して完全バリデーションを実行する。"""
+    """実際のデュエットディレクトリに対して完全バリデーションを実行する。"""
     schema = load_schema()
     manifest = load_manifest()
-    bundle_dir = REPO_ROOT / "agents" / "bundles" / fixture_name
-    return validate_bundle(bundle_dir, schema, manifest)
+    duet_dir = REPO_ROOT / "agents" / "duets" / fixture_name
+    return validate_duet(duet_dir, schema, manifest)
 
 
 class TestResults:
@@ -100,8 +100,8 @@ class TestResults:
 def main():
     results = TestResults()
 
-    print(f"Bundle バリデーション テストスイート")
-    print(f"Schema: src/duo_agents/schemas.py::Bundle")
+    print(f"Duet バリデーション テストスイート")
+    print(f"Schema: src/duo_agents/schemas.py::Duet")
     print(f"============================================================")
     print()
 
@@ -121,10 +121,10 @@ def main():
 
     print()
 
-    # ── 正常系: 実バンドル完全バリデーション ──
-    print("[実バンドル] agents/bundles/*/bundle.json の完全検証")
-    full_errors = _full_validate("code-review-bundle")
-    results.assert_pass("完全検証: code-review-bundle", full_errors)
+    # ── 正常系: 実デュエット完全バリデーション ──
+    print("[実デュエット] agents/duets/*/duet.json の完全検証")
+    full_errors = _full_validate("code-review-duet")
+    results.assert_pass("完全検証: code-review-duet", full_errors)
 
     print()
 
@@ -134,12 +134,12 @@ def main():
 
     # ref 末尾が name と一致するケース
     agent_ok = {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"}
-    ref_errors_ok = _validate_agent_ref("test-bundle", "Task Agent", agent_ok, manifest)
+    ref_errors_ok = _validate_agent_ref("test-duet", "Task Agent", agent_ok, manifest)
     results.assert_pass("ref一貫性: 一致", ref_errors_ok)
 
     # ref 末尾が name と不一致のケース
     agent_bad = {"name": "wrong-name", "ref": "agents/agents/code-reviewer"}
-    ref_errors_bad = _validate_agent_ref("test-bundle", "Task Agent", agent_bad, manifest)
+    ref_errors_bad = _validate_agent_ref("test-duet", "Task Agent", agent_bad, manifest)
     has_ref_error = any("ref 末尾" in e for e in ref_errors_bad)
     if has_ref_error:
         results.assert_fail("ref一貫性: 不一致検出", ref_errors_bad)
@@ -154,7 +154,7 @@ def main():
     print("[整合性] config.json 存在チェック")
     # 存在するエージェント
     agent_exists = {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"}
-    config_errors = _validate_agent_ref("test-bundle", "Task Agent", agent_exists, manifest)
+    config_errors = _validate_agent_ref("test-duet", "Task Agent", agent_exists, manifest)
     has_config_error = any("config.json" in e for e in config_errors)
     if not has_config_error:
         results.assert_pass("config.json: 存在確認", [])
@@ -163,7 +163,7 @@ def main():
 
     # 存在しないエージェント
     agent_missing = {"name": "nonexistent-agent", "ref": "agents/agents/nonexistent-agent"}
-    missing_errors = _validate_agent_ref("test-bundle", "Task Agent", agent_missing, manifest)
+    missing_errors = _validate_agent_ref("test-duet", "Task Agent", agent_missing, manifest)
     has_dir_error = any("ディレクトリが存在しません" in e for e in missing_errors)
     if has_dir_error:
         results.assert_fail("config.json: 存在しないエージェント検出", missing_errors)
@@ -176,22 +176,22 @@ def main():
 
     # ── 同一エージェントチェック（スキーマでは検出不可、バリデーターの論理チェック） ──
     print("[論理] Task Agent / QA Agent 同一性チェック")
-    same_agent_bundle = {
-        "name": "same-agent-bundle",
+    same_agent_duet = {
+        "name": "same-agent-duet",
         "version": "1.0.0",
-        "description": "Task Agent と QA Agent が同一のバンドル。Actor-Critic パターン違反。",
+        "description": "Task Agent と QA Agent が同一のデュエット。Actor-Critic パターン違反。",
         "artifact_format": "text",
         "task_agent": {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"},
         "qa_agent": {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"},
         "workflow": {"qa": {"max_iterations": 3, "pass_threshold": 0.80}}
     }
     with tempfile.TemporaryDirectory() as tmpdir:
-        bundle_dir = Path(tmpdir) / "same-agent-bundle"
-        bundle_dir.mkdir()
-        with open(bundle_dir / "bundle.json", "w") as f:
-            json.dump(same_agent_bundle, f)
+        duet_dir = Path(tmpdir) / "same-agent-duet"
+        duet_dir.mkdir()
+        with open(duet_dir / "duet.json", "w") as f:
+            json.dump(same_agent_duet, f)
         schema = load_schema()
-        same_errors = validate_bundle(bundle_dir, schema, manifest)
+        same_errors = validate_duet(duet_dir, schema, manifest)
         has_same_error = any("同一です" in e for e in same_errors)
         if has_same_error:
             results.assert_fail("同一エージェント検出", same_errors)
@@ -206,10 +206,10 @@ def main():
     print("[論理] QA 設定の整合性チェック")
 
     # convergence_delta >= pass_threshold のケース
-    bad_qa_bundle = {
-        "name": "bad-qa-bundle",
+    bad_qa_duet = {
+        "name": "bad-qa-duet",
         "version": "1.0.0",
-        "description": "convergence_delta が pass_threshold 以上のバンドル。",
+        "description": "convergence_delta が pass_threshold 以上のデュエット。",
         "artifact_format": "text",
         "task_agent": {"name": "code-reviewer", "ref": "agents/agents/code-reviewer"},
         "qa_agent": {"name": "code-review-qa", "ref": "agents/agents/code-review-qa"},
@@ -222,13 +222,13 @@ def main():
         }
     }
     with tempfile.TemporaryDirectory() as tmpdir:
-        bundle_dir = Path(tmpdir) / "bad-qa-bundle"
-        bundle_dir.mkdir()
-        with open(bundle_dir / "bundle.json", "w") as f:
-            json.dump(bad_qa_bundle, f)
+        duet_dir = Path(tmpdir) / "bad-qa-duet"
+        duet_dir.mkdir()
+        with open(duet_dir / "duet.json", "w") as f:
+            json.dump(bad_qa_duet, f)
 
         schema = load_schema()
-        qa_errors = validate_bundle(bundle_dir, schema, manifest)
+        qa_errors = validate_duet(duet_dir, schema, manifest)
         has_qa_error = any("convergence_delta" in e for e in qa_errors)
         if has_qa_error:
             results.assert_fail("QA論理: delta >= threshold 検出", qa_errors)

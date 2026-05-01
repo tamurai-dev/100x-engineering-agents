@@ -1,16 +1,16 @@
 """
-Bundle Blueprint 生成 — 自然言語仕様から Task Agent + QA Agent を同時生成する
+Duet Blueprint 生成 — 自然言語仕様から Task Agent + QA Agent を同時生成する
 
-Bundle Factory の中核モジュール。以下の7フェーズで動作する:
+Duet Factory の中核モジュール。以下の7フェーズで動作する:
   Phase 1: Task Agent Blueprint 生成（既存 blueprint.py を再利用）
   Phase 2: QA Agent Blueprint 生成（qa_strategy.py でテンプレート自動選択）
   Phase 3: SKILL.md 生成
-  Phase 4: bundle.json + workflow.md 生成
+  Phase 4: duet.json + workflow.md 生成
   Phase 5: 登録 + バリデーション（マニフェスト + frontmatter + config 検証）
 
 Usage:
-    from bundle_factory.bundle_blueprint import generate_bundle
-    result = generate_bundle(client, spec, model="claude-haiku-4-5")
+    from duet_factory.duet_blueprint import generate_duet
+    result = generate_duet(client, spec, model="claude-haiku-4-5")
 """
 
 from __future__ import annotations
@@ -22,15 +22,15 @@ import textwrap
 from pathlib import Path
 
 from duo_agents.json_utils import extract_json, parse_json_lenient
-from bundle_factory.qa_strategy import resolve_qa_strategy
-from bundle_factory.skill_resolver import (
+from duet_factory.qa_strategy import resolve_qa_strategy
+from duet_factory.skill_resolver import (
     get_full_skill_catalog,
     resolve_skills,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
-BUNDLES_DIR = REPO_ROOT / "agents" / "bundles"
+DUETS_DIR = REPO_ROOT / "agents" / "duets"
 TEMPLATES_DIR = REPO_ROOT / "agents" / "templates"
 
 MODEL_MAP = {
@@ -39,13 +39,13 @@ MODEL_MAP = {
     "opus": "claude-opus-4-6",
 }
 
-# ── Bundle Blueprint 生成プロンプト ─────────────────
+# ── Duet Blueprint 生成プロンプト ─────────────────
 
-BUNDLE_BLUEPRINT_SYSTEM = textwrap.dedent("""\
-あなたはバンドル設計の専門家です。
+DUET_BLUEPRINT_SYSTEM = textwrap.dedent("""\
+あなたはデュエット設計の専門家です。
 ユーザーの自然言語仕様に基づいて、Task Agent と QA Agent のペアを設計してください。
 
-## バンドルの設計原則
+## デュエットの設計原則
 
 1. Task Agent（Actor）: タスクを実行して成果物を生成する
 2. QA Agent（Critic）: 成果物を fresh-context で品質検査する（同意バイアス排除）
@@ -96,8 +96,8 @@ BUNDLE_BLUEPRINT_SYSTEM = textwrap.dedent("""\
 {skill_catalog}
 """)
 
-BUNDLE_BLUEPRINT_USER = textwrap.dedent("""\
-以下の仕様でバンドル（Task Agent + QA Agent ペア）を設計してください:
+DUET_BLUEPRINT_USER = textwrap.dedent("""\
+以下の仕様でデュエット（Task Agent + QA Agent ペア）を設計してください:
 
 {spec}
 
@@ -112,9 +112,9 @@ BUNDLE_BLUEPRINT_USER = textwrap.dedent("""\
 以下の JSON 形式で返してください:
 ```json
 {{
-  "bundle_name": "kebab-case-bundle（末尾に -bundle を付ける）",
+  "duet_name": "kebab-case-duet（末尾に -duet を付ける）",
   "task_agent_name": "kebab-case のタスクエージェント名",
-  "description": "バンドルの説明（50文字以上）",
+  "description": "デュエットの説明（50文字以上）",
   "agent_type": "{valid_types}",
   "artifact_format": "{valid_formats}",
   "task_system_prompt": "Task Agent の system prompt 全文",
@@ -164,10 +164,10 @@ SKILL.md の全文のみを返してください。
 """)
 
 SKILL_USER = textwrap.dedent("""\
-以下のバンドル用の SKILL.md を作成してください:
+以下のデュエット用の SKILL.md を作成してください:
 
-## バンドル情報
-- 名前: {bundle_name}
+## デュエット情報
+- 名前: {duet_name}
 - 説明: {description}
 - 成果物フォーマット: {artifact_format}
 - タスクタイプ: {agent_type}
@@ -182,7 +182,7 @@ SKILL.md の全文を返してください。
 # ── workflow.md 生成 ────────────────────────────────
 
 WORKFLOW_TEMPLATE = textwrap.dedent("""\
-# {bundle_name} — ワークフロー手順書
+# {duet_name} — ワークフロー手順書
 
 ## 概要
 
@@ -192,7 +192,7 @@ WORKFLOW_TEMPLATE = textwrap.dedent("""\
 
 ```
 Phase A: Pre-task
-  → bundle.json 読込
+  → duet.json 読込
   → SKILL.md を Task Agent コンテキストに注入
   → パッケージ確認（{verify_packages}）
 
@@ -209,7 +209,7 @@ Phase C: QA Loop（最大 {max_iterations} 回）
 
 Phase D: Result
   → 最高スコア版を最終成果物として出力
-  → 証跡を evidence/bundles/ に保存
+  → 証跡を evidence/duets/ に保存
 ```
 
 ## エージェント構成
@@ -222,21 +222,21 @@ Phase D: Result
 ## 実行方法
 
 ```bash
-make run-bundle NAME={bundle_name} INPUT="..." MODEL=haiku
+make run-duet NAME={duet_name} INPUT="..." MODEL=haiku
 ```
 """)
 
 
-def _validate_bundle_blueprint(data: dict) -> None:
-    """Bundle Blueprint の必須フィールドを検証する。"""
+def _validate_duet_blueprint(data: dict) -> None:
+    """Duet Blueprint の必須フィールドを検証する。"""
     required = [
-        "bundle_name", "task_agent_name", "description",
+        "duet_name", "task_agent_name", "description",
         "agent_type", "artifact_format",
         "task_system_prompt", "task_tools",
     ]
     missing = [f for f in required if f not in data]
     if missing:
-        raise ValueError(f"Bundle Blueprint に必須フィールドがありません: {missing}")
+        raise ValueError(f"Duet Blueprint に必須フィールドがありません: {missing}")
 
     valid_types = [
         "detection", "generation_verifiable", "generation_subjective",
@@ -253,23 +253,23 @@ def _validate_bundle_blueprint(data: dict) -> None:
     if data["artifact_format"] not in valid_formats:
         raise ValueError(f"不明な artifact_format: {data['artifact_format']}")
 
-    # bundle_name format check
-    if not re.match(r"^[a-z0-9][a-z0-9-]*[a-z0-9]-bundle$", data["bundle_name"]):
+    # duet_name format check
+    if not re.match(r"^[a-z0-9][a-z0-9-]*[a-z0-9]-duet$", data["duet_name"]):
         raise ValueError(
-            f"bundle_name は末尾 -bundle の kebab-case にしてください: {data['bundle_name']}"
+            f"duet_name は末尾 -duet の kebab-case にしてください: {data['duet_name']}"
         )
 
 
-def generate_bundle_blueprint(
+def generate_duet_blueprint(
     client, spec: str, model: str = "claude-haiku-4-5"
 ) -> dict:
-    """自然言語仕様から Bundle Blueprint を生成する。
+    """自然言語仕様から Duet Blueprint を生成する。
 
     LLM にスキルカタログを渡し、適切なプリビルトスキルとパッケージを
     自動選択させる。
 
     Returns:
-        Bundle Blueprint dict
+        Duet Blueprint dict
     """
     valid_types = (
         "detection | generation_verifiable | generation_subjective | "
@@ -284,9 +284,9 @@ def generate_bundle_blueprint(
     # Build skill catalog for LLM to reference
     skill_catalog = get_full_skill_catalog()
 
-    system = BUNDLE_BLUEPRINT_SYSTEM.format(skill_catalog=skill_catalog)
+    system = DUET_BLUEPRINT_SYSTEM.format(skill_catalog=skill_catalog)
 
-    user = BUNDLE_BLUEPRINT_USER.format(
+    user = DUET_BLUEPRINT_USER.format(
         spec=spec,
         valid_types=valid_types,
         valid_formats=valid_formats,
@@ -304,7 +304,7 @@ def generate_bundle_blueprint(
     json_text = extract_json(raw_text)
     blueprint = parse_json_lenient(json_text)
 
-    _validate_bundle_blueprint(blueprint)
+    _validate_duet_blueprint(blueprint)
 
     # Merge LLM recommendations with programmatic skill resolution
     skill_resolution = resolve_skills(
@@ -341,7 +341,7 @@ def generate_bundle_blueprint(
 
 
 def expand_task_agent(blueprint: dict) -> tuple[str, dict, list]:
-    """Bundle Blueprint から Task Agent のファイル群を生成する。
+    """Duet Blueprint から Task Agent のファイル群を生成する。
 
     Returns:
         (agent_md_text, config_dict, test_prompts_list)
@@ -398,7 +398,7 @@ effort: high
 
 
 def expand_qa_agent(blueprint: dict) -> tuple[str, dict]:
-    """Bundle Blueprint から QA Agent のファイル群を生成する。
+    """Duet Blueprint から QA Agent のファイル群を生成する。
 
     qa_strategy.py の QA テンプレートを使い、プレースホルダーを置換する。
 
@@ -406,23 +406,23 @@ def expand_qa_agent(blueprint: dict) -> tuple[str, dict]:
         (agent_md_text, config_dict)
     """
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
-    bundle_name = blueprint["bundle_name"].removesuffix("-bundle")
-    qa_name = f"{bundle_name}-qa"
+    duet_name = blueprint["duet_name"].removesuffix("-duet")
+    qa_name = f"{duet_name}-qa"
     description = blueprint["description"]
 
     # agent.md: テンプレートを読み込みプレースホルダー置換
     agent_template_path = strategy.agent_template_path
     agent_md = agent_template_path.read_text(encoding="utf-8")
-    agent_md = agent_md.replace("<bundle-name>", bundle_name)
-    agent_md = agent_md.replace("<bundle-description>", description)
+    agent_md = agent_md.replace("<duet-name>", duet_name)
+    agent_md = agent_md.replace("<duet-description>", description)
 
     # config.json: テンプレートを読み込みプレースホルダー置換
     config_template_path = strategy.config_template_path
     config_text = config_template_path.read_text(encoding="utf-8")
     # JSON-escape description to prevent JSONDecodeError from special chars
     safe_description = json.dumps(description)[1:-1]
-    config_text = config_text.replace("<bundle-name>", bundle_name)
-    config_text = config_text.replace("<bundle-description>", safe_description)
+    config_text = config_text.replace("<duet-name>", duet_name)
+    config_text = config_text.replace("<duet-description>", safe_description)
     config_text = config_text.replace(
         "<model>",
         MODEL_MAP.get(strategy.recommended_model, strategy.recommended_model),
@@ -448,7 +448,7 @@ def generate_skill(
     safe_description = blueprint["description"].replace("{", "{{").replace("}", "}}")
 
     user = SKILL_USER.format(
-        bundle_name=blueprint["bundle_name"],
+        duet_name=blueprint["duet_name"],
         description=safe_description,
         artifact_format=blueprint["artifact_format"],
         agent_type=blueprint["agent_type"],
@@ -466,12 +466,12 @@ def generate_skill(
     return response.content[0].text
 
 
-def generate_bundle_json(blueprint: dict) -> dict:
-    """bundle.json を生成する。"""
+def generate_duet_json(blueprint: dict) -> dict:
+    """duet.json を生成する。"""
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
-    bundle_name = blueprint["bundle_name"]
+    duet_name = blueprint["duet_name"]
     task_name = blueprint["task_agent_name"]
-    qa_name = bundle_name.removesuffix("-bundle") + "-qa"
+    qa_name = duet_name.removesuffix("-duet") + "-qa"
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     resolved_skills = blueprint.get("resolved_skills", [])
@@ -479,14 +479,14 @@ def generate_bundle_json(blueprint: dict) -> dict:
     # Filter out empty package lists
     resolved_packages = {k: v for k, v in resolved_packages.items() if v}
 
-    bundle_json: dict = {
-        "name": bundle_name,
+    duet_json: dict = {
+        "name": duet_name,
         "version": "1.0.0",
         "description": blueprint["description"],
         "artifact_format": blueprint["artifact_format"],
         "tags": [],
         "metadata": {
-            "author": "bundle-factory",
+            "author": "duet-factory",
             "created_at": now,
         },
         "task_agent": {
@@ -497,7 +497,7 @@ def generate_bundle_json(blueprint: dict) -> dict:
             "name": qa_name,
             "ref": f"agents/agents/{qa_name}",
         },
-        "skill": f"agents/bundles/{bundle_name}/skill.md",
+        "skill": f"agents/duets/{duet_name}/skill.md",
         "workflow": {
             "pre_task": {
                 "read_skills": True,
@@ -518,28 +518,28 @@ def generate_bundle_json(blueprint: dict) -> dict:
 
     # Add skills if resolved
     if resolved_skills:
-        bundle_json["skills"] = resolved_skills
+        duet_json["skills"] = resolved_skills
 
     # Add environment if packages are needed
     if resolved_packages:
-        bundle_json["environment"] = {
+        duet_json["environment"] = {
             "packages": resolved_packages,
             "networking": {"type": "unrestricted"},
         }
 
-    return bundle_json
+    return duet_json
 
 
-def generate_workflow_md(blueprint: dict, bundle_json: dict) -> str:
+def generate_workflow_md(blueprint: dict, duet_json: dict) -> str:
     """workflow.md を生成する。"""
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
-    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
-    workflow = bundle_json["workflow"]
+    qa_name = blueprint["duet_name"].removesuffix("-duet") + "-qa"
+    workflow = duet_json["workflow"]
     pre_task = workflow.get("pre_task", {})
     packages = pre_task.get("verify_packages", [])
 
     return WORKFLOW_TEMPLATE.format(
-        bundle_name=blueprint["bundle_name"],
+        duet_name=blueprint["duet_name"],
         description=blueprint["description"],
         verify_packages=", ".join(packages) if packages else "なし",
         task_agent_name=blueprint["task_agent_name"],
@@ -551,14 +551,14 @@ def generate_workflow_md(blueprint: dict, bundle_json: dict) -> str:
     )
 
 
-def save_bundle(
+def save_duet(
     blueprint: dict,
     task_agent_md: str,
     task_config: dict,
     task_test_prompts: list,
     qa_agent_md: str,
     qa_config: dict,
-    bundle_json: dict,
+    duet_json: dict,
     workflow_md: str,
     skill_md: str,
 ) -> dict[str, Path]:
@@ -568,8 +568,8 @@ def save_bundle(
         作成したディレクトリ・ファイルのパス辞書
     """
     task_name = blueprint["task_agent_name"]
-    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
-    bundle_name = blueprint["bundle_name"]
+    qa_name = blueprint["duet_name"].removesuffix("-duet") + "-qa"
+    duet_name = blueprint["duet_name"]
 
     paths: dict[str, Path] = {}
 
@@ -589,13 +589,13 @@ def save_bundle(
     _write_json(qa_dir / "test-prompts.json", [])
     paths["qa_agent_dir"] = qa_dir
 
-    # Bundle → agents/bundles/<bundle-name>/
-    bundle_dir = BUNDLES_DIR / bundle_name
-    bundle_dir.mkdir(parents=True, exist_ok=True)
-    _write_json(bundle_dir / "bundle.json", bundle_json)
-    (bundle_dir / "workflow.md").write_text(workflow_md, encoding="utf-8")
-    (bundle_dir / "skill.md").write_text(skill_md, encoding="utf-8")
-    paths["bundle_dir"] = bundle_dir
+    # Duet → agents/duets/<duet-name>/
+    duet_dir = DUETS_DIR / duet_name
+    duet_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(duet_dir / "duet.json", duet_json)
+    (duet_dir / "workflow.md").write_text(workflow_md, encoding="utf-8")
+    (duet_dir / "skill.md").write_text(skill_md, encoding="utf-8")
+    paths["duet_dir"] = duet_dir
 
     return paths
 

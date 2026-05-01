@@ -1,8 +1,9 @@
 {
-  "name": "iterations-out-bundle",
+  "name": "extra-field-duet",
   "version": "1.0.0",
-  "description": "max_iterations が範囲外（11）のバンドル。最大値は 10。",
+  "description": "additionalProperties で禁止されているフィールドを含むデュエット。",
   "artifact_format": "text",
+  "unknown_field": true,
   "task_agent": {
     "name": "code-reviewer",
     "ref": "agents/agents/code-reviewer"
@@ -13,7 +14,7 @@
   },
   "workflow": {
     "qa": {
-      "max_iterations": 11,
+      "max_iterations": 3,
       "pass_threshold": 0.80
     }
   }

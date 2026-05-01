@@ -2,20 +2,20 @@
 # ============================================================
 # QA Agent テンプレート: html_ui（HTML/UI 成果物）
 #
-# Actor-Critic Bundle の Critic 側テンプレート。
+# Actor-Critic Duet の Critic 側テンプレート。
 # Playwright スクリーンショットを用いた UI ビジュアル品質検査。
 #
 # 使い方:
-#   Bundle Factory が自動的にこのテンプレートを選択する。
-#   artifact_format: "html_ui" のバンドルで使用される。
+#   Duet Factory が自動的にこのテンプレートを選択する。
+#   artifact_format: "html_ui" のデュエットで使用される。
 # ============================================================
 
-name: <bundle-name>-qa
+name: <duet-name>-qa
 description: >
-  <bundle-description> の成果物（HTML/UI）を品質検査する QA エージェント。
+  <duet-description> の成果物（HTML/UI）を品質検査する QA エージェント。
   Playwright スクリーンショットによるビジュアル検査と HTML 構造検査を
   fresh-context で検証する。
-  バンドルワークフローの QA フェーズで PROACTIVELY 起動される。
+  デュエットワークフローの QA フェーズで PROACTIVELY 起動される。
 model: sonnet
 disallowedTools:
   - Write

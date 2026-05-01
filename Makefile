@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver
+.PHONY: help validate validate-config test test-duet test-qa-strategy check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init evidence-summary eval-agent eval-all-agents eval-agent-dry validate-duet run-duet run-duet-dry create-duet create-duet-dry test-duet-factory test-run-duet test-skill-resolver
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -75,7 +75,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory test-run-bundle test-skill-resolver check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test test-duet test-qa-strategy test-duet-factory test-run-duet test-skill-resolver check-template manifest-verify validate-duet report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -90,73 +90,73 @@ ifndef NAME
 endif
 	@bash scripts/create-subagent.sh $(NAME)
 
-# ── Bundle Factory（バンドル自動生成）─────────────
-create-bundle: ## 自然言語からバンドル自動生成 (usage: make create-bundle SPEC="..." [MODEL=haiku] [FORMAT=presentation])
+# ── Duet Factory（デュエット自動生成）─────────────
+create-duet: ## 自然言語からデュエット自動生成 (usage: make create-duet SPEC="..." [MODEL=haiku] [FORMAT=presentation])
 ifndef SPEC
 	@echo "ERROR: SPEC を指定してください"
-	@echo '  例: make create-bundle SPEC="pptxgenjsでプレゼンスライドを生成"'
-	@echo '  例: make create-bundle SPEC="..." MODEL=haiku FORMAT=presentation'
+	@echo '  例: make create-duet SPEC="pptxgenjsでプレゼンスライドを生成"'
+	@echo '  例: make create-duet SPEC="..." MODEL=haiku FORMAT=presentation'
 	@exit 1
 endif
-	@$(PYTHON) scripts/bundle-factory.py --spec "$(SPEC)" --model $(or $(MODEL),haiku) $(if $(FORMAT),--format $(FORMAT),)
+	@$(PYTHON) scripts/duet-factory.py --spec "$(SPEC)" --model $(or $(MODEL),haiku) $(if $(FORMAT),--format $(FORMAT),)
 
-create-bundle-dry: ## バンドル生成のドライラン (usage: make create-bundle-dry SPEC="..." [FORMAT=presentation])
+create-duet-dry: ## デュエット生成のドライラン (usage: make create-duet-dry SPEC="..." [FORMAT=presentation])
 ifndef SPEC
 	@echo "ERROR: SPEC を指定してください"
 	@exit 1
 endif
-	@$(PYTHON) scripts/bundle-factory.py --spec "$(SPEC)" --dry-run $(if $(FORMAT),--format $(FORMAT),)
+	@$(PYTHON) scripts/duet-factory.py --spec "$(SPEC)" --dry-run $(if $(FORMAT),--format $(FORMAT),)
 
-# ── Bundle ────────────────────────────────────────
-test-bundle: ## Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性）
-	@$(PYTHON) tests/test_validate_bundle.py
+# ── Duet ────────────────────────────────────────
+test-duet: ## Duet バリデーションテストスイート（正常系 + 異常系 + 整合性）
+	@$(PYTHON) tests/test_validate_duet.py
 
 test-qa-strategy: ## QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性）
 	@$(PYTHON) tests/test_qa_strategy.py
 
-test-bundle-factory: ## Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開 + バリデーション）
-	@$(PYTHON) tests/test_bundle_factory.py
+test-duet-factory: ## Duet Factory テストスイート（Blueprint 生成 + テンプレート展開 + バリデーション）
+	@$(PYTHON) tests/test_duet_factory.py
 
-test-run-bundle: ## Bundle ワークフロー実行エンジン テストスイート（QA パース + SKILL 注入 + フィードバック蓄積）
-	@$(PYTHON) tests/test_run_bundle.py
+test-run-duet: ## Duet ワークフロー実行エンジン テストスイート（QA パース + SKILL 注入 + フィードバック蓄積）
+	@$(PYTHON) tests/test_run_duet.py
 
 test-skill-resolver: ## Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決）
 	@$(PYTHON) tests/test_skill_resolver.py
 
-validate-bundle: ## 全バンドルの bundle.json をバリデーション
-	@$(PYTHON) scripts/validate-bundle.py
+validate-duet: ## 全デュエットの duet.json をバリデーション
+	@$(PYTHON) scripts/validate-duet.py
 
-run-bundle: ## バンドルワークフロー実行 (usage: make run-bundle NAME=<bundle-name> INPUT="..." [MODEL=haiku] [VERBOSE=1])
+run-duet: ## デュエットワークフロー実行 (usage: make run-duet NAME=<duet-name> INPUT="..." [MODEL=haiku] [VERBOSE=1])
 ifndef NAME
 	@echo "ERROR: NAME を指定してください"
-	@echo '  例: make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@echo '  例: make run-duet NAME=code-review-duet INPUT="レビュー対象コード"'
 	@exit 1
 endif
 ifndef INPUT
 	@echo "ERROR: INPUT を指定してください"
-	@echo '  例: make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@echo '  例: make run-duet NAME=code-review-duet INPUT="レビュー対象コード"'
 	@exit 1
 endif
-	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
+	@$(PYTHON) scripts/run-duet.py $(NAME) --input "$(INPUT)" $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
 
-run-bundle-multiagent: ## Multiagent モードでバンドル実行（共有ファイルシステム）(usage: make run-bundle-multiagent NAME=<bundle-name> INPUT="...")
+run-duet-multiagent: ## Multiagent モードでデュエット実行（共有ファイルシステム）(usage: make run-duet-multiagent NAME=<duet-name> INPUT="...")
 ifndef NAME
 	@echo "ERROR: NAME を指定してください"
-	@echo '  例: make run-bundle-multiagent NAME=code-review-bundle INPUT="レビュー対象コード"'
+	@echo '  例: make run-duet-multiagent NAME=code-review-duet INPUT="レビュー対象コード"'
 	@exit 1
 endif
 ifndef INPUT
 	@echo "ERROR: INPUT を指定してください"
 	@exit 1
 endif
-	@$(PYTHON) scripts/run-bundle.py $(NAME) --input "$(INPUT)" --multiagent $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
+	@$(PYTHON) scripts/run-duet.py $(NAME) --input "$(INPUT)" --multiagent $(if $(MODEL),--model $(MODEL),) $(if $(VERBOSE),--verbose,)
 
-run-bundle-dry: ## バンドルワークフローのドライラン (usage: make run-bundle-dry NAME=<bundle-name>)
+run-duet-dry: ## デュエットワークフローのドライラン (usage: make run-duet-dry NAME=<duet-name>)
 ifndef NAME
 	@echo "ERROR: NAME を指定してください"
 	@exit 1
 endif
-	@$(PYTHON) scripts/run-bundle.py $(NAME) --dry-run
+	@$(PYTHON) scripts/run-duet.py $(NAME) --dry-run
 
 # ── セットアップ ─────────────────────────────────
 setup: ## 開発環境セットアップ（依存パッケージ + pre-commit hook）

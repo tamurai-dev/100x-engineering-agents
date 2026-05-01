@@ -3,7 +3,7 @@
 This module enumerates the prebuilt skills that the Skills API auto-injects
 when an agent is created with ``skills=[{type: "anthropic", skill_id: "..."}]``.
 
-Community / custom skills live in the Bundle Factory's Skill Resolver because
+Community / custom skills live in the Duet Factory's Skill Resolver because
 their selection logic is more involved (LLM-assisted matching, package
 resolution, environment setup). This module is intentionally limited to
 the small static prebuilt set.

@@ -1,7 +1,7 @@
 """Model definitions — when a new Claude model is released, update only this file.
 
 The constants in this module are the single source of truth for which Claude
-model corresponds to each tier (haiku / sonnet / opus). The Bundle Runner,
+model corresponds to each tier (haiku / sonnet / opus). The Duet Runner,
 Factory and Eval modules all dereference ``MODEL_IDS`` instead of hard-coding
 model IDs.
 """
@@ -16,7 +16,7 @@ class ModelTier(str, Enum):
     """Logical tier name decoupled from the concrete API model ID.
 
     Using a tier name (``haiku`` / ``sonnet`` / ``opus``) rather than an API ID
-    in user-facing config (Makefile targets, bundle.json) means that bumping a
+    in user-facing config (Makefile targets, duet.json) means that bumping a
     model only requires editing ``MODEL_IDS`` below.
     """
 

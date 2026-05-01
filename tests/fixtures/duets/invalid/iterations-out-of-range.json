@@ -1,7 +1,7 @@
 {
-  "name": "bad-version-bundle",
-  "version": "v1.0",
-  "description": "バージョン形式が不正なバンドル。セマンティックバージョニングが必要。",
+  "name": "iterations-out-duet",
+  "version": "1.0.0",
+  "description": "max_iterations が範囲外（11）のデュエット。最大値は 10。",
   "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",
@@ -13,7 +13,7 @@
   },
   "workflow": {
     "qa": {
-      "max_iterations": 3,
+      "max_iterations": 11,
       "pass_threshold": 0.80
     }
   }

@@ -1,11 +1,11 @@
 {
-  "name": "code-review-bundle",
+  "name": "bad-ref-duet",
   "version": "1.0.0",
-  "description": "最小構成のバリデーション用バンドル定義。必須フィールドのみ。",
+  "description": "ref パスの形式が不正なデュエット。agents/agents/ プレフィックスが必要。",
   "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",
-    "ref": "agents/agents/code-reviewer"
+    "ref": "some/invalid/path"
   },
   "qa_agent": {
     "name": "code-review-qa",

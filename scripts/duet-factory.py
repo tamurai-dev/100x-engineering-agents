@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Bundle Factory — 自然言語からバンドル（Task Agent + QA Agent）を自動生成する CLI
+Duet Factory — 自然言語からデュエット（Task Agent + QA Agent）を自動生成する CLI
 
-ユーザーの自然言語仕様から、以下の5フェーズでバンドルを完全自動生成する:
-  Phase 1: Bundle Blueprint 生成（Task Agent + QA Agent 設計）
+ユーザーの自然言語仕様から、以下の5フェーズでデュエットを完全自動生成する:
+  Phase 1: Duet Blueprint 生成（Task Agent + QA Agent 設計）
   Phase 2: QA Agent テンプレート展開（artifact_format → QA テンプレート自動選択）
   Phase 3: SKILL.md 生成（タスク固有の手順書）
-  Phase 4: bundle.json + workflow.md 生成
+  Phase 4: duet.json + workflow.md 生成
   Phase 5: 登録 + バリデーション（マニフェスト + frontmatter + config 検証）
 
 Usage:
-    python scripts/bundle-factory.py --spec "pptxgenjsでスライド生成"
-    python scripts/bundle-factory.py --spec "..." --model haiku
-    python scripts/bundle-factory.py --spec "..." --format presentation
-    python scripts/bundle-factory.py --spec "..." --dry-run
+    python scripts/duet-factory.py --spec "pptxgenjsでスライド生成"
+    python scripts/duet-factory.py --spec "..." --model haiku
+    python scripts/duet-factory.py --spec "..." --format presentation
+    python scripts/duet-factory.py --spec "..." --dry-run
 
 環境変数:
     ANTHROPIC_API_KEY  — Anthropic API キー（--dry-run 以外は必須）
@@ -61,17 +61,17 @@ def create_client():
 
 
 def phase1_blueprint(client, spec: str, model: str, artifact_format: str | None) -> dict:
-    """Phase 1: Bundle Blueprint 生成。"""
-    from bundle_factory.bundle_blueprint import generate_bundle_blueprint
+    """Phase 1: Duet Blueprint 生成。"""
+    from duet_factory.duet_blueprint import generate_duet_blueprint
 
     print("\n" + "=" * 60)
-    print("  Phase 1: Bundle Blueprint 生成")
+    print("  Phase 1: Duet Blueprint 生成")
     print("=" * 60)
     print(f"  仕様: {spec}")
     print(f"  モデル: {model}")
 
     resolved_model = MODEL_MAP.get(model, model)
-    blueprint = generate_bundle_blueprint(client, spec, model=resolved_model)
+    blueprint = generate_duet_blueprint(client, spec, model=resolved_model)
 
     # artifact_format の明示指定があれば上書き
     if artifact_format:
@@ -80,7 +80,7 @@ def phase1_blueprint(client, spec: str, model: str, artifact_format: str | None)
     else:
         print(f"  artifact_format: {blueprint['artifact_format']}（LLM 推論）")
 
-    print(f"  バンドル名: {blueprint['bundle_name']}")
+    print(f"  デュエット名: {blueprint['duet_name']}")
     print(f"  Task Agent: {blueprint['task_agent_name']}")
     print(f"  タイプ: {blueprint['agent_type']}")
     print(f"  ツール: {blueprint['task_tools']}")
@@ -90,8 +90,8 @@ def phase1_blueprint(client, spec: str, model: str, artifact_format: str | None)
 
 def phase2_qa_agent(blueprint: dict) -> tuple[str, dict]:
     """Phase 2: QA Agent テンプレート展開。"""
-    from bundle_factory.bundle_blueprint import expand_qa_agent
-    from bundle_factory.qa_strategy import resolve_qa_strategy
+    from duet_factory.duet_blueprint import expand_qa_agent
+    from duet_factory.qa_strategy import resolve_qa_strategy
 
     print("\n" + "=" * 60)
     print("  Phase 2: QA Agent テンプレート展開")
@@ -103,7 +103,7 @@ def phase2_qa_agent(blueprint: dict) -> tuple[str, dict]:
     print(f"  推奨モデル: {strategy.recommended_model}")
 
     qa_md, qa_config = expand_qa_agent(blueprint)
-    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
+    qa_name = blueprint["duet_name"].removesuffix("-duet") + "-qa"
     print(f"  QA Agent 名: {qa_name}")
 
     return qa_md, qa_config
@@ -111,7 +111,7 @@ def phase2_qa_agent(blueprint: dict) -> tuple[str, dict]:
 
 def phase3_skill(client, blueprint: dict, model: str) -> str:
     """Phase 3: SKILL.md 生成。"""
-    from bundle_factory.bundle_blueprint import generate_skill
+    from duet_factory.duet_blueprint import generate_skill
 
     print("\n" + "=" * 60)
     print("  Phase 3: SKILL.md 生成")
@@ -127,55 +127,55 @@ def phase3_skill(client, blueprint: dict, model: str) -> str:
     return skill_md
 
 
-def phase4_bundle(blueprint: dict) -> tuple[dict, str]:
-    """Phase 4: bundle.json + workflow.md 生成。"""
-    from bundle_factory.bundle_blueprint import generate_bundle_json, generate_workflow_md
+def phase4_duet(blueprint: dict) -> tuple[dict, str]:
+    """Phase 4: duet.json + workflow.md 生成。"""
+    from duet_factory.duet_blueprint import generate_duet_json, generate_workflow_md
 
     print("\n" + "=" * 60)
-    print("  Phase 4: bundle.json + workflow.md 生成")
+    print("  Phase 4: duet.json + workflow.md 生成")
     print("=" * 60)
 
-    bundle_json = generate_bundle_json(blueprint)
-    workflow_md = generate_workflow_md(blueprint, bundle_json)
+    duet_json = generate_duet_json(blueprint)
+    workflow_md = generate_workflow_md(blueprint, duet_json)
 
-    print(f"  バンドル: {bundle_json['name']}")
-    print(f"  artifact_format: {bundle_json['artifact_format']}")
-    print(f"  QA ループ: 最大 {bundle_json['workflow']['qa']['max_iterations']} 回")
-    print(f"  合格閾値: {bundle_json['workflow']['qa']['pass_threshold']}")
+    print(f"  デュエット: {duet_json['name']}")
+    print(f"  artifact_format: {duet_json['artifact_format']}")
+    print(f"  QA ループ: 最大 {duet_json['workflow']['qa']['max_iterations']} 回")
+    print(f"  合格閾値: {duet_json['workflow']['qa']['pass_threshold']}")
 
-    return bundle_json, workflow_md
+    return duet_json, workflow_md
 
 
 def phase5_save_and_validate(
     blueprint: dict,
     task_agent_md: str, task_config: dict, task_test_prompts: list,
     qa_agent_md: str, qa_config: dict,
-    bundle_json: dict, workflow_md: str, skill_md: str,
+    duet_json: dict, workflow_md: str, skill_md: str,
 ) -> list[str]:
     """Phase 5: ファイル保存 + 登録 + バリデーション。"""
-    from bundle_factory.bundle_blueprint import save_bundle, expand_task_agent
+    from duet_factory.duet_blueprint import save_duet, expand_task_agent
 
     print("\n" + "=" * 60)
     print("  Phase 5: 保存 + 登録 + バリデーション")
     print("=" * 60)
 
     # Save files
-    paths = save_bundle(
+    paths = save_duet(
         blueprint,
         task_agent_md, task_config, task_test_prompts,
         qa_agent_md, qa_config,
-        bundle_json, workflow_md, skill_md,
+        duet_json, workflow_md, skill_md,
     )
 
     print(f"  Task Agent: {paths['task_agent_dir']}")
     print(f"  QA Agent:   {paths['qa_agent_dir']}")
-    print(f"  Bundle:     {paths['bundle_dir']}")
+    print(f"  Duet:     {paths['duet_dir']}")
 
     errors: list[str] = []
 
     # Register Task Agent in manifest
     task_name = blueprint["task_agent_name"]
-    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
+    qa_name = blueprint["duet_name"].removesuffix("-duet") + "-qa"
 
     for agent_name in [task_name, qa_name]:
         print(f"  [{agent_name}] マニフェスト登録 ...", end=" ")
@@ -216,13 +216,13 @@ def phase5_save_and_validate(
             errors.append(f"config 検証失敗 ({agent_name}): {result.stderr.strip()}")
     print("OK" if not any("config 検証" in e for e in errors) else "FAIL")
 
-    print("  bundle バリデーション ...", end=" ")
+    print("  duet バリデーション ...", end=" ")
     result = subprocess.run(
-        [sys.executable, str(REPO_ROOT / "scripts" / "validate-bundle.py")],
+        [sys.executable, str(REPO_ROOT / "scripts" / "validate-duet.py")],
         capture_output=True, text=True, cwd=str(REPO_ROOT),
     )
     if result.returncode != 0:
-        errors.append(f"bundle 検証失敗: {result.stderr.strip()}")
+        errors.append(f"duet 検証失敗: {result.stderr.strip()}")
         print("FAIL")
     else:
         print("OK")
@@ -239,7 +239,7 @@ def phase5_save_and_validate(
 
 def dry_run_preview(spec: str, artifact_format: str | None) -> None:
     """--dry-run モード。"""
-    from bundle_factory.qa_strategy import resolve_qa_strategy
+    from duet_factory.qa_strategy import resolve_qa_strategy
 
     print("\n" + "=" * 60)
     print("  DRY RUN — API 呼び出しなし")
@@ -254,10 +254,10 @@ def dry_run_preview(spec: str, artifact_format: str | None) -> None:
     else:
         print(f"  artifact_format: LLM が推論")
     print(f"\n  以下のフェーズが実行されます:")
-    print(f"    Phase 1: Bundle Blueprint 生成（Messages API × 1）")
+    print(f"    Phase 1: Duet Blueprint 生成（Messages API × 1）")
     print(f"    Phase 2: QA Agent テンプレート展開（ローカル）")
     print(f"    Phase 3: SKILL.md 生成（Messages API × 1）")
-    print(f"    Phase 4: bundle.json + workflow.md 生成（ローカル）")
+    print(f"    Phase 4: duet.json + workflow.md 生成（ローカル）")
     print(f"    Phase 5: 登録 + バリデーション（ローカル Python）")
     print(f"\n  推定コスト（haiku）: ~$0.10-$0.30")
     print(f"  推定時間: 1-3 分")
@@ -265,13 +265,13 @@ def dry_run_preview(spec: str, artifact_format: str | None) -> None:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Bundle Factory — 自然言語からバンドルを自動生成",
+        description="Duet Factory — 自然言語からデュエットを自動生成",
     )
     parser.add_argument(
         "--spec",
         type=str,
         required=True,
-        help="バンドルの自然言語仕様",
+        help="デュエットの自然言語仕様",
     )
     parser.add_argument(
         "--model",
@@ -313,22 +313,22 @@ def main():
     blueprint = phase1_blueprint(client, args.spec, args.model, args.artifact_format)
 
     # Phase 2: QA Agent
-    from bundle_factory.bundle_blueprint import expand_task_agent
+    from duet_factory.duet_blueprint import expand_task_agent
     task_agent_md, task_config, task_test_prompts = expand_task_agent(blueprint)
     qa_agent_md, qa_config = phase2_qa_agent(blueprint)
 
     # Phase 3: SKILL.md
     skill_md = phase3_skill(client, blueprint, args.model)
 
-    # Phase 4: bundle.json + workflow.md
-    bundle_json, workflow_md = phase4_bundle(blueprint)
+    # Phase 4: duet.json + workflow.md
+    duet_json, workflow_md = phase4_duet(blueprint)
 
     # Phase 5: Save + Validate
     errors = phase5_save_and_validate(
         blueprint,
         task_agent_md, task_config, task_test_prompts,
         qa_agent_md, qa_config,
-        bundle_json, workflow_md, skill_md,
+        duet_json, workflow_md, skill_md,
     )
 
     elapsed = time.time() - start_time
@@ -337,18 +337,18 @@ def main():
     print(f"  完了（{elapsed:.1f} 秒）")
     print("=" * 60)
 
-    bundle_name = blueprint["bundle_name"]
+    duet_name = blueprint["duet_name"]
     task_name = blueprint["task_agent_name"]
-    qa_name = bundle_name.removesuffix("-bundle") + "-qa"
+    qa_name = duet_name.removesuffix("-duet") + "-qa"
 
     print(f"\n  生成物:")
     print(f"    Task Agent:  agents/agents/{task_name}/")
     print(f"    QA Agent:    agents/agents/{qa_name}/")
-    print(f"    Bundle:      agents/bundles/{bundle_name}/")
+    print(f"    Duet:      agents/duets/{duet_name}/")
 
     print(f"\n  次のステップ:")
-    print(f"    make run-bundle-dry NAME={bundle_name}")
-    print(f"    make run-bundle NAME={bundle_name} INPUT=\"...\" MODEL=haiku")
+    print(f"    make run-duet-dry NAME={duet_name}")
+    print(f"    make run-duet NAME={duet_name} INPUT=\"...\" MODEL=haiku")
     print(f"    make check-all")
 
 

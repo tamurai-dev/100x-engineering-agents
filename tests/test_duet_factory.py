@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Bundle Factory テストスイート
+Duet Factory テストスイート
 
-bundle-factory.py / bundle_factory/ モジュールのユニットテスト。
+duet-factory.py / duet_factory/ モジュールのユニットテスト。
 API 呼び出しなしで検証可能なロジックのみテストする。
 
 テスト対象:
-  - Bundle Blueprint バリデーション
+  - Duet Blueprint バリデーション
   - QA Agent テンプレート展開
   - Task Agent ファイル生成
-  - bundle.json 生成
+  - duet.json 生成
   - workflow.md 生成
   - 共通ユーティリティ（parse_json_lenient, extract_json）
 """
@@ -25,22 +25,22 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from duo_agents.json_utils import extract_json, parse_json_lenient
-from bundle_factory.bundle_blueprint import (
-    _validate_bundle_blueprint,
+from duet_factory.duet_blueprint import (
+    _validate_duet_blueprint,
     expand_qa_agent,
     expand_task_agent,
-    generate_bundle_json,
+    generate_duet_json,
     generate_workflow_md,
 )
-from bundle_factory.qa_strategy import VALID_ARTIFACT_FORMATS, resolve_qa_strategy
+from duet_factory.qa_strategy import VALID_ARTIFACT_FORMATS, resolve_qa_strategy
 
 
 # ── テスト用 Blueprint フィクスチャ ───────────────────
 
 def _make_blueprint(
-    bundle_name: str = "test-bundle",
+    duet_name: str = "test-duet",
     task_agent_name: str = "test-task",
-    description: str = "テスト用バンドルの説明文です。50文字以上になるように記述しています。",
+    description: str = "テスト用デュエットの説明文です。50文字以上になるように記述しています。",
     agent_type: str = "generation_subjective",
     artifact_format: str = "presentation",
     task_system_prompt: str = "あなたはテスト専門家です。\n\n## 責務\n1. テスト実行\n\n## 出力形式\nJSON\n\n## 制約事項\n- テスト以外しない",
@@ -48,7 +48,7 @@ def _make_blueprint(
     skill_topics: list | None = None,
 ) -> dict:
     return {
-        "bundle_name": bundle_name,
+        "duet_name": duet_name,
         "task_agent_name": task_agent_name,
         "description": description,
         "agent_type": agent_type,
@@ -68,42 +68,42 @@ def _make_blueprint(
     }
 
 
-class TestBundleBlueprintValidation(unittest.TestCase):
-    """Bundle Blueprint バリデーションのテスト。"""
+class TestDuetBlueprintValidation(unittest.TestCase):
+    """Duet Blueprint バリデーションのテスト。"""
 
     def test_valid_blueprint_passes(self) -> None:
         bp = _make_blueprint()
-        _validate_bundle_blueprint(bp)  # should not raise
+        _validate_duet_blueprint(bp)  # should not raise
 
     def test_missing_required_field_raises(self) -> None:
         bp = _make_blueprint()
-        del bp["bundle_name"]
+        del bp["duet_name"]
         with self.assertRaises(ValueError) as ctx:
-            _validate_bundle_blueprint(bp)
-        self.assertIn("bundle_name", str(ctx.exception))
+            _validate_duet_blueprint(bp)
+        self.assertIn("duet_name", str(ctx.exception))
 
     def test_invalid_agent_type_raises(self) -> None:
         bp = _make_blueprint(agent_type="invalid_type")
         with self.assertRaises(ValueError) as ctx:
-            _validate_bundle_blueprint(bp)
+            _validate_duet_blueprint(bp)
         self.assertIn("agent_type", str(ctx.exception))
 
     def test_invalid_artifact_format_raises(self) -> None:
         bp = _make_blueprint(artifact_format="invalid_format")
         with self.assertRaises(ValueError) as ctx:
-            _validate_bundle_blueprint(bp)
+            _validate_duet_blueprint(bp)
         self.assertIn("artifact_format", str(ctx.exception))
 
-    def test_bundle_name_must_end_with_bundle(self) -> None:
-        bp = _make_blueprint(bundle_name="test-agent")
+    def test_duet_name_must_end_with_duet(self) -> None:
+        bp = _make_blueprint(duet_name="test-agent")
         with self.assertRaises(ValueError) as ctx:
-            _validate_bundle_blueprint(bp)
-        self.assertIn("-bundle", str(ctx.exception))
+            _validate_duet_blueprint(bp)
+        self.assertIn("-duet", str(ctx.exception))
 
-    def test_bundle_name_must_be_kebab_case(self) -> None:
-        bp = _make_blueprint(bundle_name="TestBundle-bundle")
+    def test_duet_name_must_be_kebab_case(self) -> None:
+        bp = _make_blueprint(duet_name="TestDuet-duet")
         with self.assertRaises(ValueError) as ctx:
-            _validate_bundle_blueprint(bp)
+            _validate_duet_blueprint(bp)
         self.assertIn("kebab-case", str(ctx.exception))
 
     def test_all_valid_agent_types(self) -> None:
@@ -114,12 +114,12 @@ class TestBundleBlueprintValidation(unittest.TestCase):
         ]
         for t in valid_types:
             bp = _make_blueprint(agent_type=t)
-            _validate_bundle_blueprint(bp)
+            _validate_duet_blueprint(bp)
 
     def test_all_valid_artifact_formats(self) -> None:
         for fmt in VALID_ARTIFACT_FORMATS:
             bp = _make_blueprint(artifact_format=fmt)
-            _validate_bundle_blueprint(bp)
+            _validate_duet_blueprint(bp)
 
 
 class TestExpandTaskAgent(unittest.TestCase):
@@ -175,7 +175,7 @@ class TestExpandQAAgent(unittest.TestCase):
 
     def test_code_qa_uses_haiku(self) -> None:
         bp = _make_blueprint(
-            bundle_name="code-test-bundle",
+            duet_name="code-test-duet",
             artifact_format="code",
         )
         _, config = expand_qa_agent(bp)
@@ -199,7 +199,7 @@ class TestExpandQAAgent(unittest.TestCase):
     def test_all_artifact_formats_produce_qa_agent(self) -> None:
         for fmt in VALID_ARTIFACT_FORMATS:
             bp = _make_blueprint(
-                bundle_name=f"{fmt}-test-bundle",
+                duet_name=f"{fmt}-test-duet",
                 artifact_format=fmt,
             )
             agent_md, config = expand_qa_agent(bp)
@@ -208,30 +208,30 @@ class TestExpandQAAgent(unittest.TestCase):
 
     def test_placeholder_replacement(self) -> None:
         bp = _make_blueprint(
-            bundle_name="slide-gen-bundle",
-            description="スライドを生成するバンドル",
+            duet_name="slide-gen-duet",
+            description="スライドを生成するデュエット",
             artifact_format="presentation",
         )
         agent_md, config = expand_qa_agent(bp)
         # Placeholders should be replaced
-        self.assertNotIn("<bundle-name>", agent_md)
-        self.assertNotIn("<bundle-description>", agent_md)
+        self.assertNotIn("<duet-name>", agent_md)
+        self.assertNotIn("<duet-description>", agent_md)
         self.assertNotIn("<model>", json.dumps(config))
 
 
-class TestGenerateBundleJson(unittest.TestCase):
-    """bundle.json 生成のテスト。"""
+class TestGenerateDuetJson(unittest.TestCase):
+    """duet.json 生成のテスト。"""
 
     def test_basic_structure(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
-        self.assertEqual(bj["name"], "test-bundle")
+        bj = generate_duet_json(bp)
+        self.assertEqual(bj["name"], "test-duet")
         self.assertEqual(bj["version"], "1.0.0")
         self.assertEqual(bj["artifact_format"], "presentation")
 
     def test_agent_refs(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         self.assertEqual(bj["task_agent"]["name"], "test-task")
         self.assertEqual(bj["task_agent"]["ref"], "agents/agents/test-task")
         self.assertEqual(bj["qa_agent"]["name"], "test-qa")
@@ -239,7 +239,7 @@ class TestGenerateBundleJson(unittest.TestCase):
 
     def test_workflow_qa_config(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         qa = bj["workflow"]["qa"]
         self.assertEqual(qa["max_iterations"], 3)
         self.assertEqual(qa["pass_threshold"], 0.80)
@@ -248,41 +248,41 @@ class TestGenerateBundleJson(unittest.TestCase):
 
     def test_execution_strategy_from_qa_strategy(self) -> None:
         bp = _make_blueprint(artifact_format="presentation")
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         self.assertEqual(bj["workflow"]["execution"]["strategy"], "script_generation")
 
         bp2 = _make_blueprint(
-            bundle_name="code-test-bundle",
+            duet_name="code-test-duet",
             artifact_format="code",
         )
-        bj2 = generate_bundle_json(bp2)
+        bj2 = generate_duet_json(bp2)
         self.assertEqual(bj2["workflow"]["execution"]["strategy"], "direct")
 
     def test_metadata_has_timestamp(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         self.assertIn("metadata", bj)
         self.assertIn("created_at", bj["metadata"])
-        self.assertEqual(bj["metadata"]["author"], "bundle-factory")
+        self.assertEqual(bj["metadata"]["author"], "duet-factory")
 
     def test_skill_path(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
-        self.assertEqual(bj["skill"], "agents/bundles/test-bundle/skill.md")
+        bj = generate_duet_json(bp)
+        self.assertEqual(bj["skill"], "agents/duets/test-duet/skill.md")
 
 
 class TestGenerateWorkflowMd(unittest.TestCase):
     """workflow.md 生成のテスト。"""
 
-    def test_workflow_contains_bundle_name(self) -> None:
+    def test_workflow_contains_duet_name(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         wf = generate_workflow_md(bp, bj)
-        self.assertIn("test-bundle", wf)
+        self.assertIn("test-duet", wf)
 
     def test_workflow_contains_phases(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         wf = generate_workflow_md(bp, bj)
         self.assertIn("Phase A:", wf)
         self.assertIn("Phase B:", wf)
@@ -291,7 +291,7 @@ class TestGenerateWorkflowMd(unittest.TestCase):
 
     def test_workflow_contains_agent_names(self) -> None:
         bp = _make_blueprint()
-        bj = generate_bundle_json(bp)
+        bj = generate_duet_json(bp)
         wf = generate_workflow_md(bp, bj)
         self.assertIn("test-task", wf)
         self.assertIn("test-qa", wf)
@@ -331,8 +331,8 @@ class TestSharedUtils(unittest.TestCase):
         self.assertEqual(result, {"arr": [1, 2, 3]})
 
 
-class TestBundleFactoryCLI(unittest.TestCase):
-    """bundle-factory.py CLI のドライランテスト。"""
+class TestDuetFactoryCLI(unittest.TestCase):
+    """duet-factory.py CLI のドライランテスト。"""
 
     def test_dry_run_does_not_require_api_key(self) -> None:
         """--dry-run は API キー不要で実行できる。"""
@@ -341,7 +341,7 @@ class TestBundleFactoryCLI(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
-                str(REPO_ROOT / "scripts" / "bundle-factory.py"),
+                str(REPO_ROOT / "scripts" / "duet-factory.py"),
                 "--spec", "テスト用仕様",
                 "--dry-run",
             ],
@@ -359,7 +359,7 @@ class TestBundleFactoryCLI(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
-                str(REPO_ROOT / "scripts" / "bundle-factory.py"),
+                str(REPO_ROOT / "scripts" / "duet-factory.py"),
                 "--spec", "テスト仕様",
                 "--dry-run",
                 "--format", "presentation",

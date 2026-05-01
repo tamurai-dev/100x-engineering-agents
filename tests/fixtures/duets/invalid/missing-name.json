@@ -1,7 +1,6 @@
 {
-  "name": "missing-qa-bundle",
   "version": "1.0.0",
-  "description": "workflow.qa セクションが欠落しているバンドル。qa は必須フィールド。",
+  "description": "name フィールドが欠落しているデュエット。スキーマ検証で FAIL する。",
   "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",
@@ -12,8 +11,9 @@
     "ref": "agents/agents/code-review-qa"
   },
   "workflow": {
-    "pre_task": {
-      "read_skills": true
+    "qa": {
+      "max_iterations": 3,
+      "pass_threshold": 0.80
     }
   }
 }

@@ -2,7 +2,7 @@
   "name": "react-frontend",
   "category": "frontend-performance",
   "difficulty": "medium",
-  "prompt": "/mnt/session/uploads/project/ にある React コンポーネントのパフォーマンスを分析してください。レンダリング効率、バンドルサイズ、メモ化戦略の観点から問題を検出し、重要度順に報告してください。出力は agent.md で定義されたフォーマットに従ってください。",
+  "prompt": "/mnt/session/uploads/project/ にある React コンポーネントのパフォーマンスを分析してください。レンダリング効率、デュエットサイズ、メモ化戦略の観点から問題を検出し、重要度順に報告してください。出力は agent.md で定義されたフォーマットに従ってください。",
   "graders": {
     "code_based": {
       "type": "ground-truth-match",

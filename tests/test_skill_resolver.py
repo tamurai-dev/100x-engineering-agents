@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for bundle_factory/skill_resolver.py — Skill Resolution Engine."""
+"""Tests for duet_factory/skill_resolver.py — Skill Resolution Engine."""
 
 import sys
 import unittest
@@ -8,7 +8,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from bundle_factory.skill_resolver import (
+from duet_factory.skill_resolver import (
     COMMUNITY_SKILLS,
     CUSTOM_SKILLS,
     DEFAULT_PACKAGES,

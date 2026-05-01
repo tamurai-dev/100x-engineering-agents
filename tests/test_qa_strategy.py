@@ -20,7 +20,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from bundle_factory.qa_strategy import (
+from duet_factory.qa_strategy import (
     TEMPLATES_DIR,
     VALID_ARTIFACT_FORMATS,
     QAStrategy,
@@ -165,8 +165,8 @@ class TestTemplateFiles(unittest.TestCase):
         """qa-config.json.tmpl がプレースホルダーを含む。"""
         path = TEMPLATES_DIR / "qa-config.json.tmpl"
         data = json.loads(path.read_text(encoding="utf-8"))
-        # Bundle Factory がこれらを実際の値に置換する
-        self.assertEqual(data["name"], "<bundle-name>-qa")
+        # Duet Factory がこれらを実際の値に置換する
+        self.assertEqual(data["name"], "<duet-name>-qa")
         self.assertEqual(data["model"], "<model>")
 
 

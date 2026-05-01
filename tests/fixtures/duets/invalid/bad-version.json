@@ -1,7 +1,7 @@
 {
-  "name": "InvalidBundle",
-  "version": "1.0.0",
-  "description": "name パターンが不正なバンドル。小文字+ハイフンのみ、末尾 -bundle 必須。",
+  "name": "bad-version-duet",
+  "version": "v1.0",
+  "description": "バージョン形式が不正なデュエット。セマンティックバージョニングが必要。",
   "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",

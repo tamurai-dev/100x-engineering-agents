@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-Bundle ワークフロー実行エンジン テストスイート
+Duet ワークフロー実行エンジン テストスイート
 
-run-bundle.py の関数群のユニットテスト。
+run-duet.py の関数群のユニットテスト。
 API 呼び出しなしで検証可能なロジックのみテストする。
 
 テスト対象:
   - parse_qa_result: QA JSON パース（正常系 + 異常系）
   - build_skill_preamble: SKILL.md プロンプト前文生成
   - build_feedback_history: フィードバック蓄積テキスト生成
-  - load_bundle: bundle.json 読み込み
+  - load_duet: duet.json 読み込み
   - load_agent_config: config.json 読み込み
   - load_skill_md: SKILL.md 読み込み
-  - run_bundle (dry-run): ワークフロー検証モード
+  - run_duet (dry-run): ワークフロー検証モード
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 # Import target module functions
-from run_bundle_helpers import (
+from run_duet_helpers import (
     DEFAULT_ESCALATION_THRESHOLD,
     DEFAULT_MODEL_ESCALATION,
     ESCALATION_IMPROVEMENT_DELTA,
@@ -42,7 +42,7 @@ from run_bundle_helpers import (
     build_orchestrator_system,
     build_skill_preamble,
     list_session_output_files,
-    load_bundle,
+    load_duet,
     load_agent_config,
     load_skill_md,
     parse_qa_result,
@@ -192,21 +192,21 @@ class TestBuildFeedbackHistory(unittest.TestCase):
         self.assertIn("feedback 3", result)
 
 
-class TestLoadBundle(unittest.TestCase):
-    """bundle.json 読み込みのテスト。"""
+class TestLoadDuet(unittest.TestCase):
+    """duet.json 読み込みのテスト。"""
 
-    def test_load_existing_bundle(self):
-        """既存の code-review-bundle が正しく読み込まれる。"""
-        bundle = load_bundle("code-review-bundle")
-        self.assertEqual(bundle["name"], "code-review-bundle")
-        self.assertIn("task_agent", bundle)
-        self.assertIn("qa_agent", bundle)
-        self.assertIn("workflow", bundle)
+    def test_load_existing_duet(self):
+        """既存の code-review-duet が正しく読み込まれる。"""
+        duet = load_duet("code-review-duet")
+        self.assertEqual(duet["name"], "code-review-duet")
+        self.assertIn("task_agent", duet)
+        self.assertIn("qa_agent", duet)
+        self.assertIn("workflow", duet)
 
-    def test_load_nonexistent_bundle_exits(self):
-        """存在しないバンドルは sys.exit する。"""
+    def test_load_nonexistent_duet_exits(self):
+        """存在しないデュエットは sys.exit する。"""
         with self.assertRaises(SystemExit):
-            load_bundle("nonexistent-bundle-xyz")
+            load_duet("nonexistent-duet-xyz")
 
 
 class TestLoadAgentConfig(unittest.TestCase):
@@ -229,19 +229,19 @@ class TestLoadSkillMd(unittest.TestCase):
     """SKILL.md 読み込みのテスト。"""
 
     def test_load_nonexistent_skill(self):
-        """SKILL.md がないバンドルは None を返す。"""
-        result = load_skill_md("code-review-bundle")
-        # code-review-bundle has no skill.md
+        """SKILL.md がないデュエットは None を返す。"""
+        result = load_skill_md("code-review-duet")
+        # code-review-duet has no skill.md
         self.assertIsNone(result)
 
     def test_load_existing_skill(self):
-        """SKILL.md があるバンドルは内容を返す。"""
+        """SKILL.md があるデュエットは内容を返す。"""
         # Create a temporary skill.md for testing
-        bundle_dir = REPO_ROOT / "agents" / "bundles" / "code-review-bundle"
-        skill_path = bundle_dir / "skill.md"
+        duet_dir = REPO_ROOT / "agents" / "duets" / "code-review-duet"
+        skill_path = duet_dir / "skill.md"
         try:
             skill_path.write_text("# Test Skill\ntest content", encoding="utf-8")
-            result = load_skill_md("code-review-bundle")
+            result = load_skill_md("code-review-duet")
             self.assertIsNotNone(result)
             self.assertIn("Test Skill", result)
         finally:
@@ -254,10 +254,10 @@ class TestDryRun(unittest.TestCase):
 
     def test_dry_run_returns_ok(self):
         """ドライランは API を呼ばずに検証結果を返す。"""
-        from run_bundle_helpers import run_bundle
+        from run_duet_helpers import run_duet
 
-        result = run_bundle(
-            bundle_name="code-review-bundle",
+        result = run_duet(
+            duet_name="code-review-duet",
             user_input="",
             dry_run=True,
         )
@@ -266,10 +266,10 @@ class TestDryRun(unittest.TestCase):
 
     def test_dry_run_with_model_override(self):
         """ドライランはモデルオーバーライドでもクラッシュしない。"""
-        from run_bundle_helpers import run_bundle
+        from run_duet_helpers import run_duet
 
-        result = run_bundle(
-            bundle_name="code-review-bundle",
+        result = run_duet(
+            duet_name="code-review-duet",
             user_input="",
             model="sonnet",
             dry_run=True,
@@ -424,9 +424,9 @@ class TestMultiagent(unittest.TestCase):
             "pass_threshold": 0.80,
             "convergence_delta": 0.02,
         }
-        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings, None)
         self.assertIsInstance(result, str)
-        self.assertIn("test-bundle", result)
+        self.assertIn("test-duet", result)
         self.assertIn("Task Agent", result)
         self.assertIn("QA Agent", result)
 
@@ -437,7 +437,7 @@ class TestMultiagent(unittest.TestCase):
             "pass_threshold": 0.80,
         }
         skill = "Use pptxgenjs to generate slides."
-        result = build_orchestrator_system("test-bundle", qa_settings, skill)
+        result = build_orchestrator_system("test-duet", qa_settings, skill)
         self.assertIn("SKILL.md", result)
         self.assertIn("pptxgenjs", result)
 
@@ -448,7 +448,7 @@ class TestMultiagent(unittest.TestCase):
             "pass_threshold": 0.80,
         }
         long_skill = "x" * (ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 1000)
-        result = build_orchestrator_system("test-bundle", qa_settings, long_skill)
+        result = build_orchestrator_system("test-duet", qa_settings, long_skill)
         # The skill content should be truncated
         self.assertLessEqual(
             result.count("x"), ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 10
@@ -462,7 +462,7 @@ class TestMultiagent(unittest.TestCase):
             "convergence_delta": 0.03,
             "escalation_threshold": 0.35,
         }
-        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings, None)
         self.assertIn("0.9", result)
         self.assertIn("5", result)
         self.assertIn("0.35", result)
@@ -473,7 +473,7 @@ class TestMultiagent(unittest.TestCase):
             "max_iterations": 3,
             "pass_threshold": 0.80,
         }
-        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings, None)
         self.assertIn("filesystem", result.lower())
         self.assertIn("/mnt/session/outputs/", result)
 
@@ -483,7 +483,7 @@ class TestMultiagent(unittest.TestCase):
             "max_iterations": 3,
             "pass_threshold": 0.80,
         }
-        result = build_orchestrator_system("test-bundle", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings, None)
         self.assertIn("final_status", result)
         self.assertIn("best_score", result)
 

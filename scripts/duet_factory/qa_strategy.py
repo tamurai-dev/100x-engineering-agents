@@ -1,11 +1,11 @@
 """
 QA 戦略エンジン — artifact_format に基づく QA テンプレート自動選択
 
-bundle.json の artifact_format フィールドから、最適な QA テンプレートと
+duet.json の artifact_format フィールドから、最適な QA テンプレートと
 QA パイプライン設定を自動選択する。
 
 Usage:
-    from scripts.bundle_factory.qa_strategy import resolve_qa_strategy
+    from scripts.duet_factory.qa_strategy import resolve_qa_strategy
 
     strategy = resolve_qa_strategy("presentation")
     print(strategy.agent_template)    # "qa-presentation.md.tmpl"
@@ -21,7 +21,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 TEMPLATES_DIR = REPO_ROOT / "agents" / "templates"
 
-# All artifact_format values defined in bundle.schema.json
+# All artifact_format values defined in duet.schema.json
 VALID_ARTIFACT_FORMATS = frozenset(
     [
         "text",
@@ -128,13 +128,13 @@ def resolve_qa_strategy(artifact_format: str) -> QAStrategy:
     """artifact_format から最適な QA 戦略を解決する。
 
     Args:
-        artifact_format: bundle.json の artifact_format 値。
+        artifact_format: duet.json の artifact_format 値。
 
     Returns:
         QAStrategy: 選択された QA 戦略。
 
     Raises:
-        ValueError: artifact_format が bundle.schema.json の enum に含まれない場合。
+        ValueError: artifact_format が duet.schema.json の enum に含まれない場合。
     """
     if artifact_format not in VALID_ARTIFACT_FORMATS:
         raise ValueError(

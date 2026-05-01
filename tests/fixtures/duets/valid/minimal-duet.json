@@ -1,6 +1,7 @@
 {
+  "name": "code-review-duet",
   "version": "1.0.0",
-  "description": "name フィールドが欠落しているバンドル。スキーマ検証で FAIL する。",
+  "description": "最小構成のバリデーション用デュエット定義。必須フィールドのみ。",
   "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",

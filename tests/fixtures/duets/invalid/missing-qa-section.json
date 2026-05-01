@@ -1,9 +1,8 @@
 {
-  "name": "extra-field-bundle",
+  "name": "missing-qa-duet",
   "version": "1.0.0",
-  "description": "additionalProperties で禁止されているフィールドを含むバンドル。",
+  "description": "workflow.qa セクションが欠落しているデュエット。qa は必須フィールド。",
   "artifact_format": "text",
-  "unknown_field": true,
   "task_agent": {
     "name": "code-reviewer",
     "ref": "agents/agents/code-reviewer"
@@ -13,9 +12,8 @@
     "ref": "agents/agents/code-review-qa"
   },
   "workflow": {
-    "qa": {
-      "max_iterations": 3,
-      "pass_threshold": 0.80
+    "pre_task": {
+      "read_skills": true
     }
   }
 }

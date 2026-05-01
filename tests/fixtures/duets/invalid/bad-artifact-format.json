@@ -1,11 +1,11 @@
 {
-  "name": "bad-ref-bundle",
+  "name": "bad-format-duet",
   "version": "1.0.0",
-  "description": "ref パスの形式が不正なバンドル。agents/agents/ プレフィックスが必要。",
-  "artifact_format": "text",
+  "description": "artifact_format が不正なデュエット。定義済み enum のみ許可。",
+  "artifact_format": "unknown_format",
   "task_agent": {
     "name": "code-reviewer",
-    "ref": "some/invalid/path"
+    "ref": "agents/agents/code-reviewer"
   },
   "qa_agent": {
     "name": "code-review-qa",

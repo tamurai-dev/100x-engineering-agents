@@ -1,8 +1,8 @@
 {
-  "name": "bad-format-bundle",
+  "name": "InvalidDuet",
   "version": "1.0.0",
-  "description": "artifact_format が不正なバンドル。定義済み enum のみ許可。",
-  "artifact_format": "unknown_format",
+  "description": "name パターンが不正なデュエット。小文字+ハイフンのみ、末尾 -duet 必須。",
+  "artifact_format": "text",
   "task_agent": {
     "name": "code-reviewer",
     "ref": "agents/agents/code-reviewer"

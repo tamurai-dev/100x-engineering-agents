@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Final
 
 # All artifact_format values supported by the framework.
-# Mirrors ``bundle.schema.json`` (which PR-2 will delete in favour of pydantic).
+# Mirrors ``duet.schema.json`` (which PR-2 will delete in favour of pydantic).
 VALID_ARTIFACT_FORMATS: Final[frozenset[str]] = frozenset(
     [
         "text",

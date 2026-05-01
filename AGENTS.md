@@ -78,11 +78,11 @@ agent:
 │   │   ├── test-generator/           #   テスト生成専門
 │   │   ├── doc-writer/               #   ドキュメント生成専門
 │   │   ├── task-planner/             #   タスク分解・計画専門
-│   │   ├── code-review-qa/           #   コードレビュー QA（Actor-Critic Bundle の Critic）
+│   │   ├── code-review-qa/           #   コードレビュー QA（Actor-Critic Duet の Critic）
 │   │   └── performance-optimizer/    #   パフォーマンス最適化専門
-│   ├── bundles/                      # Actor-Critic Bundle 定義
-│   │   └── code-review-bundle/       #   コードレビューバンドル（code-reviewer + code-review-qa）
-│   │       └── bundle.json           #     バンドル定義（Task/QA Agent 参照、QA ループ設定）
+│   ├── duets/                      # Actor-Critic Duet 定義
+│   │   └── code-review-duet/       #   コードレビューデュエット（code-reviewer + code-review-qa）
+│   │       └── duet.json           #     デュエット定義（Task/QA Agent 参照、QA ループ設定）
 │   ├── schemas/                      # （PR-2 で削除済。pydantic v2 モデルへ移行: src/duo_agents/schemas.py）
 │   ├── templates/                    # テンプレート
 │   │   ├── subagent.md.tmpl          #   agent.md テンプレート
@@ -116,32 +116,32 @@ agent:
 │   │   ├── eval_suite.py             #     Phase 2: Eval Suite 生成
 │   │   ├── edd_loop.py               #     Phase 4: EDD ループ
 │   │   └── utils.py                  #     共通ユーティリティ（JSON パース等）
-│   ├── bundle-factory.py              #   Bundle Factory CLI（自然言語 → バンドル自動生成）
-│   ├── bundle_factory/                #   Bundle Factory コアモジュール
+│   ├── duet-factory.py              #   Duet Factory CLI（自然言語 → デュエット自動生成）
+│   ├── duet_factory/                #   Duet Factory コアモジュール
 │   │   ├── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
-│   │   ├── bundle_blueprint.py        #     Bundle Blueprint 生成（Task + QA Agent + bundle.json）
+│   │   ├── duet_blueprint.py        #     Duet Blueprint 生成（Task + QA Agent + duet.json）
 │   │   └── skill_resolver.py          #     Skill Resolver（プリビルト + コミュニティスキル自動選択）
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
-│   ├── validate-bundle.py            #   Bundle バリデーション
-│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン v2
-│   ├── run_bundle_helpers.py          #   run-bundle.py テスト用ヘルパー
+│   ├── validate-duet.py            #   Duet バリデーション
+│   ├── run-duet.py                 #   Duet ワークフロー実行エンジン v2
+│   ├── run_duet_helpers.py          #   run-duet.py テスト用ヘルパー
 │   └── setup-hooks.sh                #   初期セットアップ
 │
 ├── evidence/                         # テスト証跡（Managed Agents セッション）
 │   ├── sessions/                     #   スモークテスト証跡
-│   ├── bundles/                      #   Bundle 実行証跡
+│   ├── duets/                      #   Duet 実行証跡
 │   ├── evals/                        #   品質評価結果
 │   ├── SUMMARY.md                    #   証跡サマリー（自動生成）
 │   └── .gitattributes                #   linguist-generated 設定
 │
 ├── tests/                            # テスト
 │   ├── test_validate_subagents.py    #   バリデーションテストスイート
-│   ├── test_validate_bundle.py       #   Bundle バリデーションテストスイート
+│   ├── test_validate_duet.py       #   Duet バリデーションテストスイート
 │   ├── test_qa_strategy.py           #   QA 戦略エンジンテストスイート
-│   ├── test_bundle_factory.py        #   Bundle Factory テストスイート
-│   ├── test_run_bundle.py            #   Bundle ワークフロー実行エンジンテストスイート
+│   ├── test_duet_factory.py        #   Duet Factory テストスイート
+│   ├── test_run_duet.py            #   Duet ワークフロー実行エンジンテストスイート
 │   ├── test_skill_resolver.py        #   Skill Resolver テストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
@@ -158,7 +158,7 @@ agent:
 5. **Claude Code 互換**: `agents/agents/*/agent.md`, `agents/skills/`, `agents/rules/` 等は Claude Code が自動認識する
 6. **テスト駆動モデル選定**: haiku でタスク成功できるなら haiku を使う。テスト結果に基づく最安モデル選定
 7. **Actor-Critic 品質保証**: Task Agent（Actor）が成果物を生成し、QA Agent（Critic）が fresh-context で品質検査する。同意バイアスを構造的に排除し、フィードバックループで品質を収束させる
-8. **スキル自動選択**: Bundle 生成時に artifact_format から Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチし、マッチしない場合はコミュニティスキル候補を推薦。必要なパッケージ（npm/pip/apt）も Environment に自動設定する
+8. **スキル自動選択**: Duet 生成時に artifact_format から Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチし、マッチしない場合はコミュニティスキル候補を推薦。必要なパッケージ（npm/pip/apt）も Environment に自動設定する
 9. **モデル自動エスカレーション**: QA スコアが escalation_threshold（デフォルト 0.40）以下かつ改善なしの場合、haiku → sonnet に自動切替。コスト最適化と品質保証を両立する
 
 ## 3. ファイル参照ガイド
@@ -232,14 +232,14 @@ make check-all
 | 1 | `make validate` | 全 agent.md の frontmatter バリデーション（Claude Code 用） |
 | 2 | `make validate-config` | 全 config.json バリデーション + agent.md との整合性チェック |
 | 3 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
-| 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
+| 4 | `make test-duet` | Duet バリデーションテストスイート（正常系 + 異常系 + 整合性） |
 | 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
-| 6 | `make test-bundle-factory` | Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開） |
-| 7 | `make test-run-bundle` | Bundle ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
+| 6 | `make test-duet-factory` | Duet Factory テストスイート（Blueprint 生成 + テンプレート展開） |
+| 7 | `make test-run-duet` | Duet ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
 | 8 | `make test-skill-resolver` | Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決） |
 | 9 | `make check-template` | テンプレート整合性チェック |
 | 10 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 11 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 11 | `make validate-duet` | Actor-Critic Duet バリデーション |
 | 12 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
@@ -311,7 +311,7 @@ Layer 3 ────────── pre-commit hook（4段構成）
                    → Hook 1: agent.md frontmatter バリデーション
                    → Hook 2: config.json バリデーション + 整合性チェック
                    → Hook 3: マニフェスト + HMAC 署名検証
-                   → Hook 4: Actor-Critic Bundle バリデーション
+                   → Hook 4: Actor-Critic Duet バリデーション
 Layer 2 ────────── マニフェスト登録制 + HMAC-SHA256 署名
                    → create-subagent.sh 以外からの作成を検出
 Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）
@@ -410,27 +410,27 @@ make improve-agent NAME=code-reviewer
 python scripts/agent-factory.py --spec "..." --dry-run
 ```
 
-### 4.6 Bundle Factory — 自然言語からバンドル自動生成
+### 4.6 Duet Factory — 自然言語からデュエット自動生成
 
-Bundle Factory は自然言語の仕様から Task Agent + QA Agent のバンドルを完全自動生成する。Agent Factory がシングルエージェントを生成するのに対し、Bundle Factory は Actor-Critic ペアをセットで生成する。
+Duet Factory は自然言語の仕様から Task Agent + QA Agent のデュエットを完全自動生成する。Agent Factory がシングルエージェントを生成するのに対し、Duet Factory は Actor-Critic ペアをセットで生成する。
 
 #### ユースケース例
 
 ```bash
-# スライド生成バンドル（Task: pptxgenjs スクリプト生成 + QA: ビジュアル品質検査）
-make create-bundle SPEC="pptxgenjsでプレゼンスライドを生成"
+# スライド生成デュエット（Task: pptxgenjs スクリプト生成 + QA: ビジュアル品質検査）
+make create-duet SPEC="pptxgenjsでプレゼンスライドを生成"
 
 # HTML モックアップ（Task: HTML 生成 + QA: Playwright screenshot 検査）
-make create-bundle SPEC="ランディングページのHTMLモックアップ作成" FORMAT=html_ui
+make create-duet SPEC="ランディングページのHTMLモックアップ作成" FORMAT=html_ui
 
 # コード生成（Task: コード生成 + QA: lint + テスト実行検査）
-make create-bundle SPEC="Pythonでデータ分析スクリプトを生成" MODEL=sonnet
+make create-duet SPEC="Pythonでデータ分析スクリプトを生成" MODEL=sonnet
 ```
 
 #### 5フェーズパイプライン
 
 ```
-Phase 1: Bundle Blueprint 生成
+Phase 1: Duet Blueprint 生成
   自然言語仕様 → Claude Messages API → Task Agent 設計 + QA Agent 設計
   - agent_type（8タイプ）+ artifact_format（9フォーマット）を自動判定
   - Task Agent の system prompt + ツール選択を自動生成
@@ -445,24 +445,24 @@ Phase 2: QA Agent テンプレート展開
 Phase 3: SKILL.md 生成
   Claude Messages API → タスク固有の手順書（前提条件・実行手順・品質基準）
 
-Phase 4: bundle.json + workflow.md 生成
-  ローカル生成 → バンドル定義 + ワークフロー手順書
+Phase 4: duet.json + workflow.md 生成
+  ローカル生成 → デュエット定義 + ワークフロー手順書
 
 Phase 5: 登録 + バリデーション
-  マニフェスト登録（Task + QA 両方）+ frontmatter + config + bundle 検証
+  マニフェスト登録（Task + QA 両方）+ frontmatter + config + duet 検証
 ```
 
 #### コマンド一覧
 
 ```bash
-# バンドル全自動生成
-make create-bundle SPEC="pptxgenjsでスライド生成"
+# デュエット全自動生成
+make create-duet SPEC="pptxgenjsでスライド生成"
 
 # artifact_format を明示指定（LLM 推論をスキップ）
-make create-bundle SPEC="..." FORMAT=presentation
+make create-duet SPEC="..." FORMAT=presentation
 
 # ドライラン（API 呼び出しなし）
-make create-bundle-dry SPEC="..." FORMAT=presentation
+make create-duet-dry SPEC="..." FORMAT=presentation
 ```
 
 ### 4.7 禁止事項（再掲・厳守）

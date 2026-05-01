@@ -31,13 +31,13 @@ repos:
         pass_filenames: false
         description: "新規 subagent が create-subagent.sh 経由で作成されたか HMAC 署名で検証する"
 
-      - id: validate-bundle
-        name: "Actor-Critic Bundle バリデーション"
-        entry: python scripts/validate-bundle.py
+      - id: validate-duet
+        name: "Actor-Critic Duet バリデーション"
+        entry: python scripts/validate-duet.py
         language: python
-        files: ^agents/bundles/.*/bundle\.json$
+        files: ^agents/duets/.*/duet\.json$
         additional_dependencies:
           - pyyaml>=6.0
           - pydantic>=2.13
         pass_filenames: false
-        description: "bundle.json が pydantic スキーマに準拠し、参照先エージェントが正しく登録されているか検証する"
+        description: "duet.json が pydantic スキーマに準拠し、参照先エージェントが正しく登録されているか検証する"

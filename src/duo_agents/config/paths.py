@@ -27,8 +27,8 @@ AGENTS_ASSETS_DIR: Final[Path] = REPO_ROOT / "agents"
 # Subagent definitions (each subdir is one Task or QA agent).
 SUBAGENTS_DIR: Final[Path] = AGENTS_ASSETS_DIR / "agents"
 
-# Bundle / Duet definitions (Actor-Critic pair definitions).
-BUNDLES_DIR: Final[Path] = AGENTS_ASSETS_DIR / "bundles"
+# Duet / Duet definitions (Actor-Critic pair definitions).
+DUETS_DIR: Final[Path] = AGENTS_ASSETS_DIR / "duets"
 
 # Templates used by the Subagent / Duet factories.
 TEMPLATES_DIR: Final[Path] = AGENTS_ASSETS_DIR / "templates"
@@ -54,7 +54,7 @@ MANIFEST_KEY_PATH: Final[Path] = REPO_ROOT / ".manifest-key"
 # ── Evidence (run / eval output) ─────────────────────────────────────────────
 EVIDENCE_DIR: Final[Path] = REPO_ROOT / "evidence"
 EVIDENCE_SESSIONS_DIR: Final[Path] = EVIDENCE_DIR / "sessions"
-EVIDENCE_BUNDLES_DIR: Final[Path] = EVIDENCE_DIR / "bundles"
+EVIDENCE_DUETS_DIR: Final[Path] = EVIDENCE_DIR / "duets"
 EVIDENCE_EVALS_DIR: Final[Path] = EVIDENCE_DIR / "evals"
 
 # ── Tests ────────────────────────────────────────────────────────────────────

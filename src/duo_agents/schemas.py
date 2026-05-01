@@ -4,7 +4,7 @@ Replaces the JSON Schema files under ``agents/schemas/``:
 
 * ``subagent-frontmatter.schema.json`` → :class:`SubagentFrontmatter`
 * ``managed-agent-config.schema.json`` → :class:`ManagedAgentConfig`
-* ``bundle.schema.json``               → :class:`Bundle`
+* ``duet.schema.json``               → :class:`Duet`
 
 Design notes:
 
@@ -172,10 +172,10 @@ class ManagedAgentConfig(BaseModel):
         return self
 
 
-# ── 3. Bundle ─────────────────────────────────────────────────────────────────
+# ── 3. Duet ─────────────────────────────────────────────────────────────────
 
 
-_BUNDLE_NAME_PATTERN = r"^[a-z0-9][a-z0-9-]*[a-z0-9]-bundle$"
+_DUET_NAME_PATTERN = r"^[a-z0-9][a-z0-9-]*[a-z0-9]-duet$"
 _AGENT_REF_PATTERN = r"^agents/agents/[a-z0-9][a-z0-9-]*[a-z0-9]$"
 _SEMVER_PATTERN = r"^[0-9]+\.[0-9]+\.[0-9]+$"
 _TAG_PATTERN = r"^[a-z0-9][a-z0-9-]*[a-z0-9]$"
@@ -209,7 +209,7 @@ class PackageList(BaseModel):
     pip: list[str] | None = None
 
 
-class BundleMetadata(BaseModel):
+class DuetMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     author: str | None = None
@@ -217,33 +217,33 @@ class BundleMetadata(BaseModel):
     updated_at: str | None = None
 
 
-class BundleNetworking(BaseModel):
+class DuetNetworking(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: Literal["unrestricted", "restricted"] = "unrestricted"
 
 
-class BundleEnvironment(BaseModel):
+class DuetEnvironment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     packages: PackageList | None = None
-    networking: BundleNetworking | None = None
+    networking: DuetNetworking | None = None
 
 
-class BundlePreTask(BaseModel):
+class DuetPreTask(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     read_skills: bool = True
     verify_packages: list[str] | None = None
 
 
-class BundleExecution(BaseModel):
+class DuetExecution(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     strategy: Literal["script_generation", "direct", "hybrid"] = "direct"
 
 
-class BundleQA(BaseModel):
+class DuetQA(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     max_iterations: Annotated[int, Field(ge=1, le=10)] = 3
@@ -256,7 +256,7 @@ class BundleQA(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _model_escalation_unique(self) -> BundleQA:
+    def _model_escalation_unique(self) -> DuetQA:
         if not (1 <= len(self.model_escalation) <= 3):
             raise ValueError("model_escalation must have 1..3 entries")
         if len(set(self.model_escalation)) != len(self.model_escalation):
@@ -264,29 +264,29 @@ class BundleQA(BaseModel):
         return self
 
 
-class BundleWorkflow(BaseModel):
+class DuetWorkflow(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    pre_task: BundlePreTask | None = None
-    execution: BundleExecution | None = None
-    qa: BundleQA
+    pre_task: DuetPreTask | None = None
+    execution: DuetExecution | None = None
+    qa: DuetQA
 
 
-class BundleMultiagent(BaseModel):
+class DuetMultiagent(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     enabled: bool = False
     orchestrator_model: Literal["haiku", "sonnet", "opus"] = "haiku"
 
 
-class Bundle(BaseModel):
-    """Actor-Critic Bundle definition (``bundle.json``)."""
+class Duet(BaseModel):
+    """Actor-Critic Duet definition (``duet.json``)."""
 
     model_config = ConfigDict(extra="forbid")
 
     name: Annotated[
         str,
-        StringConstraints(pattern=_BUNDLE_NAME_PATTERN, min_length=3, max_length=128),
+        StringConstraints(pattern=_DUET_NAME_PATTERN, min_length=3, max_length=128),
     ]
     version: Annotated[str, StringConstraints(pattern=_SEMVER_PATTERN)]
     description: Annotated[str, StringConstraints(min_length=10, max_length=2048)]
@@ -295,17 +295,17 @@ class Bundle(BaseModel):
         default=None,
         max_length=20,
     )
-    metadata: BundleMetadata | None = None
+    metadata: DuetMetadata | None = None
     task_agent: AgentRef
     qa_agent: AgentRef
     skill: str | None = None
     skills: Annotated[list[SkillEntry], Field(max_length=20)] | None = None
-    environment: BundleEnvironment | None = None
-    workflow: BundleWorkflow
-    multiagent: BundleMultiagent | None = None
+    environment: DuetEnvironment | None = None
+    workflow: DuetWorkflow
+    multiagent: DuetMultiagent | None = None
 
     @model_validator(mode="after")
-    def _validate_artifact_format(self) -> Bundle:
+    def _validate_artifact_format(self) -> Duet:
         if self.artifact_format not in VALID_ARTIFACT_FORMATS:
             raise ValueError(
                 f"artifact_format must be one of {sorted(VALID_ARTIFACT_FORMATS)}, "
@@ -314,7 +314,7 @@ class Bundle(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def _validate_tags_unique(self) -> Bundle:
+    def _validate_tags_unique(self) -> Duet:
         if self.tags is not None and len(set(self.tags)) != len(self.tags):
             raise ValueError("tags must be unique")
         return self
@@ -343,15 +343,15 @@ def format_validation_error(exc: Exception) -> list[str]:
 
 __all__ = [
     "AgentRef",
-    "Bundle",
-    "BundleEnvironment",
-    "BundleExecution",
-    "BundleMetadata",
-    "BundleMultiagent",
-    "BundleNetworking",
-    "BundlePreTask",
-    "BundleQA",
-    "BundleWorkflow",
+    "Duet",
+    "DuetEnvironment",
+    "DuetExecution",
+    "DuetMetadata",
+    "DuetMultiagent",
+    "DuetNetworking",
+    "DuetPreTask",
+    "DuetQA",
+    "DuetWorkflow",
     "ManagedAgentConfig",
     "ModelConfig",
     "PackageList",
