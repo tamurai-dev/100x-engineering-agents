@@ -173,9 +173,9 @@ def _get_type_keywords(issue_type: str) -> list[str]:
         "select-star": ["select *", "全カラム取得", "不要なカラム", "必要なカラムのみ"],
         "inefficient-algorithm": ["bubble sort", "バブルソート", "o(n²)", "o(n^2)", "二重ループ", "計算量", "非効率なアルゴリズム"],
         "unindexable-query": ["like '%", "インデックスが効かない", "フルスキャン", "full scan", "先頭ワイルドカード"],
-        "redundant-computation": ["redundant", "不要な再計算", "無駄な取得", "全件取得", "再計算", "毎回計算"],
+        "redundant-computation": ["redundant computation", "不要な再計算", "無駄な取得", "全件取得", "冗長な計算", "毎回計算"],
         "sequential-processing": ["sequential", "逐次処理", "並行処理", "promise.all", "asyncio", "threadpool", "直列"],
-        "missing-memoization": ["usememo", "メモ化", "memoiz", "再計算", "キャッシュ"],
+        "missing-memoization": ["usememo", "メモ化", "memoiz", "メモ化されていない", "キャッシュ"],
         "bundle-size": ["バンドルサイズ", "bundle size", "tree-shaking", "tree shaking", "全量インポート"],
         "unnecessary-rerender": ["再レンダリング", "re-render", "usecallback", "inline callback", "インラインコールバック", "インライン関数"],
     }
