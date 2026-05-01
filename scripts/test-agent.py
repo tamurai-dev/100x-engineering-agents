@@ -177,11 +177,24 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
     expected = test_prompt.get("expected_behaviors", [])
     matched = []
     for behavior in expected:
-        if behavior.lower() in full_response.lower() or any(
-            keyword in full_response.lower()
-            for keyword in behavior.lower().split("の")
-        ):
+        resp_lower = full_response.lower()
+        # exact substring match
+        if behavior.lower() in resp_lower:
             matched.append(behavior)
+            continue
+        # split on Japanese particles and check if enough keywords match
+        particles = ["の", "が", "を", "に", "で", "は", "と", "も", "から", "まで", "より"]
+        keywords = [behavior]
+        for p in particles:
+            new_keywords = []
+            for kw in keywords:
+                new_keywords.extend(kw.split(p))
+            keywords = new_keywords
+        keywords = [kw.strip() for kw in keywords if len(kw.strip()) >= 2]
+        if keywords:
+            hit_count = sum(1 for kw in keywords if kw.lower() in resp_lower)
+            if hit_count >= max(1, len(keywords) // 2):
+                matched.append(behavior)
 
     result = {
         "test_name": test_prompt["name"],
