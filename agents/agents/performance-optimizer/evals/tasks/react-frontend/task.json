@@ -1,0 +1,24 @@
+{
+  "name": "react-frontend",
+  "category": "frontend-performance",
+  "difficulty": "medium",
+  "prompt": "/mnt/session/uploads/project/ にある React コンポーネントのパフォーマンスを分析してください。レンダリング効率、バンドルサイズ、メモ化戦略の観点から問題を検出し、重要度順に報告してください。出力は agent.md で定義されたフォーマットに従ってください。",
+  "graders": {
+    "code_based": {
+      "type": "ground-truth-match",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": ["CRITICAL|HIGH|MEDIUM|LOW"],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}

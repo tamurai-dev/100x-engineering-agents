@@ -1,0 +1,169 @@
+{
+  "agent": "performance-optimizer",
+  "model": "haiku",
+  "date": "2026-05-01T06:51:43.152252+00:00",
+  "results": [
+    {
+      "test_name": "N+1クエリとアルゴリズム非効率の検出",
+      "model": "claude-haiku-4-5",
+      "agent_id": "agent_011CabQSX6XAW37fMUQd7M5L",
+      "session_id": "sesn_011CabQSZdaSTRfbZiA1Xar2",
+      "environment_id": "env_0179ngf1ToAEnJ98xQxWTu6T",
+      "status": "pass",
+      "response_preview": "このコードには複数の深刻なパフォーマンスボトルネックが存在します。詳細に分析します：\n\n---\n\n## パフォーマンス分析結果\n\n### [CRITICAL] データベース・クエリ - N+1 クエリパターン\n**箇所**: 行 5-13（ループ内でのクエリ発行）\n\n**問題説明**:\n```\n1回の orders SELECT +\nN回の order_items SELECT (各orderごと) +\nM回の products SELECT (各itemごと)\n= 1 + N + M の合計クエリ発行\n```\n\n**現在の計算量/影響**: \n- クエリ数: O(1 + orders数 + items総数) → 直線的スケーリング\n- 実際のデータベースラウンドトリップが頻繁で、ネットワークレイテンシが累積\n- orders=100, items=1000の場合でも1100回のクエリ往復が発生\n\n**推奨される最適化方法**:\n```python\n# JOINを使用して1回のクエリで取得\ncursor = conn.execute('''\n    SELECT o.id, oi.id, oi.product_id, p.id, p.name, p.price\n    FROM orders o\n    JOIN order_items oi ON o.id = oi.order_id\n    JOIN products p ON oi.product_id = p.id\n    ORDER BY p.price\n''')\n```\n\n**期待される改善効果**:\n- クエリ数: 3回 → 1回（数十〜100倍のラウンドトリップ削減）\n- 全体レスポンス時間が数秒→ミリ秒レベルに改善\n\n---\n\n### [CRITICAL] フロントエンド・アルゴリズム - バブルソート\n**箇所**: 行 14-18（ソート処理）\n\n**問題説明**:\n```python\nfor i in range(len(result)):        # O(n)\n    for j in range(len(result) - 1):  # O(n)\n        if result[j]['product'][3] > result[j+1]['product'][3]:\n            result[j], result[j+1] = result[j+1], result[j]\n```\n\n**現在の計算量/影響**: \n- 計算量: O(n²) \n- 結果数100の場合: 約10,000回の比較・交換\n- 結果数1,000の場合: 約1,000,000回の比較・交換\n\n**推奨される最適化方法**:\n```python\n# Python組み込みのTimsort（O(n log n)）を使用\nresult.sort(key=lambda x: x['product'][3])\n```\n\n**期待される改善効果**:\n- 計算量: O(n²) → O(n log n)\n- 結果数100: 10,000 → 664回（15倍高速化）\n- 結果数1,000: 1,000,000 → 9,966回（100倍高速化）\n\n---\n\n### [HIGH] セキュリティ・パフォーマンス - SQLインジェクション脆弱性\n**箇所**: 行 7, 11（f-string使用）\n\n**問題説明**:\n```python\nf'SELECT * FROM order_items WHERE order_id = {order[0]}'\nf'SELECT * FROM products WHERE id = {item[2]}'\n```\n値を直接埋め込むため、SQLインジェクションに加えて、クエリキャッシュが機能せず、毎回パースが必要\n\n**推奨される最適化方法**:\n```python\n# プレペアドステートメント＋パラメータバインディング\nitems = conn.execute(\n    'SELECT * FROM order_items WHERE order_id = ?',\n    (order[0],)\n).fetchall()\n```\n\n**期待される改善効果**:\n- SQLクエリキャッシュが有効化（クエリパース処理削減）\n- セキュリティ脅威が排除される\n\n---\n\n### [MEDIUM] データベース・クエリ - SELECT * の使用\n**箇所**: 行 4, 7, 11\n\n**問題説明**:\n```python\n'SELECT * FROM orders'  # 不要なカラムもすべて取得\n```\n実際に必要なカラム：\n- ord",
+      "tool_calls": [],
+      "expected_behaviors": [
+        "N+1 クエリパターンの指摘",
+        "SELECT * の使用を指摘",
+        "バブルソートの計算量 O(n²) を指摘"
+      ],
+      "matched_behaviors": [
+        "N+1 クエリパターンの指摘",
+        "SELECT * の使用を指摘",
+        "バブルソートの計算量 O(n²) を指摘"
+      ],
+      "errors": [],
+      "usage": {
+        "input_tokens": 9,
+        "output_tokens": 2883
+      },
+      "events": [
+        {
+          "type": "session.status_running",
+          "processed_at": "2026-05-01 06:50:44.701000+00:00"
+        },
+        {
+          "type": "user.message",
+          "processed_at": "2026-05-01 06:50:45.062000+00:00"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 06:50:45.170000+00:00"
+        },
+        {
+          "type": "agent.thinking",
+          "processed_at": "2026-05-01 06:51:04.995000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 06:51:04.995000+00:00",
+          "content": [
+            "このコードには複数の深刻なパフォーマンスボトルネックが存在します。詳細に分析します：\n\n---\n\n## パフォーマンス分析結果\n\n### [CRITICAL] データベース・クエリ - N+1 クエリパターン\n**箇所**: 行 5-13（ループ内でのクエリ発行）\n\n**問題説明**:\n```\n1回の orders SELECT +\nN回の order_items SELECT (各orderごと) +\nM回の products SELECT (各itemごと)\n= 1 + N + M の合計クエリ発行\n```\n\n**現在の計算量/影響**: \n- クエリ数: O(1 + orders数 + items総数) → 直線的スケーリング\n- 実際のデータベースラウンドトリップが頻繁で、ネットワークレイテンシが累積\n- orders=100, items=1000の場合でも1100回のクエリ往復が発生\n\n**推奨される最適化方法**:\n```python\n# JOINを使用して1回のクエリで取得\ncursor = conn.execute('''\n    SELECT o.id, oi.id, oi.product_id, p.id, p.name, p.price\n    FROM orders o\n    JOIN order_items oi ON o.id = oi.order_id\n    JOIN products p ON oi.product_id = p.id\n    ORDER BY p.price\n''')\n```\n\n**期待される改善効果**:\n- クエリ数: 3回 → 1回（数十〜100倍のラウンドトリップ削減）\n- 全体レスポンス時間が数秒→ミリ秒レベルに改善\n\n---\n\n### [CRITICAL] フロントエンド・アルゴリズム - バブルソート\n**箇所**: 行 14-18（ソート処理）\n\n**問題説明**:\n```python\nfor i in range(len(result)):        # O(n)\n    for j in range(len(result) - 1):  # O(n)\n        if result[j]['product'][3] > result[j+1]['product'][3]:\n            result[j], result[j+1] = result[j+1], result[j]\n```\n\n**現在の計算量/影響**: \n- 計算量: O(n²) \n- 結果数100の場合: 約10,000回の比較・交換\n- 結果数1,000の場合: 約1,000,000回の比較・交換\n\n**推奨される最適化方法**:\n```python\n# Python組み込みのTimsort（O(n log n)）を使用\nresult.sort(key=lambda x: x['product'][3])\n```\n\n**期待される改善効果**:\n- 計算量: O(n²) → O(n log n)\n- 結果数100: 10,000 → 664回（15倍高速化）\n- 結果数1,000: 1,000,000 → 9,966回（100倍高速化）\n\n---\n\n### [HIGH] セキュリティ・パフォーマンス - SQLインジェクション脆弱性\n**箇所**: 行 7, 11（f-string使用）\n\n**問題説明**:\n```python\nf'SELECT * FROM order_items WHERE order_id = {order[0]}'\nf'SELECT * FROM products WHERE id = {item[2]}'\n```\n値を直接埋め込むため、SQLインジェクションに加えて、クエリキャッシュが機能せず、毎回パースが必要\n\n**推奨される最適化方法**:\n```python\n# プレペアドステートメント＋パラメータバインディング\nitems = conn.execute(\n    'SELECT * FROM order_items WHERE order_id = ?',\n    (order[0],)\n).fetchall()\n```\n\n**期待される改善効果**:\n- SQLクエリキャッシュが有効化（クエリパース処理削減）\n- セキュリティ脅威が排除される\n\n---\n\n### [MEDIUM] データベース・クエリ - SELECT * の使用\n**箇所**: 行 4, 7, 11\n\n**問題説明**:\n```python\n'SELECT * FROM orders'  # 不要なカラムもすべて取得\n```\n実際に必要なカラム：\n- orders: id（1カラム）\n- order_items: id, product_id（2カラム）\n- products: id, name, price（3カラム）\n\nが、不要なカラムもメモリに読み込まれる\n\n**推奨される最適化方法**:\n```python\ncursor = conn.execute('''\n    SELECT o.id, oi.id, oi.product_id, p.id, p.name, p.price\n    FROM orders o\n    JOIN order_items oi ON o.id = oi.order_id\n    JOIN products p ON oi.product_id = p.id\n    ORDER BY p.price\n''')\n```\n\n**期待される改善効果**:\n- ネットワーク帯域幅削減（テーブル設計による、10-50%程度）\n- メモリ使用量削減\n\n---\n\n### [MEDIUM] メモリ・リソース - コネクション管理の不適切\n**箇所**: 行 3, 19\n\n**問題説明**:\n```python\nconn = sqlite3.connect(db_path)\n# ... 処理\nconn.close()  # 例外発生時に閉じられない\n```\n\n**推奨される最適化方法**:\n```python\nwith sqlite3.connect(db_path) as conn:\n    cursor = conn.execute(...)\n    # ... 処理\n# 自動的にクローズ\n```\n\n**期待される改善効果**:\n- 例外時のリソースリーク防止\n- コード可読性向上\n\n---\n\n### [MEDIUM] メモリ・リソース - メモリ効率\n**箇所**: 行 4-5, 13（全結果をメモリに読み込み）\n\n**問題説明**:\n```python\norders = cursor.fetchall()  # 大規模データセットでメモリ肥大化\n```\n\nデータが膨大な場合、全体がメモリに乗り切らない可能性\n\n**推奨される最適化方法**:\n```python\n# ストリーミング処理やページネーション\nfor order in conn.execute('SELECT ... FROM orders'):\n    # 1行ずつ処理\n```\n\n**期待される改善効果**:\n- メモリ使用量: O(全データサイズ) → O(1行のサイズ)\n- 大規模データセットでのOOM防止\n\n---\n\n## 改善されたコード例\n\n```python\nimport sqlite3\n\ndef get_orders_with_items(db_path):\n    \"\"\"注文と商品情報を取得し、価格でソート\"\"\"\n    with sqlite3.connect(db_path) as conn:\n        cursor = conn.execute('''\n            SELECT oi.id, oi.product_id, p.id, p.name, p.price\n            FROM order_items oi\n            JOIN products p ON oi.product_id = p.id\n            ORDER BY p.price\n        ''')\n        result = [\n            {'item_id': row[0], 'product_id': row[1], 'product': row[2:]}\n            for row in cursor.fetchall()\n        ]\n    return result\n```\n\n**改善効果の総合評価**:\n- クエリ数: 1,100+ → 1（1000倍以上削減）\n- ソート計算量: O(n²) → O(n log n)（1000件で100倍高速化）\n- 全体レスポンス時間: **数秒 → 数ミリ秒への改善が期待できます**"
+          ]
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 06:51:05.362000+00:00",
+          "model_usage": {
+            "input_tokens": 9,
+            "output_tokens": 2883
+          }
+        },
+        {
+          "type": "session.status_idle",
+          "processed_at": "2026-05-01 06:51:05.529000+00:00"
+        }
+      ]
+    },
+    {
+      "test_name": "フロントエンド再レンダリング問題の検出",
+      "model": "claude-haiku-4-5",
+      "agent_id": "agent_011CabQUSZyfuLKcAgR6VdRR",
+      "session_id": "sesn_011CabQUUkw8eZQXMkbSwnbG",
+      "environment_id": "env_01CNFw1nxkpP5ZhaQrLEQ6mK",
+      "status": "pass",
+      "response_preview": "Reactコードの詳細なパフォーマンス分析を行います。\n提供いただいたReactコードに対して、パフォーマンス分析結果をまとめます。\n\n---\n\n## パフォーマンス分析結果\n\n### [HIGH] フロントエンド - 毎レンダリング時の不要な計算\n**位置**: `getStats()` 関数（レンダリング内で毎回実行）\n\n**問題の説明**:\n`getStats()` はレンダリングのたびに呼ばれ、毎回 `users` 配列全体をフィルタリング → リデュース処理している。さらに `JSON.stringify()` で新しい文字列を生成するため、子コンポーネントへの不要なProps更新を発生させる。\n\n**現在の計算量/影響**:\n- 計算量: O(n) × (毎レンダリング)\n- 影響: ユーザーが100件以上の場合、フィルタ入力のたびに統計計算が再実行され、UIの応答遅延\n\n**推奨される最適化方法**:\n```javascript\nconst stats = useMemo(() => {\n  return {\n    total: users.length,\n    active: users.filter(u => u.active).length,\n    avgAge: users.reduce((sum, u) => sum + u.age, 0) / users.length\n  };\n}, [users]); // users が変更されたときのみ再計算\n\n// JSXでは getStats() ではなく stats を使用\n<p>Stats: {JSON.stringify(stats)}</p>\n```\n\n**期待される改善効果**:\n- フィルタ入力時の統計計算を回避（O(n) の処理が削減）\n- 子コンポーネントへの不要なProps更新をブロック\n\n---\n\n### [HIGH] フロントエンド - インラインコールバックによる不要な再レンダリング\n**位置**: `UserCard` の `onSelect` プロップ\n\n**問題の説明**:\n```javascript\nonSelect={() => console.log(user.id)}\n```\n毎回のレンダリング時に新しい関数オブジェクトが生成される。`UserCard` が `React.memo()` で最適化されていない場合、毎レンダリング時に `UserCard` も再レンダリングされる。`sortedUsers` のリストが100件なら、毎回100個の新しい関数を作成。\n\n**現在の計算量/影響**:\n- コールバック生成コスト: O(n) × (毎レンダリング)\n- 影響: UserCard 子コンポーネント数分の不要な再レンダリング\n\n**推奨される最適化方法**:\n```javascript\nconst handleUserSelect = useCallback((userId) => {\n  console.log(userId);\n}, []); // 依存性なし - 常に同じ関数参照\n\n{sortedUsers.map(user => (\n  <UserCard\n    key={user.id}\n    user={user}\n    onSelect={() => handleUserSelect(user.id)} // または onSelect={handleUserSelect} として userId をパス\n  />\n))}\n```\n\n**期待される改善効果**:\n- UserCard の不要な再レンダリング削減（特に大規模リストで効果大）\n- メモリ使用量削減（大量のコールバック関数オブジェクト生成回避）\n\n---\n\n### [MEDIUM] フロントエンド - lodash 依存による過度なバンドルサイズ\n**位置**: `import _ from 'lodash'` とそのソートの使用\n\n**問題の説明**:\n`_.sortBy()` を使用していますが、JavaScriptネイティブの `.sort()` で十分対応可能。lodash 全体をインポートすると、ツリーシェイキング対象外となり、未使用のメソッドも含まれてバンドルサイズが増加（~70KB 圧縮後）。\n\n**現在の計算量/影響**:\n- バンドルサイズ増加: +70KB（圧縮後）\n- 初期ロード時間の遅延\n\n**推奨される最適化方法**:\n```javascript\n// lodash の削除\nconst sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.n",
+      "tool_calls": [
+        {
+          "name": "read"
+        }
+      ],
+      "expected_behaviors": [
+        "getStats がレンダリング毎に再計算される問題（useMemo 推奨）",
+        "onSelect のインラインコールバックによる再レンダリング（useCallback 推奨）",
+        "lodash の全量インポートを指摘（lodash/sortBy 推奨）"
+      ],
+      "matched_behaviors": [
+        "getStats がレンダリング毎に再計算される問題（useMemo 推奨）",
+        "onSelect のインラインコールバックによる再レンダリング（useCallback 推奨）",
+        "lodash の全量インポートを指摘（lodash/sortBy 推奨）"
+      ],
+      "errors": [],
+      "usage": {
+        "input_tokens": 15,
+        "output_tokens": 3282
+      },
+      "events": [
+        {
+          "type": "session.status_running",
+          "processed_at": "2026-05-01 06:51:10.703000+00:00"
+        },
+        {
+          "type": "user.message",
+          "processed_at": "2026-05-01 06:51:11.072000+00:00"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 06:51:11.180000+00:00"
+        },
+        {
+          "type": "agent.thinking",
+          "processed_at": "2026-05-01 06:51:17.229000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 06:51:17.229000+00:00",
+          "content": [
+            "Reactコードの詳細なパフォーマンス分析を行います。"
+          ]
+        },
+        {
+          "type": "agent.tool_use",
+          "processed_at": "2026-05-01 06:51:17.229000+00:00",
+          "tool_name": "read"
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 06:51:17.764000+00:00",
+          "model_usage": {
+            "input_tokens": 9,
+            "output_tokens": 658
+          }
+        },
+        {
+          "type": "agent.tool_result",
+          "processed_at": "2026-05-01 06:51:20.009000+00:00",
+          "content_preview": "[BetaManagedAgentsTextBlock(text='awk: read error (Is a directory)\\n', type='text')]"
+        },
+        {
+          "type": "span.model_request_start",
+          "processed_at": "2026-05-01 06:51:20.133000+00:00"
+        },
+        {
+          "type": "agent.message",
+          "processed_at": "2026-05-01 06:51:38.722000+00:00",
+          "content": [
+            "提供いただいたReactコードに対して、パフォーマンス分析結果をまとめます。\n\n---\n\n## パフォーマンス分析結果\n\n### [HIGH] フロントエンド - 毎レンダリング時の不要な計算\n**位置**: `getStats()` 関数（レンダリング内で毎回実行）\n\n**問題の説明**:\n`getStats()` はレンダリングのたびに呼ばれ、毎回 `users` 配列全体をフィルタリング → リデュース処理している。さらに `JSON.stringify()` で新しい文字列を生成するため、子コンポーネントへの不要なProps更新を発生させる。\n\n**現在の計算量/影響**:\n- 計算量: O(n) × (毎レンダリング)\n- 影響: ユーザーが100件以上の場合、フィルタ入力のたびに統計計算が再実行され、UIの応答遅延\n\n**推奨される最適化方法**:\n```javascript\nconst stats = useMemo(() => {\n  return {\n    total: users.length,\n    active: users.filter(u => u.active).length,\n    avgAge: users.reduce((sum, u) => sum + u.age, 0) / users.length\n  };\n}, [users]); // users が変更されたときのみ再計算\n\n// JSXでは getStats() ではなく stats を使用\n<p>Stats: {JSON.stringify(stats)}</p>\n```\n\n**期待される改善効果**:\n- フィルタ入力時の統計計算を回避（O(n) の処理が削減）\n- 子コンポーネントへの不要なProps更新をブロック\n\n---\n\n### [HIGH] フロントエンド - インラインコールバックによる不要な再レンダリング\n**位置**: `UserCard` の `onSelect` プロップ\n\n**問題の説明**:\n```javascript\nonSelect={() => console.log(user.id)}\n```\n毎回のレンダリング時に新しい関数オブジェクトが生成される。`UserCard` が `React.memo()` で最適化されていない場合、毎レンダリング時に `UserCard` も再レンダリングされる。`sortedUsers` のリストが100件なら、毎回100個の新しい関数を作成。\n\n**現在の計算量/影響**:\n- コールバック生成コスト: O(n) × (毎レンダリング)\n- 影響: UserCard 子コンポーネント数分の不要な再レンダリング\n\n**推奨される最適化方法**:\n```javascript\nconst handleUserSelect = useCallback((userId) => {\n  console.log(userId);\n}, []); // 依存性なし - 常に同じ関数参照\n\n{sortedUsers.map(user => (\n  <UserCard\n    key={user.id}\n    user={user}\n    onSelect={() => handleUserSelect(user.id)} // または onSelect={handleUserSelect} として userId をパス\n  />\n))}\n```\n\n**期待される改善効果**:\n- UserCard の不要な再レンダリング削減（特に大規模リストで効果大）\n- メモリ使用量削減（大量のコールバック関数オブジェクト生成回避）\n\n---\n\n### [MEDIUM] フロントエンド - lodash 依存による過度なバンドルサイズ\n**位置**: `import _ from 'lodash'` とそのソートの使用\n\n**問題の説明**:\n`_.sortBy()` を使用していますが、JavaScriptネイティブの `.sort()` で十分対応可能。lodash 全体をインポートすると、ツリーシェイキング対象外となり、未使用のメソッドも含まれてバンドルサイズが増加（~70KB 圧縮後）。\n\n**現在の計算量/影響**:\n- バンドルサイズ増加: +70KB（圧縮後）\n- 初期ロード時間の遅延\n\n**推奨される最適化方法**:\n```javascript\n// lodash の削除\nconst sorted = [...filtered].sort((a, b) => a.name.localeCompare(b.name));\n\n// または useMemo と組み合わせ\nconst sorted = useMemo(\n  () => [...filtered].sort((a, b) => a.name.localeCompare(b.name)),\n  [filtered]\n);\n```\n\n**期待される改善効果**:\n- バンドルサイズ削減: ~70KB\n- 初期ロード時間の短縮\n\n---\n\n### [MEDIUM] アルゴリズム - 複数回のループにより計算量が増加\n**位置**: `useEffect` 内と `getStats()` 内の重複フィルタリング\n\n**問題の説明**:\n```javascript\n// useEffect 内: O(n) + O(n log n)\nconst filtered = users.filter(u => u.name.includes(filter));\nconst sorted = _.sortBy(filtered, 'name');\n\n// getStats 内: O(n) × 2 回（filter + reduce）\nconst filtered = users.filter(u => u.active).length;\nconst avgAge = users.reduce((sum, u) => sum + u.age, 0) / users.length;\n```\n\n`users` の全スキャンが複数回実行されている。users が増加すると線形に遅延が増加。\n\n**現在の計算量/影響**:\n- 計算量: O(n) × 3 回（filter + sort + filter + reduce）\n- 影響: users が 10,000 件を超える場合、顕著なレスポンス遅延\n\n**推奨される最適化方法**:\n```javascript\n// 1パス で全統計を計算\nconst stats = useMemo(() => {\n  let total = 0, active = 0, ageSum = 0;\n  for (const user of users) {\n    total++;\n    if (user.active) active++;\n    ageSum += user.age;\n  }\n  return {\n    total,\n    active,\n    avgAge: total > 0 ? ageSum / total : 0\n  };\n}, [users]);\n```\n\n**期待される改善効果**:\n- 計算量を O(n) × 3 から O(n) × 2 へ削減\n- ユーザー数 10,000 件で約 33% の処理時間削減\n\n---\n\n### [LOW] フロントエンド - useEffect 依存配列の潜在的な問題\n**位置**: `useEffect` の依存配列\n\n**問題の説明**:\n```javascript\nuseEffect(() => {\n  // ...\n}, [users, filter]);\n```\n\n`users` オブジェクトが参照として毎回異なる場合（親から新しい配列が渡される）、不要な再計算が発生する可能性。大規模データの場合の最適化機会。\n\n**推奨される最適化方法**:\n親コンポーネントから渡される `users` を `useMemo` で安定化するか、必要に応じて `useCallback` で users 生成を最適化。\n\n---\n\n## 改善されたコード例\n\n```javascript\nimport React, { useState, useEffect, useMemo, useCallback } from 'react';\n\nfunction UserDashboard({ users }) {\n  const [filter, setFilter] = useState('');\n\n  // 統計情報を useMemo でメモ化\n  const stats = useMemo(() => {\n    let total = 0, active = 0, ageSum = 0;\n    for (const user of users) {\n      total++;\n      if (user.active) active++;\n      ageSum += user.age;\n    }\n    return {\n      total,\n      active,\n      avgAge: total > 0 ? ageSum / total : 0\n    };\n  }, [users]);\n\n  // フィルタ・ソートを useMemo でメモ化\n  const sortedUsers = useMemo(() => {\n    const filtered = users.filter(u => u.name.includes(filter));\n    return [...filtered].sort((a, b) => a.name.localeCompare(b.name));\n  }, [users, filter]);\n\n  // コールバックを useCallback でメモ化\n  const handleUserSelect = useCallback((userId) => {\n    console.log(userId);\n  }, []);\n\n  return (\n    <div>\n      <input onChange={e => setFilter(e.target.value)} />\n      <p>Stats: {JSON.stringify(stats)}</p>\n      {sortedUsers.map(user => (\n        <UserCard\n          key={user.id}\n          user={user}\n          onSelect={() => handleUserSelect(user.id)}\n        />\n      ))}\n    </div>\n  );\n}\n```\n\n---\n\n## プロファイリング推奨ツール\n\nDevTools で計測する場合:\n```javascript\n// React DevTools Profiler タブで計測\n// 1. Chrome DevTools -> Profiler タブを開く\n// 2. 「Record」ボタンをクリック\n// 3. フィルタ入力などアクションを実行\n// 4. 「Stop」をクリックして、各レンダリングの所要時間を確認\n\n// あるいは console.time() で計測\nconsole.time('UserDashboard render');\n// レンダリング処理\nconsole.timeEnd('UserDashboard render');\n```\n\nこれらの最適化により、特に大規模ユーザーリスト（100+）において、レスポンス時間の大幅な改善が期待できます。"
+          ]
+        },
+        {
+          "type": "span.model_request_end",
+          "processed_at": "2026-05-01 06:51:38.839000+00:00",
+          "model_usage": {
+            "input_tokens": 6,
+            "output_tokens": 2624
+          }
+        },
+        {
+          "type": "session.status_idle",
+          "processed_at": "2026-05-01 06:51:38.996000+00:00"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "passed": 2,
+    "failed": 0
+  }
+}

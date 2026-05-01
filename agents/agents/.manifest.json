@@ -5,31 +5,37 @@
       "file": "agents/agents/code-reviewer/agent.md",
       "created_at": "2026-05-01T01:09:13.440788+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "5d9ab499b32b8e4366fde851f2a089e4c2903df474f805feb39ba069a46e1854"
+      "hmac_sha256": "8fc672ebbb728bb4f642d32cbad332ee26d89883af9bd025d1e532f37e2b3f4c"
     },
     "doc-writer": {
       "file": "agents/agents/doc-writer/agent.md",
       "created_at": "2026-05-01T01:09:13.440956+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "182f7266750254cf03da3a4db021b26757b80c0373ef848ee2f07c5b16c9b43c"
+      "hmac_sha256": "2c0daa17d76b2146b9fa559c94caf025423d6669803e20e691800eac828b2d8a"
     },
     "security-auditor": {
       "file": "agents/agents/security-auditor/agent.md",
       "created_at": "2026-05-01T01:09:13.441224+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "63a4dcc0b00f10048acc669dec452809969df00b1a320a7e667707c5bb8c6324"
+      "hmac_sha256": "59ed5a2fcd7204478b2be9afc416b1d8724a35fa635e19851c74de0e244df6ff"
     },
     "task-planner": {
       "file": "agents/agents/task-planner/agent.md",
       "created_at": "2026-05-01T01:09:13.441433+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "7d0133155c3390a3c835d8e8aa357ed762fffcc469bed8a883ff856ca5ae1b76"
+      "hmac_sha256": "11f70bfe29a6b1f1e50ad04537616431c2429b3f1ad37bc1ee00aa091dd168fb"
     },
     "test-generator": {
       "file": "agents/agents/test-generator/agent.md",
       "created_at": "2026-05-01T01:09:13.441584+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "77e72ed38320d1c7f5f82db0c654127eba32247a5992bf3e9f0a91384c6cf6f1"
+      "hmac_sha256": "a34a35aaa30c6761ecc49dd9561acf38279807eb86ad2234757d1fec3ac3b1d1"
+    },
+    "performance-optimizer": {
+      "file": "agents/agents/performance-optimizer/agent.md",
+      "created_at": "2026-05-01T06:04:06.325115+00:00",
+      "created_by": "create-subagent.sh",
+      "hmac_sha256": "502cec7ccf12cdb5b5e87ed158f89505cec36ebd20b01558ee64cbda5c41ce78"
     }
   }
 }

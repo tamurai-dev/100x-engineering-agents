@@ -1,0 +1,7 @@
+{
+  "agent": "performance-optimizer",
+  "description": "パフォーマンス最適化エージェントの品質評価スイート",
+  "tasks": ["python-backend", "react-frontend"],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "eval-react-frontend",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.2.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1"
+  }
+}
