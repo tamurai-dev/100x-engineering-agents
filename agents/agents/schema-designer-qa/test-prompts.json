@@ -1,0 +1,23 @@
+[
+  {
+    "name": "RLS欠如スキーマの検出",
+    "prompt": "以下の Supabase スキーマ設計を品質検査してください:\n\n```sql\ncreate table public.users (\n  id uuid primary key default gen_random_uuid(),\n  email text not null unique,\n  name text not null,\n  created_at timestamptz not null default now()\n);\n\ncreate table public.orders (\n  id uuid primary key default gen_random_uuid(),\n  user_id uuid references public.users(id),\n  total_amount numeric(10,2) not null,\n  status text not null default 'pending',\n  created_at timestamptz not null default now()\n);\n```",
+    "expected_behaviors": [
+      "RLS が有効化されていないことの指摘",
+      "updated_at カラムの欠如の指摘",
+      "status に Enum を使うべきとの指摘",
+      "score が 0.7 未満"
+    ],
+    "success_criteria": "expected_behaviors の3つ以上を指摘し、passed=false を返す"
+  },
+  {
+    "name": "高品質スキーマの評価",
+    "prompt": "以下の Supabase スキーマ設計を品質検査してください:\n\n```sql\ncreate type public.order_status as enum ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled');\n\ncreate table public.users (\n  id uuid primary key default gen_random_uuid(),\n  email text not null unique,\n  name text not null,\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  deleted_at timestamptz,\n  metadata jsonb default '{}'::jsonb\n);\n\nalter table public.users enable row level security;\ncreate policy \"users_select_own\" on public.users for select using (auth.uid() = id);\n\ncreate table public.orders (\n  id uuid primary key default gen_random_uuid(),\n  user_id uuid not null references public.users(id),\n  total_amount numeric(10,2) not null check (total_amount >= 0),\n  status public.order_status not null default 'pending',\n  created_at timestamptz not null default now(),\n  updated_at timestamptz not null default now(),\n  deleted_at timestamptz,\n  metadata jsonb default '{}'::jsonb\n);\n\nalter table public.orders enable row level security;\ncreate policy \"orders_select_own\" on public.orders for select using (auth.uid() = user_id);\n\ncreate index idx_orders_user_id on public.orders(user_id);\ncreate index idx_orders_status on public.orders(status);\n\ncreate or replace function public.update_updated_at()\nreturns trigger as $$\nbegin\n  new.updated_at = now();\n  return new;\nend;\n$$ language plpgsql;\n\ncreate trigger set_updated_at_users before update on public.users for each row execute function public.update_updated_at();\ncreate trigger set_updated_at_orders before update on public.orders for each row execute function public.update_updated_at();\n```",
+    "expected_behaviors": [
+      "score が 0.7 以上",
+      "RLS が適切に設定されていることの確認",
+      "Enum の使用が適切であることの確認"
+    ],
+    "success_criteria": "expected_behaviors の全てを含み、passed=true を返す"
+  }
+]

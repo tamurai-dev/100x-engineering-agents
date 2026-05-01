@@ -1,0 +1,33 @@
+{
+  "name": "schema-design-bundle",
+  "version": "1.0.0",
+  "description": "業務ワークフローから Supabase 本番レベルデータベーススキーマを設計し、QA エージェントが RLS・制約・インデックス・拡張性を検証するバンドル。Actor-Critic パターンにより、本番投入可能な品質のスキーマを自律的に生成する。",
+  "artifact_format": "structured_data",
+  "tags": ["database", "supabase", "schema-design", "workflow-automation"],
+  "metadata": {
+    "author": "bundle-factory",
+    "created_at": "2026-05-01T10:00:00Z"
+  },
+  "task_agent": {
+    "name": "schema-designer",
+    "ref": "agents/agents/schema-designer"
+  },
+  "qa_agent": {
+    "name": "schema-designer-qa",
+    "ref": "agents/agents/schema-designer-qa"
+  },
+  "workflow": {
+    "pre_task": {
+      "read_skills": false
+    },
+    "execution": {
+      "strategy": "direct"
+    },
+    "qa": {
+      "max_iterations": 3,
+      "pass_threshold": 0.80,
+      "convergence_delta": 0.02,
+      "keep_best": true
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "agent": "schema-designer",
+  "description": "Supabase スキーマ設計エージェントの品質評価スイート",
+  "tasks": ["workflow-to-schema"],
+  "default_trials": 3,
+  "default_model": "sonnet"
+}

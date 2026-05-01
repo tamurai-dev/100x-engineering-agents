@@ -1,0 +1,41 @@
+{
+  "description": "不動産仲介業務ワークフローから生成されるべきスキーマの正解データ",
+  "required_elements": {
+    "tables": [
+      "organizations",
+      "profiles",
+      "properties",
+      "inquiries",
+      "viewings",
+      "contracts"
+    ],
+    "features": [
+      "uuid primary key",
+      "gen_random_uuid()",
+      "timestamptz",
+      "row level security",
+      "create policy",
+      "organization_id",
+      "created_at",
+      "updated_at",
+      "deleted_at",
+      "metadata jsonb"
+    ],
+    "patterns": [
+      "CREATE TABLE",
+      "ALTER TABLE .+ ENABLE ROW LEVEL SECURITY",
+      "CREATE POLICY",
+      "CREATE INDEX",
+      "CREATE TYPE .+ AS ENUM",
+      "COMMENT ON",
+      "CREATE OR REPLACE FUNCTION",
+      "CREATE TRIGGER"
+    ]
+  },
+  "prohibited_patterns": [
+    "timestamp without time zone",
+    "serial",
+    "bigserial",
+    "integer primary key"
+  ]
+}

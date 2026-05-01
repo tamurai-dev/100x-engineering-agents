@@ -1,0 +1,24 @@
+{
+  "name": "workflow-to-schema",
+  "category": "database-design",
+  "difficulty": "hard",
+  "prompt": "/mnt/session/uploads/project/ にある業務ワークフロー定義を読み込み、Supabase の本番レベルデータベーススキーマを設計してください。ワークフロー分析サマリー、マイグレーション SQL、Mermaid ER 図、設計判断の根拠を出力してください。",
+  "graders": {
+    "code_based": {
+      "type": "ground-truth-match",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": ["CREATE TABLE", "enable row level security", "create policy", "timestamptz", "gen_random_uuid"],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}
