@@ -217,6 +217,10 @@ def resolve_custom_skills(
         scored.append((name, info, keyword_hits + name_hit))
 
     scored.sort(key=lambda x: x[2], reverse=True)
+    # When a spec is provided, filter out skills with no keyword matches
+    # to avoid returning irrelevant skills for unrelated queries.
+    if spec_lower:
+        scored = [(n, i, s) for n, i, s in scored if s > 0]
     return [
         {
             "type": "custom",

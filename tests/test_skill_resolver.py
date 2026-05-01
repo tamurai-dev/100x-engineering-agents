@@ -166,8 +166,8 @@ class TestResolveSkills(unittest.TestCase):
     def test_text_resolution(self):
         result = resolve_skills("text", "テキスト要約")
         self.assertFalse(result.prebuilt_matched)
-        # phone-caller custom skill matches text format
-        self.assertEqual(len(result.custom_skills), 1)
+        # phone-caller doesn't match "テキスト要約" (no keyword overlap)
+        self.assertEqual(len(result.custom_skills), 0)
         self.assertEqual(result.packages, {})
 
     def test_code_resolution(self):
@@ -284,6 +284,22 @@ class TestPhoneCallerCustomSkill(unittest.TestCase):
     def test_resolve_skills_text_summary_contains_custom(self):
         result = resolve_skills("text", "電話")
         self.assertIn("Custom", result.summary)
+
+    def test_resolve_custom_skills_no_match_for_irrelevant_text_spec(self):
+        """phone-caller should NOT match when spec has no keyword overlap."""
+        result = resolve_custom_skills("text", "テキスト要約")
+        self.assertEqual(len(result), 0)
+
+    def test_resolve_custom_skills_no_match_for_irrelevant_structured_data_spec(self):
+        """phone-caller should NOT match Excel-related queries."""
+        result = resolve_custom_skills("structured_data", "Excel分析")
+        self.assertEqual(len(result), 0)
+
+    def test_resolve_custom_skills_returns_all_when_no_spec(self):
+        """Without spec, all format-matching custom skills are returned."""
+        result = resolve_custom_skills("text")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["skill_id"], "skill_phone_caller")
 
     def test_full_catalog_includes_custom(self):
         catalog = get_full_skill_catalog()
