@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry
+.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -96,7 +96,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test test-bundle check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test test-bundle test-qa-strategy check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -132,6 +132,9 @@ endif
 # ── Bundle ────────────────────────────────────────
 test-bundle: ## Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性）
 	@$(PYTHON) tests/test_validate_bundle.py
+
+test-qa-strategy: ## QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性）
+	@$(PYTHON) tests/test_qa_strategy.py
 
 validate-bundle: ## 全バンドルの bundle.json をバリデーション
 	@$(PYTHON) scripts/validate-bundle.py
