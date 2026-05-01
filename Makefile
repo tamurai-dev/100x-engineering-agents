@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate test check-template check-all create-agent setup report clean
+.PHONY: help validate test check-template check-all create-agent setup report clean manifest-verify manifest-show manifest-init
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -37,8 +37,18 @@ report: ## バリデーションレポート生成 (tests/reports/validation-rep
 	@echo ""
 	@echo "レポート生成: $(REPORT)"
 
+# ── マニフェスト ─────────────────────────────────
+manifest-verify: ## マニフェスト全エントリの HMAC 署名検証
+	@$(PYTHON) scripts/manifest.py verify
+
+manifest-show: ## マニフェスト内容を表示
+	@$(PYTHON) scripts/manifest.py show
+
+manifest-init: ## 既存エージェントをマニフェストに一括登録（初回セットアップ用）
+	@$(PYTHON) scripts/manifest.py init
+
 # ── 統合チェック ─────────────────────────────────
-check-all: validate test check-template report ## 全チェック実行（CI と同等）
+check-all: validate test check-template manifest-verify report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
