@@ -16,8 +16,8 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from pathlib import Path as _Path
 import importlib.util
 
 # validate-bundle.py をハイフン付きファイル名なので動的インポート
@@ -33,6 +33,9 @@ load_manifest = validate_bundle_mod.load_manifest
 validate_bundle = validate_bundle_mod.validate_bundle
 _validate_agent_ref = validate_bundle_mod._validate_agent_ref
 
+from duo_agents.schemas import Bundle  # noqa: E402
+from pydantic import ValidationError  # noqa: E402
+
 FIXTURES_DIR = REPO_ROOT / "tests" / "fixtures" / "bundles"
 VALID_DIR = FIXTURES_DIR / "valid"
 INVALID_DIR = FIXTURES_DIR / "invalid"
@@ -40,19 +43,14 @@ INVALID_DIR = FIXTURES_DIR / "invalid"
 
 def _schema_only_validate(fixture_path: Path) -> list[str]:
     """フィクスチャファイルをスキーマのみで検証する（ファイルシステムチェックなし）。"""
-    import jsonschema
-
-    schema = load_schema()
     errors: list[str] = []
-
     with open(fixture_path, encoding="utf-8") as f:
         bundle = json.load(f)
-
     try:
-        jsonschema.validate(bundle, schema)
-    except jsonschema.ValidationError as e:
-        errors.append(e.message)
-
+        Bundle.model_validate(bundle)
+    except ValidationError as exc:
+        for err in exc.errors():
+            errors.append(err.get("msg", str(exc)))
     return errors
 
 
@@ -103,7 +101,7 @@ def main():
     results = TestResults()
 
     print(f"Bundle バリデーション テストスイート")
-    print(f"Schema: agents/schemas/bundle.schema.json")
+    print(f"Schema: src/duo_agents/schemas.py::Bundle")
     print(f"============================================================")
     print()
 

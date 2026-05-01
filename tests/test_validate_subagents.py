@@ -94,16 +94,18 @@ def main():
     print()
 
     # === 異常系 ===
+    # NOTE: PR-2 でバリデーション基盤を jsonschema から pydantic v2 に置換したため、
+    # エラーメッセージのキーワードを pydantic 形式に追従させている。
     print("[異常系] バリデーション FAIL が期待されるケース:")
-    r.assert_fail("name 欠落", "invalid-missing-name.md", "'name' is a required property")
-    r.assert_fail("description 欠落", "invalid-missing-description.md", "'description' is a required property")
-    r.assert_fail("name フォーマット不正", "invalid-bad-name.md", "does not match")
+    r.assert_fail("name 欠落", "invalid-missing-name.md", "Field required")
+    r.assert_fail("description 欠落", "invalid-missing-description.md", "Field required")
+    r.assert_fail("name フォーマット不正", "invalid-bad-name.md", "should match pattern")
     r.assert_fail("tools/disallowedTools 排他違反", "invalid-tools-conflict.md", "排他")
     r.assert_fail("不正な model 値", "invalid-bad-model.md")
-    r.assert_fail("不正な effort 値", "invalid-bad-effort.md", "is not one of")
-    r.assert_fail("未知フィールド", "invalid-unknown-field.md", "Additional properties")
+    r.assert_fail("不正な effort 値", "invalid-bad-effort.md", "Input should be")
+    r.assert_fail("未知フィールド", "invalid-unknown-field.md", "Extra inputs are not permitted")
     r.assert_fail("frontmatter なし", "invalid-no-frontmatter.md", "YAML frontmatter")
-    r.assert_fail("description が短すぎる", "invalid-short-description.md", "too short")
+    r.assert_fail("description が短すぎる", "invalid-short-description.md", "at least 10 characters")
     r.assert_fail("本文（body）が空", "invalid-empty-body.md", "body")
     print()
 

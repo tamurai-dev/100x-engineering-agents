@@ -174,17 +174,19 @@ class TestQAStrategyCompleteness(unittest.TestCase):
     """QA 戦略マッピングの完全性テスト。"""
 
     def test_all_schema_formats_are_covered(self) -> None:
-        """bundle.schema.json の全 artifact_format が戦略マップでカバーされている。"""
-        schema_path = REPO_ROOT / "agents" / "schemas" / "bundle.schema.json"
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        schema_formats = set(
-            schema["properties"]["artifact_format"]["enum"]
-        )
-        # VALID_ARTIFACT_FORMATS should match schema
+        """duo_agents.config.artifacts.VALID_ARTIFACT_FORMATS が単一情報源として
+        qa_strategy.VALID_ARTIFACT_FORMATS と一致していることを確認する。
+
+        PR-2 で JSON Schema を pydantic に置換したため、artifact_format の権威は
+        ``src/duo_agents/config/artifacts.py`` にある。
+        """
+        sys.path.insert(0, str(REPO_ROOT / "src"))
+        from duo_agents.config.artifacts import VALID_ARTIFACT_FORMATS as CONFIG_FORMATS
+
         self.assertEqual(
-            schema_formats,
+            CONFIG_FORMATS,
             VALID_ARTIFACT_FORMATS,
-            "qa_strategy.VALID_ARTIFACT_FORMATS does not match bundle.schema.json",
+            "qa_strategy.VALID_ARTIFACT_FORMATS does not match duo_agents.config.artifacts",
         )
 
     def test_every_format_resolves_without_error(self) -> None:
