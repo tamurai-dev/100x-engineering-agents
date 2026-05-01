@@ -59,7 +59,7 @@ agent:
 │
 ├── Makefile                          # 開発タスクランナー（make help で全コマンド表示）
 ├── agents/                           # 全エージェント資産の格納場所（= .claude/ の実体）
-│   ├── agents/                       # Subagent 定義（6体）
+│   ├── agents/                       # Subagent 定義（7体）
 │   │   ├── code-reviewer/            #   コードレビュー専門
 │   │   │   ├── agent.md              #     Claude Code 用定義
 │   │   │   ├── config.json           #     Managed Agents API 用設定
@@ -76,10 +76,15 @@ agent:
 │   │   ├── test-generator/           #   テスト生成専門
 │   │   ├── doc-writer/               #   ドキュメント生成専門
 │   │   ├── task-planner/             #   タスク分解・計画専門
+│   │   ├── code-review-qa/           #   コードレビュー QA（Actor-Critic Bundle の Critic）
 │   │   └── performance-optimizer/    #   パフォーマンス最適化専門
+│   ├── bundles/                      # Actor-Critic Bundle 定義
+│   │   └── code-review-bundle/       #   コードレビューバンドル（code-reviewer + code-review-qa）
+│   │       └── bundle.json           #     バンドル定義（Task/QA Agent 参照、QA ループ設定）
 │   ├── schemas/                      # バリデーションスキーマ
 │   │   ├── subagent-frontmatter.schema.json   # Claude Code 用
-│   │   └── managed-agent-config.schema.json   # Managed Agents API 用
+│   │   ├── managed-agent-config.schema.json   # Managed Agents API 用
+│   │   └── bundle.schema.json                 # Actor-Critic Bundle 用
 │   ├── templates/                    # テンプレート
 │   │   ├── subagent.md.tmpl          #   agent.md テンプレート
 │   │   ├── config.json.tmpl          #   config.json テンプレート
@@ -109,10 +114,13 @@ agent:
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
+│   ├── validate-bundle.py            #   Bundle バリデーション
+│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン
 │   └── setup-hooks.sh                #   初期セットアップ
 │
 ├── evidence/                         # テスト証跡（Managed Agents セッション）
 │   ├── sessions/                     #   スモークテスト証跡
+│   ├── bundles/                      #   Bundle 実行証跡
 │   ├── evals/                        #   品質評価結果
 │   ├── SUMMARY.md                    #   証跡サマリー（自動生成）
 │   └── .gitattributes                #   linguist-generated 設定
@@ -133,6 +141,7 @@ agent:
 4. **Symlink 同期**: `.claude/` は `agents/` への symlink。手動で `.claude/` 配下にファイルを作らない
 5. **Claude Code 互換**: `agents/agents/*/agent.md`, `agents/skills/`, `agents/rules/` 等は Claude Code が自動認識する
 6. **テスト駆動モデル選定**: haiku でタスク成功できるなら haiku を使う。テスト結果に基づく最安モデル選定
+7. **Actor-Critic 品質保証**: Task Agent（Actor）が成果物を生成し、QA Agent（Critic）が fresh-context で品質検査する。同意バイアスを構造的に排除し、フィードバックループで品質を収束させる
 
 ## 3. ファイル参照ガイド
 
@@ -207,7 +216,8 @@ make check-all
 | 3 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
 | 4 | `make check-template` | テンプレート整合性チェック |
 | 5 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 6 | `make report` | バリデーションレポート (JSON) 生成 |
+| 6 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 7 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 

@@ -315,9 +315,12 @@ def run_bundle(
             results["final_status"] = "passed"
             break
 
-        # Convergence check
-        if iteration >= 2:
-            prev_score = results["iterations"][-2].get("score", 0.0)
+        # Convergence check (compare only against previous *successful* QA score)
+        prev_valid_scores = [
+            it["score"] for it in results["iterations"][:-1] if "score" in it
+        ]
+        if prev_valid_scores:
+            prev_score = prev_valid_scores[-1]
             delta = abs(score - prev_score)
             if delta <= qa_settings.get("convergence_delta", 0.02):
                 print(f"  収束検出（Δ={delta:.3f} <= {qa_settings['convergence_delta']}）")
@@ -344,7 +347,7 @@ def run_bundle(
 
     # ── Phase D: 証跡保存 ──
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+    timestamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     model_label = model or "default"
     evidence_path = EVIDENCE_DIR / f"{timestamp}_{bundle_name}_{model_label}.json"
     with open(evidence_path, "w", encoding="utf-8") as f:
