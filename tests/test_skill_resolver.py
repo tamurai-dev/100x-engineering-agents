@@ -166,7 +166,8 @@ class TestResolveSkills(unittest.TestCase):
     def test_text_resolution(self):
         result = resolve_skills("text", "テキスト要約")
         self.assertFalse(result.prebuilt_matched)
-        self.assertEqual(len(result.skills), 0)
+        # phone-caller custom skill matches text format
+        self.assertEqual(len(result.custom_skills), 1)
         self.assertEqual(result.packages, {})
 
     def test_code_resolution(self):
@@ -198,8 +199,8 @@ class TestCustomSkills(unittest.TestCase):
     def test_format_to_custom_is_dict(self):
         self.assertIsInstance(FORMAT_TO_CUSTOM, dict)
 
-    def test_resolve_custom_skills_empty_registry(self):
-        """No custom skills registered → empty result."""
+    def test_resolve_custom_skills_no_match_for_presentation(self):
+        """phone-caller is text/structured_data, not presentation."""
         result = resolve_custom_skills("presentation", "スライド生成")
         self.assertEqual(result, [])
 
@@ -208,10 +209,11 @@ class TestCustomSkills(unittest.TestCase):
         result = resolve_skills("presentation")
         self.assertIsInstance(result.custom_skills, list)
 
-    def test_custom_catalog_empty_when_no_skills(self):
-        """Custom catalog returns empty string when no skills registered."""
+    def test_custom_catalog_contains_phone_caller(self):
+        """Custom catalog includes phone-caller skill."""
         catalog = get_custom_skill_catalog()
-        self.assertEqual(catalog, "")
+        self.assertIn("phone-caller", catalog)
+        self.assertIn("AI 電話エージェント", catalog)
 
     def test_custom_skills_structure_when_registered(self):
         """Validate that CUSTOM_SKILLS entries would have required fields."""
@@ -230,6 +232,64 @@ class TestCustomSkills(unittest.TestCase):
                 self.assertIn(fmt, CUSTOM_SKILLS[name]["artifact_formats"])
 
 
+class TestPhoneCallerCustomSkill(unittest.TestCase):
+    """Phone caller custom skill specific tests."""
+
+    def test_phone_caller_registered(self):
+        self.assertIn("phone-caller", CUSTOM_SKILLS)
+
+    def test_phone_caller_has_required_fields(self):
+        info = CUSTOM_SKILLS["phone-caller"]
+        required = {"skill_id", "display_title", "description",
+                     "artifact_formats", "keywords"}
+        self.assertTrue(required.issubset(info.keys()))
+
+    def test_phone_caller_artifact_formats(self):
+        info = CUSTOM_SKILLS["phone-caller"]
+        self.assertIn("text", info["artifact_formats"])
+        self.assertIn("structured_data", info["artifact_formats"])
+
+    def test_phone_caller_keywords(self):
+        info = CUSTOM_SKILLS["phone-caller"]
+        self.assertIn("phone", info["keywords"])
+        self.assertIn("twilio", info["keywords"])
+        self.assertIn("elevenlabs", info["keywords"])
+        self.assertIn("電話", info["keywords"])
+
+    def test_phone_caller_mapped_to_text_format(self):
+        self.assertIn("text", FORMAT_TO_CUSTOM)
+        self.assertIn("phone-caller", FORMAT_TO_CUSTOM["text"])
+
+    def test_phone_caller_mapped_to_structured_data_format(self):
+        self.assertIn("structured_data", FORMAT_TO_CUSTOM)
+        self.assertIn("phone-caller", FORMAT_TO_CUSTOM["structured_data"])
+
+    def test_resolve_custom_skills_matches_phone_caller_for_text(self):
+        result = resolve_custom_skills("text", "電話をかけて")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["skill_id"], "skill_phone_caller")
+        self.assertEqual(result[0]["type"], "custom")
+
+    def test_resolve_custom_skills_keyword_boost(self):
+        result = resolve_custom_skills("text", "twilio phone call")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["skill_id"], "skill_phone_caller")
+
+    def test_resolve_skills_text_includes_custom(self):
+        result = resolve_skills("text", "電話をかける")
+        self.assertGreater(len(result.custom_skills), 0)
+        custom_ids = [s["skill_id"] for s in result.custom_skills]
+        self.assertIn("skill_phone_caller", custom_ids)
+
+    def test_resolve_skills_text_summary_contains_custom(self):
+        result = resolve_skills("text", "電話")
+        self.assertIn("Custom", result.summary)
+
+    def test_full_catalog_includes_custom(self):
+        catalog = get_full_skill_catalog()
+        self.assertIn("phone-caller", catalog)
+
+
 class TestSkillCatalog(unittest.TestCase):
     """Skill catalog generation tests."""
 
@@ -243,10 +303,11 @@ class TestSkillCatalog(unittest.TestCase):
         for name in COMMUNITY_SKILLS:
             self.assertIn(name, catalog)
 
-    def test_full_catalog_has_both(self):
+    def test_full_catalog_has_all_sections(self):
         catalog = get_full_skill_catalog()
         self.assertIn("Pre-built", catalog)
         self.assertIn("Community", catalog)
+        self.assertIn("Custom", catalog)
 
     def test_catalog_not_empty(self):
         self.assertGreater(len(get_full_skill_catalog()), 100)
