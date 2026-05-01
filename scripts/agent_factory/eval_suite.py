@@ -351,12 +351,28 @@ def _parse_json_lenient(text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    # Truncated JSON: close all open brackets
-    fixed = cleaned
-    open_braces = fixed.count("{") - fixed.count("}")
-    open_brackets = fixed.count("[") - fixed.count("]")
-    fixed = fixed.rstrip().rstrip(",")
-    fixed += "]" * max(0, open_brackets) + "}" * max(0, open_braces)
+    # Truncated JSON: close open delimiters in reverse stack order
+    fixed = cleaned.rstrip().rstrip(",")
+    stack: list[str] = []
+    in_string = False
+    escape = False
+    for ch in fixed:
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in ("{", "["):
+            stack.append("}" if ch == "{" else "]")
+        elif ch in ("}", "]") and stack:
+            stack.pop()
+    fixed += "".join(reversed(stack))
     return json.loads(fixed)
 
 
