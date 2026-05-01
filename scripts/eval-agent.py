@@ -350,10 +350,17 @@ def grade_trial(
 
     if "test_execution" in graders_config:
         exec_result = grade_test_execution(trial_result["events"])
-        scores["outcome"] = {
-            "score": exec_result["score"],
-            "details": exec_result,
-        }
+        if "outcome" in scores:
+            prev_score = scores["outcome"]["score"]
+            scores["outcome"] = {
+                "score": round((prev_score + exec_result["score"]) / 2, 3),
+                "details": {"code_based": scores["outcome"]["details"], "test_execution": exec_result},
+            }
+        else:
+            scores["outcome"] = {
+                "score": exec_result["score"],
+                "details": exec_result,
+            }
 
     if "outcome" not in scores:
         scores["outcome"] = {"score": 0.0, "details": {"reason": "no grader configured"}}

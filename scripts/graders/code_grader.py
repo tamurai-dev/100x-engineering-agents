@@ -148,26 +148,26 @@ def _get_type_keywords(issue_type: str) -> list[str]:
         "command-injection": ["command injection", "コマンドインジェクション", "os.system", "subprocess", "shell=true", "shell injection"],
         "path-traversal": ["path traversal", "パストラバーサル", "ディレクトリトラバーサル", "directory traversal", "../"],
         "hardcoded-secret": ["hardcod", "ハードコード", "secret", "シークレット", "平文", "直接記述", "埋め込"],
-        "bare-except": ["bare except", "except:", "例外を握り潰", "例外の握り潰し", "broad exception", "例外処理"],
-        "debug-mode": ["debug", "デバッグ", "debug=true", "本番環境"],
+        "bare-except": ["bare except", "except:", "例外を握り潰", "例外の握り潰し", "broad exception"],
+        "debug-mode": ["debug=true", "debug = true", "デバッグモード", "本番環境でdebug"],
         "unrestricted-hosts": ["allowed_hosts", "ワイルドカード", "'*'", "unrestricted"],
-        "xss": ["xss", "cross-site scripting", "クロスサイトスクリプティング", "innerhtml", "エスケープ"],
+        "xss": ["xss", "cross-site scripting", "クロスサイトスクリプティング", "innerhtml", "dangerouslysetinnerhtml"],
         "csrf": ["csrf", "cross-site request forgery"],
-        "ssrf": ["ssrf", "server-side request forgery", "url fetch", "外部url"],
-        "missing-auth": ["認証", "authentication", "auth", "ミドルウェア", "middleware", "未認証"],
-        "timing-attack": ["timing", "タイミング", "定数時間", "constant-time"],
-        "rate-limiting": ["rate limit", "レート制限", "ブルートフォース", "試行回数"],
-        "sensitive-log": ["ログ", "log", "センシティブ", "sensitive", "機密情報"],
-        "cors-misconfiguration": ["cors", "origin", "access-control"],
+        "ssrf": ["ssrf", "server-side request forgery", "外部urlへのfetch", "ユーザー指定のurl"],
+        "missing-auth": ["認証なし", "認証がない", "認証ミドルウェア", "missing auth", "no authentication", "未認証のまま"],
+        "timing-attack": ["timing attack", "タイミング攻撃", "定数時間比較", "constant-time"],
+        "rate-limiting": ["rate limit", "レート制限", "ブルートフォース", "試行回数制限"],
+        "sensitive-log": ["機密情報をログ", "sensitive data in log", "パスワードをログ", "logging sensitive", "ログに含めるべきでない"],
+        "cors-misconfiguration": ["cors", "access-control-allow-origin"],
         "no-token-expiry": ["expire", "expir", "有効期限", "トークンの期限"],
-        "any-type": ["any型", "any 型", ": any", "型安全", "型の安全"],
-        "var-usage": ["var ", "var　", "let ", "const ", "var の使用"],
-        "loose-equality": ["==", "===", "厳密等価", "strict equal", "loose equal"],
-        "unused-variable": ["未使用", "unused", "使われていない"],
-        "missing-error-handling": ["エラーハンドリング", "error handling", "try-catch", "例外処理"],
-        "unhandled-promise": ["await", "promise", "非同期", "async"],
-        "stack-trace-exposure": ["stack", "スタックトレース", "err.stack", "内部情報"],
-        "password-leak": ["パスワード", "password", "レスポンス", "response", "漏洩"],
+        "any-type": ["any型", "any 型", ": any", "型安全性が低い"],
+        "var-usage": ["var宣言", "varを使用", "varキーワード", "var の使用", "letやconstに置き換え"],
+        "loose-equality": ["== を使用", "厳密等価", "strict equal", "loose equal", "=== に置き換え", "== instead of ==="],
+        "unused-variable": ["未使用の変数", "unused variable", "使われていない変数"],
+        "missing-error-handling": ["エラーハンドリング", "error handling", "try-catch", "例外処理が不足"],
+        "unhandled-promise": ["missing await", "awaitが不足", "未処理のpromise", "unhandled promise", "promiseが未処理"],
+        "stack-trace-exposure": ["スタックトレース", "err.stack", "内部情報の露出", "stack trace exposure"],
+        "password-leak": ["パスワードが漏洩", "password leak", "パスワードをレスポンス", "機密データの露出"],
     }
     return keyword_map.get(issue_type, [issue_type.replace("-", " ")])
 
@@ -246,11 +246,13 @@ def grade_transcript(events: list[dict]) -> dict:
 
     tokens_total = tokens_input + tokens_output
 
-    turn_score = _threshold_score(turns, excellent=2, acceptable=5)
-    tool_score = _threshold_score(tool_calls, excellent=5, acceptable=15)
-    token_score = _threshold_score(tokens_total, excellent=3000, acceptable=10000)
-
-    efficiency_score = round((turn_score + tool_score + token_score) / 3, 3)
+    if turns == 0 and tool_calls == 0 and tokens_total == 0:
+        efficiency_score = 0.0
+    else:
+        turn_score = _threshold_score(turns, excellent=2, acceptable=5)
+        tool_score = _threshold_score(tool_calls, excellent=5, acceptable=15)
+        token_score = _threshold_score(tokens_total, excellent=3000, acceptable=10000)
+        efficiency_score = round((turn_score + tool_score + token_score) / 3, 3)
 
     return {
         "turns": turns,
