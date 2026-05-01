@@ -353,8 +353,10 @@ def expand_qa_agent(blueprint: dict) -> tuple[str, dict]:
     # config.json: テンプレートを読み込みプレースホルダー置換
     config_template_path = strategy.config_template_path
     config_text = config_template_path.read_text(encoding="utf-8")
+    # JSON-escape description to prevent JSONDecodeError from special chars
+    safe_description = json.dumps(description)[1:-1]
     config_text = config_text.replace("<bundle-name>", bundle_name)
-    config_text = config_text.replace("<bundle-description>", description)
+    config_text = config_text.replace("<bundle-description>", safe_description)
     config_text = config_text.replace(
         "<model>",
         MODEL_MAP.get(strategy.recommended_model, strategy.recommended_model),
@@ -375,13 +377,17 @@ def generate_skill(
     skill_topics = ", ".join(blueprint.get("skill_topics", ["一般"]))
     prompt_excerpt = blueprint["task_system_prompt"][:500]
 
+    # Escape braces in LLM-generated content to prevent str.format() crashes
+    safe_excerpt = prompt_excerpt.replace("{", "{{").replace("}", "}}")
+    safe_description = blueprint["description"].replace("{", "{{").replace("}", "}}")
+
     user = SKILL_USER.format(
         bundle_name=blueprint["bundle_name"],
-        description=blueprint["description"],
+        description=safe_description,
         artifact_format=blueprint["artifact_format"],
         agent_type=blueprint["agent_type"],
         skill_topics=skill_topics,
-        task_system_prompt_excerpt=prompt_excerpt,
+        task_system_prompt_excerpt=safe_excerpt,
     )
 
     response = client.messages.create(
