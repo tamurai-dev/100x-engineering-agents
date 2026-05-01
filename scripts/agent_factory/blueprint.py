@@ -346,9 +346,15 @@ def _inject_weakness_mitigations(system_prompt: str, agent_type: str) -> str:
     if not new_items:
         return system_prompt
 
-    # ## 制約事項 セクションが既にあれば末尾に追加
+    # ## 制約事項 セクションが既にあれば、そのセクション内末尾に挿入
     constraint_header = "## 制約事項"
     if constraint_header in system_prompt:
+        import re as _re
+        header_pos = system_prompt.index(constraint_header)
+        next_header = _re.search(r"\n## ", system_prompt[header_pos + len(constraint_header):])
+        if next_header:
+            insert_pos = header_pos + len(constraint_header) + next_header.start()
+            return system_prompt[:insert_pos].rstrip() + "\n" + "\n".join(new_items) + "\n" + system_prompt[insert_pos:]
         return system_prompt.rstrip() + "\n" + "\n".join(new_items)
 
     # なければセクションごと追加
@@ -376,13 +382,16 @@ def expand_blueprint(blueprint: dict) -> tuple[str, dict, list]:
     disallowed = blueprint.get("disallowed_tools", [])
 
     # === agent.md ===
+    def _to_pascal(s: str) -> str:
+        return "".join(word.capitalize() for word in s.split("_"))
+
     if disallowed:
         tools_section = "disallowedTools:\n" + "\n".join(
-            f"  - {t.title()}" for t in disallowed
+            f"  - {_to_pascal(t)}" for t in disallowed
         )
     else:
         tools_section = "tools:\n" + "\n".join(
-            f"  - {t.title()}" for t in tools
+            f"  - {_to_pascal(t)}" for t in tools
         )
 
     agent_md = textwrap.dedent(f"""\
