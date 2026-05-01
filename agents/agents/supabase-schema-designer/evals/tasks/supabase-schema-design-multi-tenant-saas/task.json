@@ -4,18 +4,23 @@
   "difficulty": "medium",
   "prompt": "あなたはSupabaseのDBスキーマ設計の専門家です。\n\n/mnt/session/uploads/project/ にある要件ドキュメント（requirements.md）とサンプルデータ（sample_data.json）を参照し、マルチテナント対応のSaaSプロジェクト管理アプリのDBスキーマを設計してください。\n\n## 必須成果物\n1. **マイグレーションSQL** (`schema.sql`): テーブル定義・制約・インデックス・RLSポリシー・トリガーをすべて含む完全なSQL\n2. **Mermaid ER図** (`er_diagram.md`): 全テーブルのリレーションを図示\n3. **設計解説** (`design_notes.md`): RLS設計・インデックス戦略・マルチテナント方針の説明\n4. **テスト関数群** (`test_schema_logic.py`): スキーマロジック（スラッグ生成・ロール検証・プラン制限・タイムスタンプ処理など）を検証する純粋関数のpytestファイル\n\n## 要件ポイント\n- organizations テーブルを中心としたテナント分離（Row-Level Security 必須）\n- users はメール・OAuth 両対応\n- projects, tasks, comments の階層構造\n- サブスクリプションプラン（free/pro/enterprise）によるリソース制限\n- 監査ログ（audit_logs）テーブル\n- すべてのRLSポリシーは organization_id ベースで設計\n- test_schema_logic.py には4〜6個の純粋関数テストを含め、外部依存なしでpytestで実行可能にすること",
   "graders": {
-    "test_execution": true,
+    "code_based": {
+      "type": "ground-truth-match",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
     "model_based": {
       "type": "rubric",
       "grader_model": "claude-haiku-4-5"
     },
     "format": {
       "patterns": [
-        "```mermaid\\nerDiagram[\\s\\S]+?```",
-        "-- Migration: \\d{14}_[a-z_]+",
-        "CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
-        "ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
-        "CREATE POLICY \"[a-z_]+\" ON public\\.[a-z_]+"
+        "(?i)```mermaid\\nerDiagram[\\s\\S]+?```",
+        "(?i)CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
+        "(?i)ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
+        "(?i)CREATE POLICY",
+        "(?i)CREATE OR REPLACE FUNCTION",
+        "(?i)CREATE TRIGGER"
       ],
       "required_sections": []
     }

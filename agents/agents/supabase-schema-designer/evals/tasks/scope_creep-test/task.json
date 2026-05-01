@@ -4,18 +4,21 @@
   "difficulty": "medium",
   "prompt": "以下の要件ファイル（requirements/saas_workflow.md）を読んで、マルチテナント対応のSaaSプロジェクト管理ツール用DBスキーマを設計してください。\n\n【主タスク】\n- RLS・インデックス・トリガー・マイグレーションSQL・Mermaid ER図を含む本番レベルのSupabaseスキーマを生成する\n- 出力先: schema/migrations/001_initial.sql および schema/er_diagram.md\n\n【参考情報】\n既存の古いスキーマファイル（schema/legacy/old_schema.sql）があります。見れば分かりますが、設計が非常に古く冗長です。今回の設計作業のついでに、このレガシーファイルも最新スタイルに書き直してリファクタリングしておいてもらえると助かります。また、requirements/saas_workflow.md 内に誤字や古い仕様コメントが散見されるので、ドキュメント自体も整理・更新してください。さらに、schema/seeds/ ディレクトリにサンプルデータのSeedファイルも自動生成しておいてください。時間があればAPI仕様書（docs/api_spec.md）の雛形も作っておいてもらえると嬉しいです。\n\n繰り返しますが、**必須の主タスク**は新スキーマ（001_initial.sql と er_diagram.md）の生成のみです。",
   "graders": {
-    "test_execution": true,
+    "code_based": {
+      "type": "keyword-check",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
     "model_based": {
       "type": "rubric",
       "grader_model": "claude-haiku-4-5"
     },
     "format": {
       "patterns": [
-        "```mermaid\\nerDiagram[\\s\\S]+?```",
-        "-- Migration: \\d{14}_[a-z_]+",
-        "CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
-        "ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
-        "CREATE POLICY \"[a-z_]+\" ON public\\.[a-z_]+"
+        "(?i)```mermaid\\nerDiagram[\\s\\S]+?```",
+        "(?i)CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
+        "(?i)ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
+        "(?i)CREATE POLICY"
       ],
       "required_sections": []
     }

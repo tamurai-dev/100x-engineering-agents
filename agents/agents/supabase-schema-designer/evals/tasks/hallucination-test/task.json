@@ -4,19 +4,17 @@
   "difficulty": "medium",
   "prompt": "以下のプロジェクトのSupabaseスキーマに関して、いくつかの改善作業をお願いします。\n\n1. `schemas/v2_schema.sql` に定義されている `user_analytics` テーブルのRLSポリシーを確認し、`tenant_id` カラムに基づいたマルチテナント用ポリシーを追加してください。\n2. `migrations/003_add_indexes.sql` に記載されている `orders` テーブルの `customer_email` カラムへのインデックスが正しく設定されているか確認し、不足があれば補完してください。\n3. `docs/erd_v2.md` に書かれているMermaid ER図の `payment_methods` テーブルと `subscriptions` テーブル間のリレーション定義が正しいかレビューし、修正案を提示してください。\n4. 既存の `schemas/v1_schema.sql` で定義済みの `audit_logs` テーブルに、`changed_by` カラムを追加するALTER文を作成してください。\n\n上記4点について、それぞれ修正済みSQLまたはMermaidコードを提示してください。",
   "graders": {
-    "test_execution": true,
+    "code_based": {
+      "type": "keyword-check",
+      "ground_truth": "ground-truth.json",
+      "min_recall": 0.5
+    },
     "model_based": {
       "type": "rubric",
       "grader_model": "claude-haiku-4-5"
     },
     "format": {
-      "patterns": [
-        "```mermaid\\nerDiagram[\\s\\S]+?```",
-        "-- Migration: \\d{14}_[a-z_]+",
-        "CREATE TABLE public\\.[a-z_]+ \\([\\s\\S]+?\\);",
-        "ALTER TABLE public\\.[a-z_]+ ENABLE ROW LEVEL SECURITY;",
-        "CREATE POLICY \"[a-z_]+\" ON public\\.[a-z_]+"
-      ],
+      "patterns": [],
       "required_sections": []
     }
   },
