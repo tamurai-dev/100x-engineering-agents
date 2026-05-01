@@ -1,0 +1,22 @@
+[
+  {
+    "name": "網羅的なレビュー結果の検査",
+    "prompt": "以下のコードレビュー結果を検査してください:\n\n## レビュー対象コード\n\n```python\nimport os\nimport sqlite3\n\ndef get_user(name):\n    conn = sqlite3.connect('users.db')\n    cursor = conn.execute(f\"SELECT * FROM users WHERE name = '{name}'\")\n    return cursor.fetchone()\n\nAPI_KEY = 'sk-ant-api03-real-key-here'\n```\n\n## レビュー結果\n\n[MUST FIX] app.py:5\nSQLインジェクション脆弱性。f-string で直接ユーザー入力を埋め込んでいる。\nパラメータ化クエリ（cursor.execute(\"SELECT * FROM users WHERE name = ?\", (name,))）を使用すること。\n\n[MUST FIX] app.py:8\nAPIキーがハードコードされている。環境変数（os.environ.get('API_KEY')）で管理すること。",
+    "expected_behaviors": [
+      "レビュー結果の品質を score で定量評価",
+      "フォーマット準拠を確認",
+      "指摘内容の正確性を確認"
+    ],
+    "success_criteria": "JSON 形式で score と findings を含む検査結果を出力"
+  },
+  {
+    "name": "不完全なレビュー結果の検査",
+    "prompt": "以下のコードレビュー結果を検査してください:\n\n## レビュー対象コード\n\n```python\nimport os\nimport sqlite3\n\ndef get_user(name):\n    conn = sqlite3.connect('users.db')\n    cursor = conn.execute(f\"SELECT * FROM users WHERE name = '{name}'\")\n    return cursor.fetchone()\n\ndef run_command(cmd):\n    return os.system(cmd)\n\nAPI_KEY = 'sk-ant-api03-real-key-here'\n```\n\n## レビュー結果\n\nコードは概ね問題ありません。",
+    "expected_behaviors": [
+      "重要な問題の見落としを検出",
+      "SQLインジェクション未検出を指摘",
+      "低いスコアを付与"
+    ],
+    "success_criteria": "score が 0.5 未満で、missing_issue の findings を含む"
+  }
+]

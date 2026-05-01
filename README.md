@@ -65,6 +65,12 @@ layout:
 
 GitHub リポジトリを持っていなくても、自分の業務効率化のためのエージェントが作れる。コードレビューからデータ集計まで、技術スタックを問わずあらゆる用途に対応。
 
+### 特徴
+
+- 🏭 **Agent Factory** — 自然言語1行からエージェントを全自動生成
+- 🎯 **Actor-Critic Bundle** — Task Agent（実行）と QA Agent（検査）のペアで、成果物の品質を自律的に保証
+- 📊 **Eval-Driven Development** — テストスコアに基づく自動品質改善ループ
+
 ---
 
 ## 0. クイックスタート（5分で最初のエージェント）
@@ -148,6 +154,33 @@ make test-all-agents MODEL=haiku
 make help
 ```
 
+### Actor-Critic Bundle（バンドル）
+
+シングルエージェントでは品質のばらつきが避けられない。Actor-Critic Bundle は **Task Agent（実行者 = Actor）** と **QA Agent（批評者 = Critic）** を1つのバンドルとしてペアにし、成果物の品質を自律的に保証する仕組み。
+
+```
+Task Agent（Actor）          QA Agent（Critic）
+  タスク実行 ──→ 成果物 ──→ fresh-context で品質検査
+       ↑                         │
+       └── フィードバック ←──────┘
+           （不合格なら修正→再検査、最大3回）
+```
+
+**なぜ Actor-Critic か:**
+- QA Agent は **fresh-context**（タスク実行の過程を知らない状態）で検査する。これにより「自分が作ったものだから正しいはず」という同意バイアスを構造的に排除する
+- 各ラウンドの成果物を保存し、最高スコア版を最終成果物として採用する
+
+```bash
+# バンドルの検証（API 不要）
+make run-bundle-dry NAME=code-review-bundle
+
+# バンドルのワークフロー実行（ANTHROPIC_API_KEY 必須）
+make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード" MODEL=haiku
+
+# バンドルバリデーション
+make validate-bundle
+```
+
 ---
 
 ## 1. ビジョン
@@ -166,6 +199,7 @@ AIエージェントの導入が進んでいるが、多くの現場で「手戻
 - **技術スタック非依存** — Python、TypeScript、Go、その他あらゆる言語やフレームワークのプロジェクトに対応。コード以外の業務効率化にも対応
 - **GitHub リポジトリ不要** — コードベースを持たない人でも、業務プロセスの自動化エージェントを作成できる
 - **品質が計測可能** — 「動いた気がする」ではなく、Precision/Recall/F1 スコアでエージェントの品質を定量評価できる
+- **Actor-Critic で品質保証** — Task Agent（実行者）と QA Agent（批評者）のペアが互いの成果物を検証し合うことで、同意バイアスなき高品質を実現
 - **ローカル完結** — 外部サービス（Devin, Cursor 等）に依存せず、Mac のターミナルだけで全ワークフローが完結する
 
 ### 1.3 スコープ
@@ -174,6 +208,7 @@ AIエージェントの導入が進んでいるが、多くの現場で「手戻
 
 - ANTHROPIC_API_KEY だけで動く、エージェント作成・テスト・評価の CLI ツール一式
 - 自然言語からのエージェント全自動生成（Agent Factory）
+- **Actor-Critic Bundle** — Task Agent + QA Agent のペアによる自律的品質保証ワークフロー
 - 3層 Grader による品質評価フレームワーク（Code-Based / Model-Based / Test Execution）
 - 評価駆動開発（EDD）による自動品質改善ループ
 - エージェント向けコンテキスト設計のテンプレートとベストプラクティス
@@ -308,12 +343,13 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 | 開発規約策定 | 完了（本README §2） |
 | エージェント指示書 | 完了（AGENTS.md） |
 | agents/ ディレクトリ構成 | 完了 |
-| Subagent 定義（6体） | 完了（code-reviewer, security-auditor, test-generator, doc-writer, task-planner, performance-optimizer） |
+| Subagent 定義（7体） | 完了（code-reviewer, security-auditor, test-generator, doc-writer, task-planner, performance-optimizer, code-review-qa） |
 | .claude/ symlink 設定 | 完了 |
 | pyproject.toml（依存管理） | 完了 |
 | Agent Factory（全自動生成） | 完了（`make create-smart-agent`） |
 | 品質評価フレームワーク | 完了（3層 Grader + EDD ループ） |
 | CI/CD パイプライン | 完了（GitHub Actions） |
+| Actor-Critic Bundle | 完了（Vertical Slice — code-review-bundle） |
 | Getting Started ドキュメント | 完了（本README §0） |
 | エンタープライズ要件定義 | **未着手**（コア機能安定後に着手） |
 | 実プロジェクト適用事例 | **未着手** |
@@ -322,12 +358,13 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 
 ## 4. 次のステップ
 
-1. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
-2. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
-3. agents/rules/ にエンタープライズガードレールを定義
-4. agents/skills/ に再利用可能スキルを追加
-5. 他プロジェクト向けテンプレートの整備（agents/templates/）
-6. ドキュメント: ユースケース別ガイド（業務効率化、コード検査、データ処理等）
+1. **Actor-Critic Bundle 拡充** — QA テンプレート・戦略エンジン・ Bundle Factory CLI（`make create-bundle SPEC="..."`）
+2. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
+3. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
+4. agents/rules/ にエンタープライズガードレールを定義
+5. agents/skills/ に再利用可能スキルを追加
+6. 他プロジェクト向けテンプレートの整備（agents/templates/）
+7. ドキュメント: ユースケース別ガイド（業務効率化、コード検査、データ処理等）
 
 ---
 
