@@ -1,0 +1,7 @@
+{
+  "agent": "security-auditor",
+  "description": "セキュリティ監査エージェントの品質評価スイート",
+  "tasks": ["express-api"],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

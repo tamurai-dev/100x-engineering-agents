@@ -1,0 +1,7 @@
+{
+  "agent": "doc-writer",
+  "description": "ドキュメント生成エージェントの品質評価スイート",
+  "tasks": ["python-module"],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

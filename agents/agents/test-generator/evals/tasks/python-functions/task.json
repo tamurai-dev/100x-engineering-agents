@@ -1,0 +1,22 @@
+{
+  "name": "python-functions",
+  "category": "test-generation",
+  "difficulty": "medium",
+  "prompt": "/mnt/session/uploads/project/ にある Python 関数に対する pytest テストを生成してください。validators.py と calculator.py の全関数について、正常系・異常系・境界値テストを作成してください。テストは /mnt/user/tests/ に書き、python3 -m pytest /mnt/user/tests/ -v で全テストが PASS することを確認してください。テスト対象モジュールは /mnt/session/uploads/project/ にあるので、sys.path に追加してインポートしてください。",
+  "graders": {
+    "test_execution": {
+      "type": "fail-to-pass"
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": ["def test_", "import pytest|from pytest"],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}

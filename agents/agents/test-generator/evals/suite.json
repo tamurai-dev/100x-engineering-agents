@@ -1,0 +1,7 @@
+{
+  "agent": "test-generator",
+  "description": "テスト生成エージェントの品質評価スイート",
+  "tasks": ["python-functions"],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

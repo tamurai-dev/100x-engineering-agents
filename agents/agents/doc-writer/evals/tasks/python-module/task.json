@@ -1,0 +1,23 @@
+{
+  "name": "python-module",
+  "category": "documentation",
+  "difficulty": "medium",
+  "prompt": "/mnt/session/uploads/project/ にある Python モジュールのドキュメントを生成してください。全関数・クラスに対して、docstring、パラメータ説明、戻り値、使用例を含む包括的なドキュメントを作成してください。",
+  "graders": {
+    "code_based": {
+      "type": "keyword-check",
+      "keywords": ["extract", "transform", "load", "PipelineConfig", "source", "destination", "format"]
+    },
+    "model_based": {
+      "type": "rubric",
+      "grader_model": "claude-haiku-4-5"
+    },
+    "format": {
+      "patterns": [],
+      "required_sections": []
+    }
+  },
+  "pass_threshold": {
+    "outcome_score": 0.5
+  }
+}
