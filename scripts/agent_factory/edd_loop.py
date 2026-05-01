@@ -154,7 +154,7 @@ def _weakness_test_score(task_results: list[dict], weakness_type: str) -> float:
     """弱点テストのスコアを取得する。テストが存在しない場合は 1.0（問題なし）。"""
     for result in task_results:
         task_name = result.get("task", "")
-        if weakness_type in task_name:
+        if task_name == f"{weakness_type}-test" or task_name == weakness_type:
             return result.get("mean_scores", {}).get("overall", 1.0)
     return 1.0
 

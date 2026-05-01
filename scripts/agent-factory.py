@@ -182,7 +182,10 @@ def phase3_validate(agent_name: str) -> list[str]:
     return errors
 
 
-def phase4_edd(client, agent_name: str, model: str) -> dict:
+def phase4_edd(
+    client, agent_name: str, model: str,
+    target_score: float = 0.65, max_iterations: int = 3,
+) -> dict:
     """Phase 4: EDD ループ — 評価駆動開発で品質を引き上げる。"""
     from agent_factory.edd_loop import run_edd_loop
 
@@ -190,7 +193,10 @@ def phase4_edd(client, agent_name: str, model: str) -> dict:
     print("  Phase 4: EDD ループ（評価駆動開発）")
     print("=" * 60)
 
-    result = run_edd_loop(client, agent_name, model=model)
+    result = run_edd_loop(
+        client, agent_name, model=model,
+        target_score=target_score, max_iterations=max_iterations,
+    )
 
     print(f"\n  最終スコア: {result['final_score']}")
     print(f"  目標達成: {'YES' if result['target_reached'] else 'NO'}")
@@ -287,7 +293,10 @@ def main():
             print(f"ERROR: エージェントが見つかりません: {agent_dir}")
             sys.exit(1)
 
-        result = phase4_edd(client, agent_name, args.model)
+        result = phase4_edd(
+            client, agent_name, args.model,
+            target_score=args.target_score, max_iterations=args.max_iterations,
+        )
 
     else:
         # --spec モード: 全フェーズ実行
@@ -302,7 +311,10 @@ def main():
 
         # Phase 4（オプション）
         if not args.skip_edd:
-            edd_result = phase4_edd(client, blueprint["name"], args.model)
+            edd_result = phase4_edd(
+                client, blueprint["name"], args.model,
+                target_score=args.target_score, max_iterations=args.max_iterations,
+            )
 
     elapsed = time.time() - start_time
 
