@@ -416,10 +416,7 @@ def create_multiagent_session(
     # QA Agent
     qa_create = {
         "name": qa_config["name"],
-        "model": MODEL_MAP.get(
-            qa_config.get("model_short", "sonnet"),
-            qa_config.get("model", MODEL_MAP["sonnet"]),
-        ),
+        "model": qa_config.get("model", MODEL_MAP["sonnet"]),
         "system": qa_config.get("system", ""),
     }
     if qa_config.get("description"):
@@ -433,23 +430,28 @@ def create_multiagent_session(
     orchestrator_system = build_orchestrator_system(
         bundle_name, qa_settings, skill_content
     )
+    # callable_agents is a Research Preview parameter — pass via extra_body
+    # to support SDK versions that don't have it as a named parameter yet.
     orchestrator = client.beta.agents.create(
         name=f"orchestrator-{bundle_name}",
         model=MODEL_MAP.get(current_model, current_model),
         system=orchestrator_system,
         tools=[{"type": "agent_toolset_20260401"}],
-        callable_agents=[
-            {
-                "type": "agent",
-                "id": task_agent.id,
-                "version": task_agent.version,
-            },
-            {
-                "type": "agent",
-                "id": qa_agent.id,
-                "version": qa_agent.version,
-            },
-        ],
+        betas=[MULTIAGENT_BETA],
+        extra_body={
+            "callable_agents": [
+                {
+                    "type": "agent",
+                    "id": task_agent.id,
+                    "version": task_agent.version,
+                },
+                {
+                    "type": "agent",
+                    "id": qa_agent.id,
+                    "version": qa_agent.version,
+                },
+            ],
+        },
     )
 
     # Shared environment
@@ -474,11 +476,16 @@ def create_multiagent_session(
     return orchestrator, task_agent, qa_agent, env, session
 
 
-def collect_multiagent_events(client, session_id: str) -> dict:
+def collect_multiagent_events(
+    client, session_id: str, prompt: str | None = None
+) -> dict:
     """Stream events from an orchestrator session and collect results.
 
     The orchestrator internally delegates to Task and QA agents.
     We collect the final orchestrator response.
+
+    If prompt is provided, opens the stream first then sends the message
+    to avoid race conditions (matching send_and_collect pattern).
     """
     messages: list[str] = []
     tool_calls: list[dict] = []
@@ -487,6 +494,16 @@ def collect_multiagent_events(client, session_id: str) -> dict:
 
     try:
         with client.beta.sessions.events.stream(session_id) as stream:
+            if prompt:
+                client.beta.sessions.events.send(
+                    session_id,
+                    events=[
+                        {
+                            "type": "user.message",
+                            "content": [{"type": "text", "text": prompt}],
+                        },
+                    ],
+                )
             for event in stream:
                 match event.type:
                     case "agent.message":
@@ -614,19 +631,53 @@ def run_bundle_multiagent(
 
     print(f"[Phase B] Orchestrator 実行中 (model: {current_model})...")
 
-    orchestrator, task_agent, qa_agent, env, session = (
-        create_multiagent_session(
-            client,
-            task_config,
-            qa_config,
-            bundle_name,
-            qa_settings,
-            current_model,
-            skill_content=skill_content,
-            skills=bundle_skills or None,
-            packages=bundle_packages or None,
+    try:
+        orchestrator, task_agent, qa_agent, env, session = (
+            create_multiagent_session(
+                client,
+                task_config,
+                qa_config,
+                bundle_name,
+                qa_settings,
+                current_model,
+                skill_content=skill_content,
+                skills=bundle_skills or None,
+                packages=bundle_packages or None,
+            )
         )
-    )
+    except Exception as e:
+        err_str = str(e)
+        if "callable_agents" in err_str or "Extra inputs" in err_str:
+            print(
+                "\n  ERROR: Multiagent Sessions は Research Preview 機能です。"
+                "\n  Anthropic に Research Preview アクセスを申請してください。"
+                "\n  https://docs.anthropic.com/en/docs/agents-and-tools/"
+                "managed-agents/multiagent-sessions"
+                "\n\n  代替: --multiagent なしで従来モード（別セッション方式）"
+                "を使用できます。\n"
+            )
+        else:
+            print(f"\n  ERROR: セッション作成失敗: {e}\n")
+        results["final_status"] = "multiagent_not_available"
+        results["error"] = err_str
+        results["completed_at"] = datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat()
+        # Save partial evidence
+        EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d"
+        )
+        model_label = model or "default"
+        evidence_path = (
+            EVIDENCE_DIR
+            / f"{timestamp}_{bundle_name}_multiagent_{model_label}.json"
+        )
+        with open(evidence_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"  証跡: {evidence_path}")
+        return results
 
     # Send user task to orchestrator — it will delegate internally
     orchestrator_prompt = (
@@ -636,18 +687,8 @@ def run_bundle_multiagent(
         "system prompt."
     )
 
-    # Send the initial message to kick off the orchestrator
-    client.beta.sessions.events.send(
-        session.id,
-        events=[
-            {
-                "type": "user.message",
-                "content": [{"type": "text", "text": orchestrator_prompt}],
-            },
-        ],
-    )
-
-    result = collect_multiagent_events(client, session.id)
+    # Open stream first, then send message to avoid race condition
+    result = collect_multiagent_events(client, session.id, orchestrator_prompt)
 
     if result["errors"]:
         print(f"  ERROR: Orchestrator でエラー発生: {result['errors']}")
