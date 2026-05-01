@@ -248,6 +248,9 @@ def grade_transcript(events: list[dict]) -> dict:
 
     if turns == 0 and tool_calls == 0 and tokens_total == 0:
         efficiency_score = 0.0
+        turn_score = 0.0
+        tool_score = 0.0
+        token_score = 0.0
     else:
         turn_score = _threshold_score(turns, excellent=2, acceptable=5)
         tool_score = _threshold_score(tool_calls, excellent=5, acceptable=15)
