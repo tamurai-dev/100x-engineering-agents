@@ -125,7 +125,8 @@ agent:
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
 │   ├── validate-bundle.py            #   Bundle バリデーション
-│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン
+│   ├── run-bundle.py                 #   Bundle ワークフロー実行エンジン v2
+│   ├── run_bundle_helpers.py          #   run-bundle.py テスト用ヘルパー
 │   └── setup-hooks.sh                #   初期セットアップ
 │
 ├── evidence/                         # テスト証跡（Managed Agents セッション）
@@ -140,6 +141,7 @@ agent:
 │   ├── test_validate_bundle.py       #   Bundle バリデーションテストスイート
 │   ├── test_qa_strategy.py           #   QA 戦略エンジンテストスイート
 │   ├── test_bundle_factory.py        #   Bundle Factory テストスイート
+│   ├── test_run_bundle.py            #   Bundle ワークフロー実行エンジンテストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
 │
@@ -230,10 +232,11 @@ make check-all
 | 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
 | 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
 | 6 | `make test-bundle-factory` | Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開） |
-| 7 | `make check-template` | テンプレート整合性チェック |
-| 8 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 9 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 10 | `make report` | バリデーションレポート (JSON) 生成 |
+| 7 | `make test-run-bundle` | Bundle ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
+| 8 | `make check-template` | テンプレート整合性チェック |
+| 9 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 10 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 11 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 

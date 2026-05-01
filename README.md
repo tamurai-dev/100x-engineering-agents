@@ -205,9 +205,22 @@ make run-bundle-dry NAME=code-review-bundle
 # バンドルのワークフロー実行（ANTHROPIC_API_KEY 必須）
 make run-bundle NAME=code-review-bundle INPUT="レビュー対象コード" MODEL=haiku
 
+# 詳細ログ付き実行（デバッグ用）
+make run-bundle NAME=code-review-bundle INPUT="..." MODEL=haiku VERBOSE=1
+
 # バンドルバリデーション
 make validate-bundle
 ```
+
+**ワークフロー実行エンジン v2 の特徴:**
+
+| 機能 | 説明 |
+|------|------|
+| **SKILL.md 注入** | バンドルの `skill.md` を Task Agent のプロンプトに自動注入 |
+| **Files API 連携** | Task Agent が生成したファイルを QA Agent のセッションにマウント |
+| **フィードバック蓄積** | 全ラウンドの QA 指摘を累積し、同じ問題の再発を防止 |
+| **証跡詳細化** | task_response 抜粋、tool_calls、出力ファイル一覧を証跡に記録 |
+| **--verbose** | デバッグ用の詳細ログ出力 |
 
 ---
 
