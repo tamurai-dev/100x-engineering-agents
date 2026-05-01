@@ -108,16 +108,20 @@ _STRATEGY_MAP: dict[str, QAStrategy] = {
     ),
 }
 
-# generic fallback (text, structured_data, document, media_*, environment_state)
-_GENERIC_STRATEGY = QAStrategy(
-    artifact_format="generic",
-    agent_template="qa-generic.md.tmpl",
-    config_template="qa-config.json.tmpl",
-    pipeline=["text_analysis"],
-    execution_strategy="direct",
-    recommended_model="haiku",
-    description="汎用テキスト分析による品質検査",
-)
+# generic fallback defaults (text, structured_data, document, media_*, environment_state)
+_GENERIC_DEFAULTS = {
+    "agent_template": "qa-generic.md.tmpl",
+    "config_template": "qa-config.json.tmpl",
+    "pipeline": ["text_analysis"],
+    "execution_strategy": "direct",
+    "recommended_model": "haiku",
+    "description": "汎用テキスト分析による品質検査",
+}
+
+
+def _make_generic_strategy(artifact_format: str) -> QAStrategy:
+    """元の artifact_format を保持した generic 戦略を生成する。"""
+    return QAStrategy(artifact_format=artifact_format, **_GENERIC_DEFAULTS)
 
 
 def resolve_qa_strategy(artifact_format: str) -> QAStrategy:
@@ -137,7 +141,9 @@ def resolve_qa_strategy(artifact_format: str) -> QAStrategy:
             f"Unknown artifact_format: {artifact_format!r}. "
             f"Valid formats: {sorted(VALID_ARTIFACT_FORMATS)}"
         )
-    return _STRATEGY_MAP.get(artifact_format, _GENERIC_STRATEGY)
+    if artifact_format in _STRATEGY_MAP:
+        return _STRATEGY_MAP[artifact_format]
+    return _make_generic_strategy(artifact_format)
 
 
 def list_strategies() -> dict[str, QAStrategy]:

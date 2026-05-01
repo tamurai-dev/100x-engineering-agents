@@ -59,29 +59,29 @@ class TestResolveQAStrategy(unittest.TestCase):
 
     def test_text_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("text")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "text")
         self.assertEqual(strategy.agent_template, "qa-generic.md.tmpl")
 
     def test_document_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("document")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "document")
         self.assertEqual(strategy.agent_template, "qa-generic.md.tmpl")
 
     def test_structured_data_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("structured_data")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "structured_data")
 
     def test_media_image_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("media_image")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "media_image")
 
     def test_media_video_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("media_video")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "media_video")
 
     def test_environment_state_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("environment_state")
-        self.assertEqual(strategy.artifact_format, "generic")
+        self.assertEqual(strategy.artifact_format, "environment_state")
 
     def test_invalid_format_raises_value_error(self) -> None:
         with self.assertRaises(ValueError) as ctx:
@@ -161,6 +161,14 @@ class TestTemplateFiles(unittest.TestCase):
         # fresh-context concept expressed in Japanese
         self.assertIn("タスク実行の過程を知らない状態", system)
 
+    def test_config_template_has_placeholders(self) -> None:
+        """qa-config.json.tmpl がプレースホルダーを含む。"""
+        path = TEMPLATES_DIR / "qa-config.json.tmpl"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        # Bundle Factory がこれらを実際の値に置換する
+        self.assertEqual(data["name"], "<agent-name>-qa")
+        self.assertEqual(data["model"], "<model>")
+
 
 class TestQAStrategyCompleteness(unittest.TestCase):
     """QA 戦略マッピングの完全性テスト。"""
@@ -219,6 +227,24 @@ class TestQAStrategyCompleteness(unittest.TestCase):
                 "qa-generic.md.tmpl",
                 f"{fmt} should use qa-generic.md.tmpl",
             )
+
+    def test_generic_preserves_original_artifact_format(self) -> None:
+        """generic fallback が元の artifact_format を保持する。"""
+        for fmt in ["text", "document", "structured_data"]:
+            strategy = resolve_qa_strategy(fmt)
+            self.assertEqual(
+                strategy.artifact_format,
+                fmt,
+                f"generic strategy for {fmt} should preserve artifact_format",
+            )
+
+    def test_round_trip_resolve(self) -> None:
+        """resolve → artifact_format → 再 resolve がエラーなく動作する。"""
+        for fmt in VALID_ARTIFACT_FORMATS:
+            strategy = resolve_qa_strategy(fmt)
+            # round-trip: artifact_format should be valid for re-resolve
+            strategy2 = resolve_qa_strategy(strategy.artifact_format)
+            self.assertEqual(strategy.agent_template, strategy2.agent_template)
 
 
 class TestQAStrategyProperties(unittest.TestCase):
