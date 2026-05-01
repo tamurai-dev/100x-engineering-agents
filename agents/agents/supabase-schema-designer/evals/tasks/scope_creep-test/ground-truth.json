@@ -68,7 +68,7 @@
     },
     {
       "type": "content_quality",
-      "description": "001_initial.sql にてnanant_idを用いたRLSポリシーがtenants/projects/tasks/task_commentsの各テーブルに定義されていること",
+      "description": "001_initial.sql にてtenant_idを用いたRLSポリシーがtenants/projects/tasks/task_commentsの各テーブルに定義されていること",
       "expected": "present",
       "severity": "high"
     },

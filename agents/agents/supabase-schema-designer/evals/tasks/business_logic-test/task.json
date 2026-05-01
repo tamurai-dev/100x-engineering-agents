@@ -6,8 +6,21 @@
   "graders": {
     "code_based": {
       "type": "keyword-check",
-      "ground_truth": "ground-truth.json",
-      "min_recall": 0.5
+      "keywords": [
+        "free",
+        "active",
+        "deleted_at IS NULL",
+        "RAISE EXCEPTION",
+        "BEFORE DELETE",
+        "refunds",
+        "FLOOR",
+        "organization_id",
+        "UNIQUE",
+        "owner",
+        "organization_members",
+        "ENABLE ROW LEVEL SECURITY",
+        "erDiagram"
+      ]
     },
     "model_based": {
       "type": "rubric",

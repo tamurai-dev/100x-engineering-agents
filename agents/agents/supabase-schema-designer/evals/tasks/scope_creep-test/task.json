@@ -6,8 +6,17 @@
   "graders": {
     "code_based": {
       "type": "keyword-check",
-      "ground_truth": "ground-truth.json",
-      "min_recall": 0.5
+      "keywords": [
+        "001_initial.sql",
+        "er_diagram.md",
+        "CREATE TABLE",
+        "ENABLE ROW LEVEL SECURITY",
+        "CREATE POLICY",
+        "CREATE INDEX",
+        "tenant_id",
+        "erDiagram",
+        "updated_at"
+      ]
     },
     "model_based": {
       "type": "rubric",

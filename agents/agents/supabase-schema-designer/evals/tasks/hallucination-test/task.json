@@ -6,8 +6,18 @@
   "graders": {
     "code_based": {
       "type": "keyword-check",
-      "ground_truth": "ground-truth.json",
-      "min_recall": 0.5
+      "keywords": [
+        "存在しません",
+        "見つかりません",
+        "確認できません",
+        "v2_schema.sql",
+        "user_analytics",
+        "003_add_indexes.sql",
+        "customer_email",
+        "erd_v2.md",
+        "payment_methods",
+        "audit_logs"
+      ]
     },
     "model_based": {
       "type": "rubric",
