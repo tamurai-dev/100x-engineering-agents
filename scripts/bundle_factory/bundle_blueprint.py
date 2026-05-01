@@ -340,20 +340,20 @@ def expand_qa_agent(blueprint: dict) -> tuple[str, dict]:
         (agent_md_text, config_dict)
     """
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
-    bundle_name = blueprint["bundle_name"].replace("-bundle", "")
+    bundle_name = blueprint["bundle_name"].removesuffix("-bundle")
     qa_name = f"{bundle_name}-qa"
     description = blueprint["description"]
 
     # agent.md: テンプレートを読み込みプレースホルダー置換
     agent_template_path = strategy.agent_template_path
     agent_md = agent_template_path.read_text(encoding="utf-8")
-    agent_md = agent_md.replace("<bundle-name>", qa_name.replace("-qa", ""))
+    agent_md = agent_md.replace("<bundle-name>", bundle_name)
     agent_md = agent_md.replace("<bundle-description>", description)
 
     # config.json: テンプレートを読み込みプレースホルダー置換
     config_template_path = strategy.config_template_path
     config_text = config_template_path.read_text(encoding="utf-8")
-    config_text = config_text.replace("<bundle-name>", qa_name.replace("-qa", ""))
+    config_text = config_text.replace("<bundle-name>", bundle_name)
     config_text = config_text.replace("<bundle-description>", description)
     config_text = config_text.replace(
         "<model>",
@@ -399,7 +399,7 @@ def generate_bundle_json(blueprint: dict) -> dict:
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
     bundle_name = blueprint["bundle_name"]
     task_name = blueprint["task_agent_name"]
-    qa_name = bundle_name.replace("-bundle", "") + "-qa"
+    qa_name = bundle_name.removesuffix("-bundle") + "-qa"
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     return {
@@ -441,7 +441,7 @@ def generate_bundle_json(blueprint: dict) -> dict:
 def generate_workflow_md(blueprint: dict, bundle_json: dict) -> str:
     """workflow.md を生成する。"""
     strategy = resolve_qa_strategy(blueprint["artifact_format"])
-    qa_name = blueprint["bundle_name"].replace("-bundle", "") + "-qa"
+    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
     workflow = bundle_json["workflow"]
     pre_task = workflow.get("pre_task", {})
     packages = pre_task.get("verify_packages", [])
@@ -476,7 +476,7 @@ def save_bundle(
         作成したディレクトリ・ファイルのパス辞書
     """
     task_name = blueprint["task_agent_name"]
-    qa_name = blueprint["bundle_name"].replace("-bundle", "") + "-qa"
+    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
     bundle_name = blueprint["bundle_name"]
 
     paths: dict[str, Path] = {}

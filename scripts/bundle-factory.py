@@ -103,7 +103,7 @@ def phase2_qa_agent(blueprint: dict) -> tuple[str, dict]:
     print(f"  推奨モデル: {strategy.recommended_model}")
 
     qa_md, qa_config = expand_qa_agent(blueprint)
-    qa_name = blueprint["bundle_name"].replace("-bundle", "") + "-qa"
+    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
     print(f"  QA Agent 名: {qa_name}")
 
     return qa_md, qa_config
@@ -175,7 +175,7 @@ def phase5_save_and_validate(
 
     # Register Task Agent in manifest
     task_name = blueprint["task_agent_name"]
-    qa_name = blueprint["bundle_name"].replace("-bundle", "") + "-qa"
+    qa_name = blueprint["bundle_name"].removesuffix("-bundle") + "-qa"
 
     for agent_name in [task_name, qa_name]:
         print(f"  [{agent_name}] マニフェスト登録 ...", end=" ")
@@ -339,7 +339,7 @@ def main():
 
     bundle_name = blueprint["bundle_name"]
     task_name = blueprint["task_agent_name"]
-    qa_name = bundle_name.replace("-bundle", "") + "-qa"
+    qa_name = bundle_name.removesuffix("-bundle") + "-qa"
 
     print(f"\n  生成物:")
     print(f"    Task Agent:  agents/agents/{task_name}/")
