@@ -115,9 +115,12 @@ agent:
 │   ├── agent_factory/                #   Agent Factory コアモジュール
 │   │   ├── blueprint.py              #     Phase 1: Blueprint 生成
 │   │   ├── eval_suite.py             #     Phase 2: Eval Suite 生成
-│   │   └── edd_loop.py               #     Phase 4: EDD ループ
+│   │   ├── edd_loop.py               #     Phase 4: EDD ループ
+│   │   └── utils.py                  #     共通ユーティリティ（JSON パース等）
+│   ├── bundle-factory.py              #   Bundle Factory CLI（自然言語 → バンドル自動生成）
 │   ├── bundle_factory/                #   Bundle Factory コアモジュール
-│   │   └── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
+│   │   ├── qa_strategy.py             #     QA 戦略エンジン（artifact_format → テンプレート自動選択）
+│   │   └── bundle_blueprint.py        #     Bundle Blueprint 生成（Task + QA Agent + bundle.json）
 │   ├── collect-evidence.py           #   セッション証跡収集
 │   ├── create-subagent.sh            #   新規 Subagent 作成（テンプレートベース）
 │   ├── manifest.py                   #   マニフェスト管理（HMAC署名）
@@ -136,6 +139,7 @@ agent:
 │   ├── test_validate_subagents.py    #   バリデーションテストスイート
 │   ├── test_validate_bundle.py       #   Bundle バリデーションテストスイート
 │   ├── test_qa_strategy.py           #   QA 戦略エンジンテストスイート
+│   ├── test_bundle_factory.py        #   Bundle Factory テストスイート
 │   ├── fixtures/                     #   テスト用フィクスチャ（正常系 + 異常系）
 │   └── reports/                      #   バリデーションレポート（自動生成）
 │
@@ -225,10 +229,11 @@ make check-all
 | 3 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
 | 4 | `make test-bundle` | Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性） |
 | 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
-| 6 | `make check-template` | テンプレート整合性チェック |
-| 7 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
-| 8 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
-| 9 | `make report` | バリデーションレポート (JSON) 生成 |
+| 6 | `make test-bundle-factory` | Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開） |
+| 7 | `make check-template` | テンプレート整合性チェック |
+| 8 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 9 | `make validate-bundle` | Actor-Critic Bundle バリデーション |
+| 10 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### Managed Agents API テスト
 
@@ -398,7 +403,62 @@ make improve-agent NAME=code-reviewer
 python scripts/agent-factory.py --spec "..." --dry-run
 ```
 
-### 4.6 禁止事項（再掲・厳守）
+### 4.6 Bundle Factory — 自然言語からバンドル自動生成
+
+Bundle Factory は自然言語の仕様から Task Agent + QA Agent のバンドルを完全自動生成する。Agent Factory がシングルエージェントを生成するのに対し、Bundle Factory は Actor-Critic ペアをセットで生成する。
+
+#### ユースケース例
+
+```bash
+# スライド生成バンドル（Task: pptxgenjs スクリプト生成 + QA: ビジュアル品質検査）
+make create-bundle SPEC="pptxgenjsでプレゼンスライドを生成"
+
+# HTML モックアップ（Task: HTML 生成 + QA: Playwright screenshot 検査）
+make create-bundle SPEC="ランディングページのHTMLモックアップ作成" FORMAT=html_ui
+
+# コード生成（Task: コード生成 + QA: lint + テスト実行検査）
+make create-bundle SPEC="Pythonでデータ分析スクリプトを生成" MODEL=sonnet
+```
+
+#### 5フェーズパイプライン
+
+```
+Phase 1: Bundle Blueprint 生成
+  自然言語仕様 → Claude Messages API → Task Agent 設計 + QA Agent 設計
+  - agent_type（8タイプ）+ artifact_format（9フォーマット）を自動判定
+  - Task Agent の system prompt + ツール選択を自動生成
+
+Phase 2: QA Agent テンプレート展開
+  artifact_format → qa_strategy.py → QA テンプレート自動選択
+  - presentation → qa-presentation.md.tmpl（ビジュアル品質検査）
+  - html_ui → qa-html-ui.md.tmpl（UI 品質検査）
+  - code → qa-code.md.tmpl（コード品質検査）
+  - その他 → qa-generic.md.tmpl（汎用品質検査）
+
+Phase 3: SKILL.md 生成
+  Claude Messages API → タスク固有の手順書（前提条件・実行手順・品質基準）
+
+Phase 4: bundle.json + workflow.md 生成
+  ローカル生成 → バンドル定義 + ワークフロー手順書
+
+Phase 5: 登録 + バリデーション
+  マニフェスト登録（Task + QA 両方）+ frontmatter + config + bundle 検証
+```
+
+#### コマンド一覧
+
+```bash
+# バンドル全自動生成
+make create-bundle SPEC="pptxgenjsでスライド生成"
+
+# artifact_format を明示指定（LLM 推論をスキップ）
+make create-bundle SPEC="..." FORMAT=presentation
+
+# ドライラン（API 呼び出しなし）
+make create-bundle-dry SPEC="..." FORMAT=presentation
+```
+
+### 4.7 禁止事項（再掲・厳守）
 
 - `main` への直接プッシュ
 - 推測に基づくコード生成

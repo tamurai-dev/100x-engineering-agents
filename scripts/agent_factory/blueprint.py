@@ -434,14 +434,23 @@ def save_blueprint(
     agent_md: str,
     config: dict,
     test_prompts: list,
+    base_dir: Path | None = None,
 ) -> Path:
     """
     生成されたファイルをディスクに書き出す。
 
+    Args:
+        blueprint: Blueprint dict
+        agent_md: agent.md テキスト
+        config: config.json dict
+        test_prompts: test-prompts.json list
+        base_dir: エージェント格納先ディレクトリ（デフォルト: agents/agents/）
+
     Returns:
         エージェントディレクトリのパス
     """
-    agent_dir = AGENTS_DIR / blueprint["name"]
+    target_dir = base_dir if base_dir is not None else AGENTS_DIR
+    agent_dir = target_dir / blueprint["name"]
     agent_dir.mkdir(parents=True, exist_ok=True)
 
     # agent.md

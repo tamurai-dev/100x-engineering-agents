@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry
+.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -96,7 +96,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test test-bundle test-qa-strategy check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -129,12 +129,32 @@ ifndef NAME
 endif
 	@$(PYTHON) scripts/agent-factory.py --improve $(NAME) --model $(or $(MODEL),haiku)
 
+# ── Bundle Factory（バンドル自動生成）─────────────
+create-bundle: ## 自然言語からバンドル自動生成 (usage: make create-bundle SPEC="..." [MODEL=haiku] [FORMAT=presentation])
+ifndef SPEC
+	@echo "ERROR: SPEC を指定してください"
+	@echo '  例: make create-bundle SPEC="pptxgenjsでプレゼンスライドを生成"'
+	@echo '  例: make create-bundle SPEC="..." MODEL=haiku FORMAT=presentation'
+	@exit 1
+endif
+	@$(PYTHON) scripts/bundle-factory.py --spec "$(SPEC)" --model $(or $(MODEL),haiku) $(if $(FORMAT),--format $(FORMAT),)
+
+create-bundle-dry: ## バンドル生成のドライラン (usage: make create-bundle-dry SPEC="..." [FORMAT=presentation])
+ifndef SPEC
+	@echo "ERROR: SPEC を指定してください"
+	@exit 1
+endif
+	@$(PYTHON) scripts/bundle-factory.py --spec "$(SPEC)" --dry-run $(if $(FORMAT),--format $(FORMAT),)
+
 # ── Bundle ────────────────────────────────────────
 test-bundle: ## Bundle バリデーションテストスイート（正常系 + 異常系 + 整合性）
 	@$(PYTHON) tests/test_validate_bundle.py
 
 test-qa-strategy: ## QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性）
 	@$(PYTHON) tests/test_qa_strategy.py
+
+test-bundle-factory: ## Bundle Factory テストスイート（Blueprint 生成 + テンプレート展開 + バリデーション）
+	@$(PYTHON) tests/test_bundle_factory.py
 
 validate-bundle: ## 全バンドルの bundle.json をバリデーション
 	@$(PYTHON) scripts/validate-bundle.py
