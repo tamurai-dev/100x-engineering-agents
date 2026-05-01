@@ -64,12 +64,11 @@ def grade_test_execution(events: list[dict]) -> dict:
             "reason": "テスト実行コマンドが見つからなかった",
         }
 
-    # 全テスト実行結果を結合して判定（最終実行を優先）
-    all_test_output = "\n".join(r.get("result", "") or "" for r in test_runs)
+    # 最終テスト実行の結果で判定（エージェントが修正→再実行するパターンに対応）
     final_run = test_runs[-1]
     test_output = final_run.get("result", "") or ""
 
-    tests_passed = _check_test_passed(all_test_output)
+    tests_passed = _check_test_passed(test_output)
 
     return {
         "tests_executed": True,
@@ -85,7 +84,10 @@ def _is_test_command(text: str) -> bool:
     """テスト実行コマンドかどうかを判定する。"""
     if not text:
         return False
-    text_lower = text.lower()
+    text_lower = text.strip().lower()
+    # cat, echo 等の出力コマンドを除外
+    if text_lower.startswith(("cat ", "echo ", "printf ")):
+        return False
     test_patterns = [
         "pytest",
         "python -m pytest",
