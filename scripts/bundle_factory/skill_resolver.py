@@ -139,14 +139,13 @@ for _name, _info in COMMUNITY_SKILLS.items():
 # Priority: PREBUILT > CUSTOM > COMMUNITY
 
 CUSTOM_SKILLS: dict[str, dict] = {
-    # Example entries — replace with actual registered skill_ids
-    # "tam-invoice-generator": {
-    #     "skill_id": "skill_abc123",
-    #     "display_title": "TAM 請求書生成",
-    #     "description": "TAM独自フォーマットの請求書を自動生成",
-    #     "artifact_formats": ["document", "structured_data"],
-    #     "keywords": ["invoice", "billing", "accounting", "tam"],
-    # },
+    "phone-caller": {
+        "skill_id": "skill_phone_caller",
+        "display_title": "AI 電話エージェント",
+        "description": "ElevenLabs Eleven Agents + Twilio Voice でユーザーの代わりに電話をかけ、自然な会話を行う",
+        "artifact_formats": ["text", "structured_data"],
+        "keywords": ["phone", "call", "twilio", "elevenlabs", "voice", "telephone", "電話", "架電", "通話"],
+    },
 }
 
 # Mapping: artifact_format -> list of custom skill names
@@ -218,6 +217,10 @@ def resolve_custom_skills(
         scored.append((name, info, keyword_hits + name_hit))
 
     scored.sort(key=lambda x: x[2], reverse=True)
+    # When a spec is provided, filter out skills with no keyword matches
+    # to avoid returning irrelevant skills for unrelated queries.
+    if spec_lower:
+        scored = [(n, i, s) for n, i, s in scored if s > 0]
     return [
         {
             "type": "custom",
