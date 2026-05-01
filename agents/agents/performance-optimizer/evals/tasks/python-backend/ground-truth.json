@@ -57,7 +57,7 @@
     {
       "id": "sequential-batch",
       "file": "utils.py",
-      "line_range": [27, 31],
+      "line_range": [21, 28],
       "type": "sequential-processing",
       "severity": "medium",
       "category": "should_find",

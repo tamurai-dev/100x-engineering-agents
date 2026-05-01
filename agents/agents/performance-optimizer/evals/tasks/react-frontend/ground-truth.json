@@ -39,7 +39,7 @@
     {
       "id": "format-date-recompute",
       "file": "Dashboard.tsx",
-      "line_range": [54, 56],
+      "line_range": [51, 53],
       "type": "redundant-computation",
       "severity": "medium",
       "category": "should_find",

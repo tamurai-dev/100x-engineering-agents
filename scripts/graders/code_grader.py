@@ -168,6 +168,16 @@ def _get_type_keywords(issue_type: str) -> list[str]:
         "unhandled-promise": ["missing await", "awaitが不足", "未処理のpromise", "unhandled promise", "promiseが未処理"],
         "stack-trace-exposure": ["スタックトレース", "err.stack", "内部情報の露出", "stack trace exposure"],
         "password-leak": ["パスワードが漏洩", "password leak", "パスワードをレスポンス", "機密データの露出"],
+        # Performance optimization issue types
+        "n-plus-1-query": ["n+1", "n + 1", "n+1クエリ", "n+1 query", "個別クエリ", "ループ内でクエリ", "ループ内のクエリ"],
+        "select-star": ["select *", "select \\*", "全カラム取得", "不要なカラム", "必要なカラムのみ"],
+        "inefficient-algorithm": ["bubble sort", "バブルソート", "o(n²)", "o(n^2)", "二重ループ", "計算量", "非効率なアルゴリズム"],
+        "unindexable-query": ["like '%", "インデックスが効かない", "フルスキャン", "full scan", "先頭ワイルドカード"],
+        "redundant-computation": ["redundant", "不要な再計算", "無駄な取得", "全件取得", "再計算", "毎回計算"],
+        "sequential-processing": ["sequential", "逐次処理", "並行処理", "promise.all", "asyncio", "threadpool", "直列"],
+        "missing-memoization": ["usememo", "メモ化", "memoiz", "再計算", "キャッシュ"],
+        "bundle-size": ["バンドルサイズ", "bundle size", "tree-shaking", "tree shaking", "全量インポート", "lodash", "moment"],
+        "unnecessary-rerender": ["再レンダリング", "re-render", "usecallback", "inline callback", "インラインコールバック", "インライン関数"],
     }
     return keyword_map.get(issue_type, [issue_type.replace("-", " ")])
 
