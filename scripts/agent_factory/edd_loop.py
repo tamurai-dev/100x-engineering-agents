@@ -386,8 +386,28 @@ def run_edd_loop(
 
         prev_score = current_score
 
-    # 最終スコア
-    final_score = iterations[-1]["score"] if iterations else 0.0
+    # 最終評価（trials=3 で信頼性確認）
+    print(f"\n{'='*60}")
+    print("  最終評価（trials=3）")
+    print(f"{'='*60}")
+
+    suite = eval_agent.load_suite(agent_name)
+    task_names = suite.get("tasks", [])
+    final_results = []
+    for task_name in task_names:
+        print(f"\n  [final eval] {task_name} ...")
+        result = eval_agent.evaluate_task(
+            client, agent_name, task_name, model, num_trials=3,
+        )
+        final_results.append(result)
+
+    final_overall = [
+        r["mean_scores"]["overall"]
+        for r in final_results
+        if r.get("mean_scores", {}).get("overall") is not None
+    ]
+    final_score = sum(final_overall) / len(final_overall) if final_overall else 0.0
+    print(f"\n  最終スコア（trials=3）: {final_score:.3f}")
 
     return {
         "iterations": iterations,
@@ -396,4 +416,12 @@ def run_edd_loop(
         "improvements_made": sum(
             1 for it in iterations if it.get("action") == "improved"
         ),
+        "final_results": [
+            {
+                "task": r["task"],
+                "overall": r["mean_scores"]["overall"],
+                "pass_rate": r.get("pass_rate"),
+            }
+            for r in final_results
+        ],
     }
