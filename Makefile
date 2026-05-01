@@ -10,7 +10,7 @@ SHELL      := /bin/bash
 AGENTS_DIR := agents/agents
 REPORT     := tests/reports/validation-report.json
 
-.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle
+.PHONY: help validate validate-config test test-bundle test-qa-strategy check-template check-all create-agent create-smart-agent improve-agent setup report clean manifest-verify manifest-show manifest-init test-agent test-all-agents evidence-summary eval-agent eval-all-agents eval-agent-dry validate-bundle run-bundle run-bundle-dry create-bundle create-bundle-dry test-bundle-factory test-run-bundle test-skill-resolver
 
 # ── デフォルト ────────────────────────────────────
 help: ## このヘルプを表示
@@ -96,7 +96,7 @@ evidence-summary: ## evidence/SUMMARY.md を再生成
 	@$(PYTHON) scripts/collect-evidence.py summary
 
 # ── 統合チェック ─────────────────────────────────
-check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory test-run-bundle check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
+check-all: validate validate-config test test-bundle test-qa-strategy test-bundle-factory test-run-bundle test-skill-resolver check-template manifest-verify validate-bundle report ## 全チェック実行（CI と同等）
 	@echo ""
 	@echo "========================================"
 	@echo "  check-all: ALL PASSED"
@@ -158,6 +158,9 @@ test-bundle-factory: ## Bundle Factory テストスイート（Blueprint 生成 
 
 test-run-bundle: ## Bundle ワークフロー実行エンジン テストスイート（QA パース + SKILL 注入 + フィードバック蓄積）
 	@$(PYTHON) tests/test_run_bundle.py
+
+test-skill-resolver: ## Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決）
+	@$(PYTHON) tests/test_skill_resolver.py
 
 validate-bundle: ## 全バンドルの bundle.json をバリデーション
 	@$(PYTHON) scripts/validate-bundle.py

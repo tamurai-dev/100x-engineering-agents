@@ -24,6 +24,66 @@
           "description": "エージェントのディレクトリパス"
         }
       }
+    },
+    "skill_entry": {
+      "type": "object",
+      "required": ["type", "skill_id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["anthropic", "custom"],
+          "description": "スキルのソース。anthropic: プリビルト、custom: カスタムアップロード"
+        },
+        "skill_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "スキル ID。anthropic: pptx/xlsx/docx/pdf、custom: skill_xxx"
+        },
+        "version": {
+          "type": "string",
+          "default": "latest",
+          "description": "スキルバージョン。latest またはバージョン文字列"
+        }
+      },
+      "description": "Managed Agents API のスキル定義"
+    },
+    "package_list": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "apt": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "apt-get でインストールするシステムパッケージ"
+        },
+        "cargo": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "cargo でインストールする Rust パッケージ"
+        },
+        "gem": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "gem でインストールする Ruby パッケージ"
+        },
+        "go": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "go install でインストールする Go パッケージ"
+        },
+        "npm": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "npm でインストールする Node.js パッケージ"
+        },
+        "pip": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "pip でインストールする Python パッケージ"
+        }
+      },
+      "description": "Environment にプリインストールするパッケージ（マネージャ別）"
     }
   },
   "properties": {
@@ -102,6 +162,36 @@
     "skill": {
       "type": "string",
       "description": "SKILL.md のパス（バンドルディレクトリからの相対パス）"
+    },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill_entry" },
+      "maxItems": 20,
+      "description": "Managed Agents API に渡すスキル一覧。プリビルト（pptx/xlsx/docx/pdf）またはカスタムスキル。最大20個/セッション"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "packages": {
+          "$ref": "#/$defs/package_list",
+          "description": "Agent 起動前にインストールするパッケージ"
+        },
+        "networking": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["unrestricted", "restricted"],
+              "default": "unrestricted",
+              "description": "ネットワークアクセス設定"
+            }
+          },
+          "description": "ネットワーク設定"
+        }
+      },
+      "description": "Managed Agents API の Environment 設定。パッケージのプリインストールとネットワーク設定"
     },
     "workflow": {
       "type": "object",

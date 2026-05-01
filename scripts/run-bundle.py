@@ -11,6 +11,8 @@ v2 改善点:
   - フィードバック蓄積（全ラウンドの指摘を Task Agent に渡す）
   - 証跡詳細化（task_response 抜粋、tool_calls、出力ファイル一覧）
   - --verbose フラグ（デバッグ用詳細ログ）
+  - Anthropic Skills API 連携（プリビルト pptx/xlsx/docx/pdf + カスタムスキル）
+  - Environment packages 対応（apt/npm/pip 等のプリインストール）
 
 Usage:
     python scripts/run-bundle.py <bundle-name> --input "レビュー対象コード"
@@ -45,6 +47,7 @@ MODEL_MAP = {
 
 BETA_HEADER = "managed-agents-2026-04-01"
 FILES_BETA = "files-api-2025-04-14"
+SKILLS_BETA = "skills-2025-10-02"
 
 # Max chars of task_response to store in evidence
 EVIDENCE_RESPONSE_LIMIT = 2000
@@ -97,6 +100,8 @@ def create_agent_and_session(
     model_override: str | None,
     title: str,
     resources: list[dict] | None = None,
+    skills: list[dict] | None = None,
+    packages: dict[str, list[str]] | None = None,
 ) -> tuple:
     """Managed Agents API でエージェントとセッションを作成する。"""
     agent_config = dict(config)
@@ -112,11 +117,23 @@ def create_agent_and_session(
         create_params["description"] = agent_config["description"]
     if agent_config.get("tools"):
         create_params["tools"] = agent_config["tools"]
+    # Attach skills to the agent (pre-built and/or custom)
+    if skills:
+        create_params["skills"] = skills
 
     agent = client.beta.agents.create(**create_params)
+
+    # Build environment config with optional packages
+    env_config: dict = {
+        "type": "cloud",
+        "networking": {"type": "unrestricted"},
+    }
+    if packages:
+        env_config["packages"] = packages
+
     env = client.beta.environments.create(
         name=f"bundle-{agent_config['name']}-{int(time.time())}",
-        config={"type": "cloud", "networking": {"type": "unrestricted"}},
+        config=env_config,
     )
 
     session_params: dict = {
@@ -330,6 +347,20 @@ def run_bundle(
         elif verbose:
             print("  SKILL.md: なし")
 
+    # Load skills and environment from bundle.json
+    bundle_skills = bundle.get("skills", [])
+    bundle_env = bundle.get("environment", {})
+    bundle_packages = bundle_env.get("packages", {})
+    # Filter out empty package lists
+    bundle_packages = {k: v for k, v in bundle_packages.items() if v}
+
+    if bundle_skills:
+        skill_ids = [s.get("skill_id", "") for s in bundle_skills]
+        print(f"  Skills: {', '.join(skill_ids)}")
+    if bundle_packages:
+        pkg_strs = [f"{m}: {', '.join(p)}" for m, p in bundle_packages.items()]
+        print(f"  Packages: {'; '.join(pkg_strs)}")
+
     if verbose and pre_task.get("verify_packages"):
         print(f"  verify_packages: {pre_task['verify_packages']}")
 
@@ -347,6 +378,10 @@ def run_bundle(
         print(f"    system: {qa_config.get('system', '')[:80]}...")
         if skill_content:
             print(f"\n  [dry-run] SKILL.md: {len(skill_content)} chars")
+        if bundle_skills:
+            print(f"  [dry-run] Skills: {[s.get('skill_id') for s in bundle_skills]}")
+        if bundle_packages:
+            print(f"  [dry-run] Packages: {bundle_packages}")
         print()
         print("  [dry-run] ワークフロー検証完了。API 呼び出しはスキップしました。")
         return {"dry_run": True, "status": "ok"}
@@ -367,6 +402,8 @@ def run_bundle(
         "model_override": model,
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "skill_injected": skill_content is not None,
+        "skills_attached": [s.get("skill_id") for s in bundle_skills],
+        "packages_installed": bundle_packages,
         "iterations": [],
         "best_iteration": None,
         "best_score": 0.0,
@@ -376,7 +413,12 @@ def run_bundle(
     # ── Phase B: Task Agent 実行 ──
     print("[Phase B] Task Agent 実行中...")
     task_agent, task_env, task_session = create_agent_and_session(
-        client, task_config, model, f"Bundle Task: {bundle_name}"
+        client,
+        task_config,
+        model,
+        f"Bundle Task: {bundle_name}",
+        skills=bundle_skills or None,
+        packages=bundle_packages or None,
     )
 
     # Build initial prompt with skill preamble
