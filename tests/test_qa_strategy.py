@@ -166,7 +166,7 @@ class TestTemplateFiles(unittest.TestCase):
         path = TEMPLATES_DIR / "qa-config.json.tmpl"
         data = json.loads(path.read_text(encoding="utf-8"))
         # Bundle Factory がこれらを実際の値に置換する
-        self.assertEqual(data["name"], "<agent-name>-qa")
+        self.assertEqual(data["name"], "<bundle-name>-qa")
         self.assertEqual(data["model"], "<model>")
 
 
