@@ -14,7 +14,7 @@
 #
 # 前提条件:
 #   - Python 3.10+
-#   - pip install -e ".[dev]" 済み（または pyyaml, jsonschema がインストール済み）
+#   - pip install -e ".[dev]" 済み（または pyyaml, pydantic がインストール済み）
 # ============================================================
 
 set -euo pipefail
@@ -29,7 +29,7 @@ echo ""
 echo "[1/4] Python 依存パッケージを確認中..."
 MISSING=""
 python3 -c "import yaml" 2>/dev/null || MISSING="pyyaml"
-python3 -c "import jsonschema" 2>/dev/null || MISSING="$MISSING jsonschema"
+python3 -c "import pydantic" 2>/dev/null || MISSING="$MISSING pydantic"
 
 if [ -n "$MISSING" ]; then
     echo "  依存パッケージが不足しています: $MISSING"
@@ -39,11 +39,11 @@ if [ -n "$MISSING" ]; then
     echo ""
     echo "  または最小構成:"
     echo ""
-    echo "    pip install pyyaml jsonschema"
+    echo "    pip install pyyaml 'pydantic>=2.13'"
     echo ""
     exit 1
 fi
-echo "  OK: pyyaml, jsonschema を検出"
+echo "  OK: pyyaml, pydantic を検出"
 
 # ── Step 2: HMAC 署名鍵の生成 ─────────────────
 echo "[2/4] HMAC 署名鍵を確認中..."

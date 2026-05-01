@@ -1,230 +1,80 @@
 #!/usr/bin/env python3
-"""
-Bundle バリデーター（完全版）
+"""Actor-Critic Bundle validator (thin shim).
 
-bundle.json を bundle.schema.json で検証し、以下の整合性チェックも行う:
-  - 参照先エージェントの存在・マニフェスト登録
-  - ref パスと name の一貫性（ref 末尾 == name）
-  - config.json の存在チェック
-  - Task Agent と QA Agent の同一性チェック
-  - SKILL ファイルの存在チェック
-  - バージョン形式の追加検証
+Delegates to :mod:`duo_agents.validators`.
 
 Usage:
-    python scripts/validate-bundle.py                         # 全バンドル検証
-    python scripts/validate-bundle.py agents/bundles/my-bundle  # 個別検証
+    python scripts/validate-bundle.py                                # 全バンドル
+    python scripts/validate-bundle.py agents/bundles/my-bundle       # 個別検証
 """
 
 from __future__ import annotations
 
-import json
 import sys
 from pathlib import Path
 
-try:
-    import jsonschema
-except ImportError:
-    print("ERROR: jsonschema が必要です。 pip install jsonschema を実行してください。")
-    sys.exit(2)
-
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SCHEMA_PATH = REPO_ROOT / "agents" / "schemas" / "bundle.schema.json"
-BUNDLES_DIR = REPO_ROOT / "agents" / "bundles"
-AGENTS_DIR = REPO_ROOT / "agents" / "agents"
-MANIFEST_PATH = AGENTS_DIR / ".manifest.json"
+SRC_DIR = REPO_ROOT / "src"
+if SRC_DIR.exists() and str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from duo_agents.validators import (  # noqa: E402
+    _validate_agent_ref,
+    find_bundle_dirs,
+    load_manifest,
+    validate_bundle_dir,
+)
+
+# Backwards-compatible aliases for tests/test_validate_bundle.py.
+__all__ = [
+    "_validate_agent_ref",
+    "load_manifest",
+    "load_schema",
+    "validate_bundle",
+]
 
 
 def load_schema() -> dict:
-    """Bundle スキーマを読み込む。"""
-    with open(SCHEMA_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def load_manifest() -> dict:
-    """マニフェストを読み込む。"""
-    if MANIFEST_PATH.exists():
-        with open(MANIFEST_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    return {"version": 1, "agents": {}}
-
-
-def _validate_agent_ref(
-    bundle_name: str,
-    role: str,
-    agent: dict,
-    manifest: dict,
-) -> list[str]:
-    """エージェント参照（task_agent / qa_agent）を検証する。"""
-    errors: list[str] = []
-    agent_name = agent["name"]
-    agent_ref = agent["ref"]
-    agent_dir = REPO_ROOT / agent_ref
-
-    # ref パスと name の一貫性チェック
-    ref_tail = agent_ref.rsplit("/", 1)[-1]
-    if ref_tail != agent_name:
-        errors.append(
-            f"{bundle_name}: {role} の ref 末尾 ({ref_tail}) が "
-            f"name ({agent_name}) と一致しません"
-        )
-
-    # ディレクトリ存在チェック
-    if not agent_dir.exists():
-        errors.append(
-            f"{bundle_name}: {role} ディレクトリが存在しません: {agent_ref}"
-        )
-    else:
-        # agent.md 存在チェック
-        if not (agent_dir / "agent.md").exists():
-            errors.append(
-                f"{bundle_name}: {role} の agent.md が見つかりません: "
-                f"{agent_ref}/agent.md"
-            )
-        # config.json 存在チェック
-        if not (agent_dir / "config.json").exists():
-            errors.append(
-                f"{bundle_name}: {role} の config.json が見つかりません: "
-                f"{agent_ref}/config.json"
-            )
-
-    # マニフェスト登録チェック
-    if agent_name not in manifest.get("agents", {}):
-        errors.append(
-            f"{bundle_name}: {role} ({agent_name}) がマニフェストに未登録です"
-        )
-
-    return errors
+    """Legacy compatibility shim — pydantic now owns the schema."""
+    return {}
 
 
 def validate_bundle(bundle_dir: Path, schema: dict, manifest: dict) -> list[str]:
-    """1バンドルを検証する。エラーメッセージのリストを返す。"""
-    errors: list[str] = []
-    bundle_name = bundle_dir.name
-
-    # bundle.json の存在チェック
-    bundle_json_path = bundle_dir / "bundle.json"
-    if not bundle_json_path.exists():
-        errors.append(f"{bundle_name}: bundle.json が見つかりません")
-        return errors
-
-    # JSON パース
-    try:
-        with open(bundle_json_path, encoding="utf-8") as f:
-            bundle = json.load(f)
-    except json.JSONDecodeError as e:
-        errors.append(f"{bundle_name}: bundle.json の JSON パースエラー: {e}")
-        return errors
-
-    # JSON Schema バリデーション
-    try:
-        jsonschema.validate(bundle, schema)
-    except jsonschema.ValidationError as e:
-        errors.append(f"{bundle_name}: スキーマ検証エラー: {e.message}")
-        return errors
-
-    # バンドル名の整合性チェック
-    if bundle.get("name") != bundle_name:
-        errors.append(
-            f"{bundle_name}: bundle.json の name ({bundle.get('name')}) が "
-            f"ディレクトリ名 ({bundle_name}) と一致しません"
-        )
-
-    # Task Agent の参照チェック
-    errors.extend(
-        _validate_agent_ref(bundle_name, "Task Agent", bundle["task_agent"], manifest)
-    )
-
-    # QA Agent の参照チェック
-    errors.extend(
-        _validate_agent_ref(bundle_name, "QA Agent", bundle["qa_agent"], manifest)
-    )
-
-    # Task Agent と QA Agent が同一でないかチェック
-    if bundle["task_agent"]["name"] == bundle["qa_agent"]["name"]:
-        errors.append(
-            f"{bundle_name}: Task Agent と QA Agent が同一です "
-            f"({bundle['task_agent']['name']})。"
-            "Actor-Critic パターンでは別エージェントである必要があります"
-        )
-
-    # SKILL ファイルの存在チェック（指定されている場合）
-    skill_path = bundle.get("skill")
-    if skill_path:
-        full_skill_path = REPO_ROOT / skill_path
-        if not full_skill_path.exists():
-            errors.append(
-                f"{bundle_name}: SKILL ファイルが見つかりません: {skill_path}"
-            )
-
-    # QA 設定の論理チェック
-    qa = bundle.get("workflow", {}).get("qa", {})
-    threshold = qa.get("pass_threshold", 0.80)
-    delta = qa.get("convergence_delta", 0.02)
-    if delta >= threshold:
-        errors.append(
-            f"{bundle_name}: convergence_delta ({delta}) が "
-            f"pass_threshold ({threshold}) 以上です。"
-            "収束判定が意図通りに動作しない可能性があります"
-        )
-
-    return errors
-
-
-def find_bundles(target: str | None = None) -> list[Path]:
-    """検証対象のバンドルディレクトリを取得する。"""
-    if target:
-        target_path = Path(target)
-        if not target_path.is_absolute():
-            target_path = REPO_ROOT / target_path
-        if target_path.is_dir():
-            return [target_path]
-        print(f"ERROR: ディレクトリが見つかりません: {target}")
-        sys.exit(1)
-
-    if not BUNDLES_DIR.exists():
-        return []
-
-    bundles = []
-    for d in sorted(BUNDLES_DIR.iterdir()):
-        if d.is_dir() and not d.name.startswith("."):
-            bundles.append(d)
-    return bundles
+    """Legacy signature: ``schema`` is ignored (kept for test compatibility)."""
+    return validate_bundle_dir(bundle_dir, manifest)
 
 
 def main() -> None:
     target = sys.argv[1] if len(sys.argv) > 1 else None
 
-    schema = load_schema()
-    manifest = load_manifest()
-    bundles = find_bundles(target)
+    try:
+        bundles = find_bundle_dirs(target)
+    except FileNotFoundError as exc:
+        print(f"ERROR: {exc}")
+        sys.exit(1)
 
     if not bundles:
         print("バンドルが見つかりません。スキップします。")
         return
 
+    manifest = load_manifest()
     total_errors: list[str] = []
-    validated = 0
 
-    print(f"=== Bundle バリデーション（{len(bundles)} バンドル） ===")
-    print()
-
+    print(f"=== Bundle バリデーション（{len(bundles)} バンドル） ===\n")
     for bundle_dir in bundles:
-        errors = validate_bundle(bundle_dir, schema, manifest)
+        errors = validate_bundle_dir(bundle_dir, manifest)
         if errors:
             for e in errors:
                 print(f"  FAIL: {e}")
             total_errors.extend(errors)
         else:
             print(f"  PASS: {bundle_dir.name}")
-        validated += 1
 
     print()
     if total_errors:
-        print(f"結果: {validated} バンドル中 {len(total_errors)} 件のエラー")
+        print(f"結果: {len(bundles)} バンドル中 {len(total_errors)} 件のエラー")
         sys.exit(1)
-    else:
-        print(f"結果: {validated} バンドル — ALL PASSED")
+    print(f"結果: {len(bundles)} バンドル — ALL PASSED")
 
 
 if __name__ == "__main__":
