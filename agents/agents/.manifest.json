@@ -42,6 +42,18 @@
       "created_at": "2026-05-01T07:18:57.721012+00:00",
       "created_by": "create-subagent.sh",
       "hmac_sha256": "2f125352ddcf19f6b43aba1cf50bab639aa1bdf4da30b74077e3737f811d4627"
+    },
+    "schema-designer": {
+      "file": "agents/agents/schema-designer/agent.md",
+      "created_at": "2026-05-01T10:05:49.851641+00:00",
+      "created_by": "create-subagent.sh",
+      "hmac_sha256": "03e393b44a334b9bd54e5a1d21edbd6df8918dad3ffcc8fb5066f337ed0ab469"
+    },
+    "schema-designer-qa": {
+      "file": "agents/agents/schema-designer-qa/agent.md",
+      "created_at": "2026-05-01T10:05:50.768301+00:00",
+      "created_by": "create-subagent.sh",
+      "hmac_sha256": "26e9e054d46759abdb6c6d320df00ffd001096a9b44a11c4201a8c38d8b60fb3"
     }
   }
 }
