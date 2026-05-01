@@ -153,22 +153,50 @@ make check-all
 | 1 | `make validate` | 全 subagent の frontmatter バリデーション |
 | 2 | `make test` | テストスイート（正常系 + 異常系 + 既存エージェント） |
 | 3 | `make check-template` | テンプレート整合性チェック |
-| 4 | `make report` | バリデーションレポート (JSON) 生成 |
+| 4 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
+| 5 | `make report` | バリデーションレポート (JSON) 生成 |
 
 #### 強制メカニズム（多層防御）
 
 ```
-Layer 4 [最強] ── Branch Protection (required status checks)
+Layer 5 [最強] ── Branch Protection (required status checks)
                    → CI 未通過 = マージ不可能
-Layer 3 ────────── GitHub Actions CI
+Layer 4 ────────── GitHub Actions CI
                    → push/PR 時に 3OS × 2Python で自動実行
-Layer 2 ────────── pre-commit hook
-                   → コミット時にバリデーション自動実行
+Layer 3 ────────── pre-commit hook（2段構成）
+                   → Hook 1: frontmatter バリデーション
+                   → Hook 2: マニフェスト + HMAC 署名検証
+Layer 2 ────────── マニフェスト登録制 + HMAC-SHA256 署名
+                   → create-subagent.sh 以外からの作成を検出
 Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）
                    → エージェントへのコンテキスト提供
 ```
 
 上位層が下位層のバイパスをカバーする設計。
+
+#### マニフェスト + HMAC 署名による作成経路検証
+
+`agents/agents/.manifest.json` が全エージェントの登録簿として機能する。
+
+**仕組み:**
+1. `make create-agent` 実行時、`scripts/manifest.py` がエージェントをマニフェストに登録
+2. 登録時に HMAC-SHA256 署名を計算し、エントリに付与
+3. pre-commit hook が新規ファイルのマニフェスト登録 + 署名を検証
+4. 未登録 or 署名不正 → コミット拒否
+
+**HMAC 鍵:**
+- `.manifest-key`（`.gitignore` 対象）に保存
+- 初回 `make setup` 実行時に自動生成
+- 環境変数 `MANIFEST_HMAC_KEY` でも設定可能
+
+**攻撃シナリオと防御:**
+
+| シナリオ | 防御層 |
+|---------|--------|
+| Write ツールで .md を直接作成 | Layer 3: マニフェスト未登録で拒否 |
+| .md + .manifest.json を同時に手書き | Layer 3: HMAC 署名不正で拒否 |
+| .manifest-key を読んで署名偽造 | 可能だが 3 ステップ必要（鍵読取→署名計算→manifest更新） |
+| pre-commit を --no-verify でスキップ | システムレベルでブロック + Layer 4 CI で検出 |
 
 #### バリデーションレポート
 
@@ -195,3 +223,5 @@ Layer 1 [最弱] ── 本ドキュメント（AGENTS.md）
 - **`make check-all` を実行せずにPRを作成すること**
 - **`agents/agents/` 配下のファイルを `make create-agent` を使わずに手動作成すること**
 - **バリデーション失敗を無視してコミットすること**
+- **`.manifest.json` を手動で編集すること**
+- **`.manifest-key` をコミットすること**
