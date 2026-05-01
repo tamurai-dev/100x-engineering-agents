@@ -28,8 +28,8 @@ import re
 import textwrap
 from pathlib import Path
 
-from agent_factory.utils import extract_json as _extract_json_shared
-from agent_factory.utils import parse_json_lenient as _parse_json_lenient_shared
+from duo_agents.json_utils import extract_json as _extract_json_shared
+from duo_agents.json_utils import parse_json_lenient as _parse_json_lenient_shared
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"

@@ -289,7 +289,7 @@ def parse_qa_result(response: str) -> dict:
     # Try shared extract + lenient parse first
     try:
         sys.path.insert(0, str(REPO_ROOT / "scripts"))
-        from agent_factory.utils import extract_json, parse_json_lenient
+        from duo_agents.json_utils import extract_json, parse_json_lenient
 
         json_str = extract_json(response)
         return parse_json_lenient(json_str)

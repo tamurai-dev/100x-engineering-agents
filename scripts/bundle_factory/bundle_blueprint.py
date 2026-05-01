@@ -21,7 +21,7 @@ import re
 import textwrap
 from pathlib import Path
 
-from agent_factory.utils import extract_json, parse_json_lenient
+from duo_agents.json_utils import extract_json, parse_json_lenient
 from bundle_factory.qa_strategy import resolve_qa_strategy
 from bundle_factory.skill_resolver import (
     get_full_skill_catalog,
