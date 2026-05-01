@@ -1,0 +1,118 @@
+{
+  "issues": [
+    {
+      "rule_id": "BR-001",
+      "description": "free プランのアクティブプロジェクト上限チェック（3件超過で ERROR）をトリガーまたは CHECK で実装していること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "free",
+        "3",
+        "active",
+        "deleted_at IS NULL"
+      ],
+      "severity": "critical"
+    },
+    {
+      "rule_id": "BR-002-a",
+      "description": "月途中キャンセル返金：残日数の計算に current_period_end - cancelled_at（日単位）を使用していること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "current_period_end",
+        "cancelled_at",
+        "EXTRACT(DAY",
+        "FLOOR"
+      ],
+      "severity": "critical"
+    },
+    {
+      "rule_id": "BR-002-b",
+      "description": "月途中キャンセル返金：残日数が 0 以下または返金額が 0 円の場合は refunds に挿入しない条件分岐があること",
+      "check_type": "logic_present",
+      "expected_logic": "IF remaining_days > 0 AND refund_amount > 0 THEN INSERT INTO refunds",
+      "severity": "critical"
+    },
+    {
+      "rule_id": "BR-002-c",
+      "description": "返金額の計算式が amount × (残日数 / 総日数) で FLOOR 適用されていること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "FLOOR",
+        "amount",
+        "total_days"
+      ],
+      "severity": "high"
+    },
+    {
+      "rule_id": "BR-003",
+      "description": "projects テーブルへの物理 DELETE を禁止するトリガーが実装されていること（BEFORE DELETE で EXCEPTION を raise）",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "BEFORE DELETE",
+        "projects",
+        "RAISE EXCEPTION",
+        "physical delete"
+      ],
+      "severity": "critical"
+    },
+    {
+      "rule_id": "BR-004",
+      "description": "同一 organization 内・deleted_at IS NULL のプロジェクト名重複を禁止する部分ユニーク制約またはトリガーがあること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "UNIQUE",
+        "organization_id",
+        "name",
+        "deleted_at",
+        "WHERE deleted_at IS NULL"
+      ],
+      "severity": "high"
+    },
+    {
+      "rule_id": "BR-005",
+      "description": "organization_members から owner ロールのユーザーを DELETE しようとした場合に EXCEPTION を raise するトリガーがあること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "BEFORE DELETE",
+        "organization_members",
+        "owner",
+        "RAISE EXCEPTION"
+      ],
+      "severity": "critical"
+    },
+    {
+      "rule_id": "RLS-001",
+      "description": "RLS が全テーブルに有効化されており、organization_id による行フィルタリングポリシーが設定されていること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "ENABLE ROW LEVEL SECURITY",
+        "organization_id",
+        "auth.uid()"
+      ],
+      "severity": "high"
+    },
+    {
+      "rule_id": "IDX-001",
+      "description": "projects テーブルに organization_id, status, deleted_at の複合インデックスまたは個別インデックスが定義されていること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "CREATE INDEX",
+        "projects",
+        "organization_id"
+      ],
+      "severity": "medium"
+    },
+    {
+      "rule_id": "ERD-001",
+      "description": "Mermaid ER 図が出力されており、主要エンティティ（organizations, users, projects, subscriptions, refunds）が含まれること",
+      "check_type": "keyword_or_logic",
+      "expected_keywords": [
+        "erDiagram",
+        "organizations",
+        "projects",
+        "subscriptions",
+        "refunds"
+      ],
+      "severity": "medium"
+    }
+  ]
+}

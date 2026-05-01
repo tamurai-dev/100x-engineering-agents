@@ -1,0 +1,12 @@
+{
+  "agent": "supabase-schema-designer",
+  "description": "supabase-schema-designer の品質評価スイート（自動生成）",
+  "tasks": [
+    "supabase-schema-design-multi-tenant-saas",
+    "hallucination-test",
+    "scope_creep-test",
+    "business_logic-test"
+  ],
+  "default_trials": 3,
+  "default_model": "haiku"
+}

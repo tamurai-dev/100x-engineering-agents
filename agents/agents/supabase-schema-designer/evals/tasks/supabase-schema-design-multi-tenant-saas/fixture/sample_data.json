@@ -1,0 +1,91 @@
+{
+  "organizations": [
+    {
+      "id": "org-001",
+      "name": "Acme Corp",
+      "slug": "acme-corp",
+      "plan": "pro",
+      "max_projects": 20,
+      "max_members": 50
+    },
+    {
+      "id": "org-002",
+      "name": "Startup Inc",
+      "slug": "startup-inc",
+      "plan": "free",
+      "max_projects": 3,
+      "max_members": 5
+    }
+  ],
+  "users": [
+    {
+      "id": "user-001",
+      "email": "alice@acme.com",
+      "display_name": "Alice Smith"
+    },
+    {
+      "id": "user-002",
+      "email": "bob@acme.com",
+      "display_name": "Bob Jones"
+    },
+    {
+      "id": "user-003",
+      "email": "carol@startup.com",
+      "display_name": "Carol White"
+    }
+  ],
+  "organization_members": [
+    {
+      "organization_id": "org-001",
+      "user_id": "user-001",
+      "role": "owner"
+    },
+    {
+      "organization_id": "org-001",
+      "user_id": "user-002",
+      "role": "member"
+    },
+    {
+      "organization_id": "org-002",
+      "user_id": "user-003",
+      "role": "owner"
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-001",
+      "organization_id": "org-001",
+      "name": "Website Redesign",
+      "status": "active",
+      "owner_id": "user-001"
+    },
+    {
+      "id": "proj-002",
+      "organization_id": "org-002",
+      "name": "MVP Launch",
+      "status": "active",
+      "owner_id": "user-003"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-001",
+      "project_id": "proj-001",
+      "organization_id": "org-001",
+      "title": "Design mockups",
+      "status": "in_progress",
+      "priority": "high",
+      "assignee_id": "user-002",
+      "sort_order": 1
+    },
+    {
+      "id": "task-002",
+      "project_id": "proj-001",
+      "organization_id": "org-001",
+      "title": "Write copy",
+      "status": "todo",
+      "priority": "medium",
+      "sort_order": 2
+    }
+  ]
+}
