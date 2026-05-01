@@ -37,6 +37,7 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 BUNDLES_DIR = REPO_ROOT / "agents" / "bundles"
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
 EVIDENCE_DIR = REPO_ROOT / "evidence" / "bundles"
@@ -900,6 +901,29 @@ def run_bundle(
         "final_status": "incomplete",
     }
 
+    # ── Security screening setup ──
+    from scripts.security import screen_text
+    from scripts.security.config import SecurityConfig
+
+    security_config = SecurityConfig.load()
+    security_screenings: list[dict] = []
+
+    if security_config.should_screen("bundle", "input"):
+        input_screening = screen_text(
+            user_input,
+            direction="input",
+            metadata={"context": "bundle", "bundle": bundle_name},
+        )
+        security_screenings.append({"phase": "input", **input_screening.to_dict()})
+        if not input_screening.safe_to_proceed:
+            results["final_status"] = "blocked_by_security"
+            results["security"] = {
+                "provider": input_screening.provider,
+                "screenings": security_screenings,
+            }
+            print(f"  BLOCKED: セキュリティスクリーニングにより入力がブロックされました")
+            return results
+
     # ── Phase B: Task Agent 実行 ──
     print(f"[Phase B] Task Agent 実行中 (model: {current_model})...")
     task_agent, task_env, task_session = create_agent_and_session(
@@ -937,6 +961,15 @@ def run_bundle(
     task_usage = task_result["usage"]
     best_output = task_output
     best_score = 0.0
+
+    # Security screening (task output)
+    if security_config.should_screen("bundle", "output"):
+        task_out_screening = screen_text(
+            task_output,
+            direction="output",
+            metadata={"context": "bundle", "bundle": bundle_name, "phase": "task_output"},
+        )
+        security_screenings.append({"phase": "task_output", **task_out_screening.to_dict()})
 
     # Collect output files from Task Agent session
     task_output_files = list_session_output_files(client, task_session.id)
@@ -1010,6 +1043,15 @@ def run_bundle(
                 "qa_errors": qa_result["errors"],
             })
             continue
+
+        # Security screening (QA output)
+        if security_config.should_screen("bundle", "qa_output"):
+            qa_out_screening = screen_text(
+                qa_result["response"],
+                direction="output",
+                metadata={"context": "bundle", "bundle": bundle_name, "phase": f"qa_output_{iteration}"},
+            )
+            security_screenings.append({"phase": f"qa_output_{iteration}", **qa_out_screening.to_dict()})
 
         # QA 結果をパース
         qa_parsed = parse_qa_result(qa_result["response"])
@@ -1149,6 +1191,15 @@ def run_bundle(
                         iteration_result["escalation_failed"] = True
                     continue
 
+            # Security screening (feedback)
+            if security_config.should_screen("bundle", "feedback"):
+                fb_screening = screen_text(
+                    feedback_text,
+                    direction="input",
+                    metadata={"context": "bundle", "bundle": bundle_name, "phase": f"feedback_{iteration}"},
+                )
+                security_screenings.append({"phase": f"feedback_{iteration}", **fb_screening.to_dict()})
+
             print("  FAIL: フィードバックを Task Agent に渡して修正中...")
 
             # Build retry prompt with accumulated feedback
@@ -1193,6 +1244,20 @@ def run_bundle(
         {"iteration": fh["iteration"], "score": fh["score"]}
         for fh in feedback_history
     ]
+
+    # Security screening summary
+    if security_screenings:
+        flagged_count = sum(1 for s in security_screenings if s.get("flagged"))
+        total_latency = sum(s.get("latency_ms", 0) for s in security_screenings)
+        results["security"] = {
+            "provider": security_screenings[0].get("provider", "noop"),
+            "summary": {
+                "total_screenings": len(security_screenings),
+                "total_flagged": flagged_count,
+                "total_latency_ms": round(total_latency, 1),
+            },
+            "screenings": security_screenings,
+        }
 
     # ── Phase D: 証跡保存 ──
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

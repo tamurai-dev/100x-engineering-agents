@@ -26,6 +26,7 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT))
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
 EVIDENCE_DIR = REPO_ROOT / "evidence" / "sessions"
 
@@ -79,6 +80,38 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
     agent_config = dict(config)
     if model_override:
         agent_config["model"] = MODEL_MAP.get(model_override, model_override)
+
+    # Security screening (input) — run before API resource creation
+    from scripts.security import screen_text
+    from scripts.security.config import SecurityConfig
+
+    security_config = SecurityConfig.load()
+    security_data: dict = {"provider": "noop"}
+    if security_config.should_screen("test_agent", "input"):
+        input_screening = screen_text(
+            test_prompt["prompt"],
+            direction="input",
+            metadata={"context": "test_agent", "agent": agent_config["name"]},
+        )
+        security_data["input"] = input_screening.to_dict()
+        security_data["provider"] = input_screening.provider
+        if not input_screening.safe_to_proceed:
+            return {
+                "test_name": test_prompt["name"],
+                "model": agent_config["model"],
+                "agent_id": None,
+                "session_id": None,
+                "environment_id": None,
+                "status": "blocked_by_security",
+                "response_preview": security_config.messages.get("blocked", ""),
+                "tool_calls": [],
+                "expected_behaviors": test_prompt.get("expected_behaviors", []),
+                "matched_behaviors": [],
+                "errors": ["Security screening blocked this input"],
+                "usage": {"input_tokens": 0, "output_tokens": 0},
+                "events": [],
+                "security": security_data,
+            }
 
     # エージェント作成
     create_params = {
@@ -196,6 +229,16 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
             if hit_count >= max(1, len(keywords) // 2):
                 matched.append(behavior)
 
+    # Security screening (output)
+    if security_config.should_screen("test_agent", "output"):
+        output_screening = screen_text(
+            full_response,
+            direction="output",
+            metadata={"context": "test_agent", "agent": agent_config["name"]},
+        )
+        security_data["output"] = output_screening.to_dict()
+        security_data["provider"] = output_screening.provider
+
     result = {
         "test_name": test_prompt["name"],
         "model": agent_config["model"],
@@ -210,6 +253,7 @@ def run_test(client, config: dict, test_prompt: dict, model_override: str | None
         "errors": errors,
         "usage": usage,
         "events": all_events,
+        "security": security_data,
     }
 
     return result
@@ -232,6 +276,7 @@ def save_evidence(agent_name: str, model: str, results: list[dict]) -> Path:
             "total": len(results),
             "passed": sum(1 for r in results if r["status"] == "pass"),
             "failed": sum(1 for r in results if r["status"] == "fail"),
+            "blocked": sum(1 for r in results if r["status"] == "blocked_by_security"),
         },
     }
 
@@ -283,6 +328,7 @@ def main():
 
     total_passed = 0
     total_failed = 0
+    total_blocked = 0
 
     for agent_name in agents:
         config = load_config(agent_name)
@@ -316,16 +362,22 @@ def main():
             filepath = save_evidence(agent_name, model, results)
             passed = sum(1 for r in results if r["status"] == "pass")
             failed = sum(1 for r in results if r["status"] == "fail")
+            blocked = sum(1 for r in results if r["status"] == "blocked_by_security")
             total_passed += passed
             total_failed += failed
+            total_blocked += blocked
 
             print(f"\n  結果: {passed}/{len(results)} PASS")
+            if blocked > 0:
+                print(f"  ブロック: {blocked}")
             print(f"  証跡: {filepath.relative_to(REPO_ROOT)}")
 
     print(f"\n{'='*60}")
     print(f"  合計: {total_passed} passed / {total_failed} failed")
+    if total_blocked > 0:
+        print(f"  ブロック: {total_blocked}")
     print(f"{'='*60}")
-    sys.exit(1 if total_failed > 0 else 0)
+    sys.exit(1 if total_failed > 0 or total_blocked > 0 else 0)
 
 
 if __name__ == "__main__":

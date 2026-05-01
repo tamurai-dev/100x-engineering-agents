@@ -31,6 +31,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
 
+sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 MODEL_MAP = {
@@ -300,6 +301,22 @@ def main():
 
     else:
         # --spec モード: 全フェーズ実行
+        # Security screening (spec input)
+        from scripts.security import screen_text
+        from scripts.security.config import SecurityConfig
+
+        sec_config = SecurityConfig.load()
+        if sec_config.should_screen("factory", "spec_input"):
+            spec_screening = screen_text(
+                args.spec,
+                direction="input",
+                metadata={"context": "agent_factory"},
+            )
+            if not spec_screening.safe_to_proceed:
+                print("ERROR: 仕様テキストにセキュリティ上の問題が検出されました")
+                print(f"  {sec_config.messages.get('blocked', '')}")
+                sys.exit(1)
+
         # Phase 1
         blueprint = phase1_blueprint(client, args.spec, args.model)
 
