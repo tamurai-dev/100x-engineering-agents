@@ -1,0 +1,12 @@
+[
+  {
+    "name": "API関数のドキュメント生成",
+    "prompt": "以下のPython関数のドキュメントを生成してください。docstring、使用例、パラメータ説明を含めてください:\n\ndef batch_process(items, chunk_size=100, on_error='skip', max_retries=3):\n    results = []\n    for i in range(0, len(items), chunk_size):\n        chunk = items[i:i+chunk_size]\n        for attempt in range(max_retries):\n            try:\n                result = _process_chunk(chunk)\n                results.extend(result)\n                break\n            except Exception as e:\n                if attempt == max_retries - 1:\n                    if on_error == 'raise':\n                        raise\n                    elif on_error == 'skip':\n                        continue\n    return results\n",
+    "expected_behaviors": [
+      "全パラメータの説明を記載",
+      "戻り値の型と説明を記載",
+      "使用例を含む"
+    ],
+    "success_criteria": "expected_behaviors の全てを含むドキュメントを生成"
+  }
+]

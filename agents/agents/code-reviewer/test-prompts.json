@@ -1,0 +1,22 @@
+[
+  {
+    "name": "セキュリティ脆弱性の検出",
+    "prompt": "以下のPythonコードをレビューしてください:\n\nimport os\nimport sqlite3\n\ndef get_user(name):\n    conn = sqlite3.connect('users.db')\n    cursor = conn.execute(f\"SELECT * FROM users WHERE name = '{name}'\")\n    return cursor.fetchone()\n\ndef run_command(cmd):\n    return os.system(cmd)\n\nAPI_KEY = 'sk-ant-api03-real-key-here'\n",
+    "expected_behaviors": [
+      "SQLインジェクションの指摘",
+      "os.system によるコマンドインジェクションの指摘",
+      "APIキーのハードコードの指摘"
+    ],
+    "success_criteria": "expected_behaviors の全てを MUST FIX として指摘"
+  },
+  {
+    "name": "コード品質の評価",
+    "prompt": "以下のTypeScriptコードをレビューしてください:\n\nfunction calc(a: any, b: any) {\n  // calculate stuff\n  var result = a + b;\n  if (result == 0) {\n    return null;\n  }\n  return result;\n}\n\nexport function processData(data: any[]) {\n  let x = [];\n  for (let i = 0; i < data.length; i++) {\n    x.push(calc(data[i].val, data[i].offset));\n  }\n  return x;\n}\n",
+    "expected_behaviors": [
+      "any 型の使用を指摘",
+      "var の使用を指摘",
+      "== の使用を指摘（=== を推奨）"
+    ],
+    "success_criteria": "expected_behaviors の2つ以上を指摘"
+  }
+]

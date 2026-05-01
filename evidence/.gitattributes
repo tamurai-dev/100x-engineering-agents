@@ -1,0 +1,4 @@
+# evidence/ 配下は自動生成ファイル
+# grep/find の走査対象から除外し、diff を抑制する
+sessions/*.json linguist-generated=true diff=false
+SUMMARY.md linguist-generated=true

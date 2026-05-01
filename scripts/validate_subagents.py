@@ -87,11 +87,16 @@ def validate_frontmatter(data: dict, schema: dict, filepath: Path) -> list[str]:
     if "tools" in data and "disallowedTools" in data:
         errors.append("  [cross-field] 'tools' と 'disallowedTools' は排他です。どちらか一方のみ指定してください")
 
-    # name がファイル名と一致するか（拡張子除く）
-    expected_name = filepath.stem
+    # name がディレクトリ名と一致するか
+    # 新構造: agents/agents/<name>/agent.md → name = ディレクトリ名
+    # 旧構造: agents/agents/<name>.md → name = ファイル名（拡張子除く）
+    if filepath.name == "agent.md":
+        expected_name = filepath.parent.name
+    else:
+        expected_name = filepath.stem
     if "name" in data and data["name"] != expected_name:
         errors.append(
-            f"  [name] frontmatter の name '{data['name']}' がファイル名 '{expected_name}' と一致しません"
+            f"  [name] frontmatter の name '{data['name']}' が '{expected_name}' と一致しません"
         )
 
     # 未知フィールドの警告（JSON Schema の additionalProperties: false でもカバーされるが明示的に）
@@ -187,7 +192,10 @@ def main():
         if not AGENTS_DIR.exists():
             print(f"ERROR: ディレクトリが見つかりません: {AGENTS_DIR}")
             sys.exit(2)
-        targets = sorted(AGENTS_DIR.glob("*.md"))
+        # 新構造: agents/agents/<name>/agent.md
+        # 旧構造: agents/agents/<name>.md（後方互換）
+        targets = sorted(AGENTS_DIR.glob("*/agent.md"))
+        targets.extend(sorted(AGENTS_DIR.glob("*.md")))
 
     if not targets:
         print("検証対象のファイルがありません。")

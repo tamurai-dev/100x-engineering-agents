@@ -80,7 +80,7 @@ def register_agent(agent_name: str) -> bool:
     key = get_or_create_key()
     manifest = load_manifest()
 
-    filepath = f"agents/agents/{agent_name}.md"
+    filepath = f"agents/agents/{agent_name}/agent.md"
     created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
     signature = compute_hmac(key, agent_name, filepath, created_at)
 
@@ -122,10 +122,14 @@ def verify_all() -> tuple[int, int, list[str]]:
         if not full_path.exists():
             errors.append(f"  WARN: {agent_name} — ファイルが存在しません: {filepath}")
 
-    # agents/ に存在するがマニフェストに登録されていないファイル
-    for md_file in sorted(AGENTS_DIR.glob("*.md")):
-        name = md_file.stem
-        if name not in manifest["agents"]:
+    # agents/ に存在するがマニフェストに登録されていないディレクトリ
+    for agent_dir in sorted(AGENTS_DIR.iterdir()):
+        if not agent_dir.is_dir():
+            continue
+        name = agent_dir.name
+        if name.startswith("."):
+            continue
+        if (agent_dir / "agent.md").exists() and name not in manifest["agents"]:
             failed += 1
             errors.append(f"  FAIL: {name} — マニフェスト未登録（make create-agent NAME={name} を実行してください）")
 
@@ -147,8 +151,8 @@ def verify_staged() -> tuple[int, int, list[str]]:
     except Exception:
         new_files = []
 
-    # agents/agents/*.md のみフィルタ
-    new_agents = [f for f in new_files if f.startswith("agents/agents/") and f.endswith(".md")]
+    # agents/agents/*/agent.md のみフィルタ
+    new_agents = [f for f in new_files if f.startswith("agents/agents/") and f.endswith("/agent.md")]
 
     if not new_agents:
         return 0, 0, []  # 新規エージェントファイルなし
@@ -158,7 +162,7 @@ def verify_staged() -> tuple[int, int, list[str]]:
     errors = []
 
     for filepath in new_agents:
-        agent_name = Path(filepath).stem
+        agent_name = Path(filepath).parent.name
 
         if agent_name not in manifest["agents"]:
             failed += 1
@@ -193,13 +197,17 @@ def init_existing() -> None:
     manifest = load_manifest()
 
     count = 0
-    for md_file in sorted(AGENTS_DIR.glob("*.md")):
-        agent_name = md_file.stem
+    for agent_dir in sorted(AGENTS_DIR.iterdir()):
+        if not agent_dir.is_dir() or agent_dir.name.startswith("."):
+            continue
+        if not (agent_dir / "agent.md").exists():
+            continue
+        agent_name = agent_dir.name
         if agent_name in manifest["agents"]:
             print(f"  SKIP: {agent_name}（登録済み）")
             continue
 
-        filepath = f"agents/agents/{agent_name}.md"
+        filepath = f"agents/agents/{agent_name}/agent.md"
         created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         signature = compute_hmac(key, agent_name, filepath, created_at)
 

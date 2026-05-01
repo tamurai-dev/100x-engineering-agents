@@ -1,0 +1,17 @@
+{
+  "name": "<agent-name>",
+  "description": "このエージェントの役割と、どのような状況で起動されるべきかを記述する。",
+  "model": "claude-sonnet-4-6",
+  "system": "あなたは<agent-name>の専門家です。\n\n## 責務\n\n1. 最初の責務\n2. 次の責務\n\n## 出力形式\n\nエージェントの出力フォーマットを定義する。",
+  "tools": [
+    {
+      "type": "agent_toolset_20260401",
+      "configs": [
+        {"name": "bash", "enabled": true},
+        {"name": "read", "enabled": true},
+        {"name": "glob", "enabled": true},
+        {"name": "grep", "enabled": true}
+      ]
+    }
+  ]
+}
