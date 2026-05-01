@@ -6,6 +6,26 @@
   "type": "object",
   "required": ["name", "version", "description", "artifact_format", "task_agent", "qa_agent", "workflow"],
   "additionalProperties": false,
+  "$defs": {
+    "agent_ref": {
+      "type": "object",
+      "required": ["name", "ref"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "minLength": 1,
+          "description": "エージェント名（agents/agents/ 配下のディレクトリ名）"
+        },
+        "ref": {
+          "type": "string",
+          "pattern": "^agents/agents/[a-z0-9][a-z0-9-]*[a-z0-9]$",
+          "description": "エージェントのディレクトリパス"
+        }
+      }
+    }
+  },
   "properties": {
     "name": {
       "type": "string",
@@ -40,41 +60,44 @@
       ],
       "description": "成果物のフォーマット。QA 戦略の自動選択に使用"
     },
-    "task_agent": {
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$"
+      },
+      "uniqueItems": true,
+      "maxItems": 20,
+      "description": "バンドルの分類タグ（検索・フィルタ用）"
+    },
+    "metadata": {
       "type": "object",
-      "required": ["name", "ref"],
       "additionalProperties": false,
       "properties": {
-        "name": {
+        "author": {
           "type": "string",
-          "minLength": 1,
-          "description": "Task Agent のエージェント名（agents/agents/ 配下のディレクトリ名）"
+          "description": "バンドル作成者"
         },
-        "ref": {
+        "created_at": {
           "type": "string",
-          "pattern": "^agents/agents/[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "description": "Task Agent のディレクトリパス"
+          "format": "date-time",
+          "description": "作成日時（ISO 8601）"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "更新日時（ISO 8601）"
         }
       },
-      "description": "タスク実行を担当するエージェント"
+      "description": "バンドルのメタデータ"
+    },
+    "task_agent": {
+      "$ref": "#/$defs/agent_ref",
+      "description": "タスク実行を担当するエージェント（Actor）"
     },
     "qa_agent": {
-      "type": "object",
-      "required": ["name", "ref"],
-      "additionalProperties": false,
-      "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "QA Agent のエージェント名（agents/agents/ 配下のディレクトリ名）"
-        },
-        "ref": {
-          "type": "string",
-          "pattern": "^agents/agents/[a-z0-9][a-z0-9-]*[a-z0-9]$",
-          "description": "QA Agent のディレクトリパス"
-        }
-      },
-      "description": "品質検査を担当するエージェント（fresh-context で起動）"
+      "$ref": "#/$defs/agent_ref",
+      "description": "品質検査を担当するエージェント（Critic、fresh-context で起動）"
     },
     "skill": {
       "type": "string",

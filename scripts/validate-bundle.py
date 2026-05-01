@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Bundle バリデーター
+Bundle バリデーター（完全版）
 
-bundle.json を bundle.schema.json で検証し、
-参照先エージェントの存在・マニフェスト登録もチェックする。
+bundle.json を bundle.schema.json で検証し、以下の整合性チェックも行う:
+  - 参照先エージェントの存在・マニフェスト登録
+  - ref パスと name の一貫性（ref 末尾 == name）
+  - config.json の存在チェック
+  - Task Agent と QA Agent の同一性チェック
+  - SKILL ファイルの存在チェック
+  - バージョン形式の追加検証
 
 Usage:
     python scripts/validate-bundle.py                         # 全バンドル検証
@@ -44,6 +49,54 @@ def load_manifest() -> dict:
     return {"version": 1, "agents": {}}
 
 
+def _validate_agent_ref(
+    bundle_name: str,
+    role: str,
+    agent: dict,
+    manifest: dict,
+) -> list[str]:
+    """エージェント参照（task_agent / qa_agent）を検証する。"""
+    errors: list[str] = []
+    agent_name = agent["name"]
+    agent_ref = agent["ref"]
+    agent_dir = REPO_ROOT / agent_ref
+
+    # ref パスと name の一貫性チェック
+    ref_tail = agent_ref.rsplit("/", 1)[-1]
+    if ref_tail != agent_name:
+        errors.append(
+            f"{bundle_name}: {role} の ref 末尾 ({ref_tail}) が "
+            f"name ({agent_name}) と一致しません"
+        )
+
+    # ディレクトリ存在チェック
+    if not agent_dir.exists():
+        errors.append(
+            f"{bundle_name}: {role} ディレクトリが存在しません: {agent_ref}"
+        )
+    else:
+        # agent.md 存在チェック
+        if not (agent_dir / "agent.md").exists():
+            errors.append(
+                f"{bundle_name}: {role} の agent.md が見つかりません: "
+                f"{agent_ref}/agent.md"
+            )
+        # config.json 存在チェック
+        if not (agent_dir / "config.json").exists():
+            errors.append(
+                f"{bundle_name}: {role} の config.json が見つかりません: "
+                f"{agent_ref}/config.json"
+            )
+
+    # マニフェスト登録チェック
+    if agent_name not in manifest.get("agents", {}):
+        errors.append(
+            f"{bundle_name}: {role} ({agent_name}) がマニフェストに未登録です"
+        )
+
+    return errors
+
+
 def validate_bundle(bundle_dir: Path, schema: dict, manifest: dict) -> list[str]:
     """1バンドルを検証する。エラーメッセージのリストを返す。"""
     errors: list[str] = []
@@ -78,47 +131,20 @@ def validate_bundle(bundle_dir: Path, schema: dict, manifest: dict) -> list[str]
         )
 
     # Task Agent の参照チェック
-    task_agent_name = bundle["task_agent"]["name"]
-    task_agent_ref = bundle["task_agent"]["ref"]
-    task_agent_dir = REPO_ROOT / task_agent_ref
-
-    if not task_agent_dir.exists():
-        errors.append(
-            f"{bundle_name}: Task Agent ディレクトリが存在しません: {task_agent_ref}"
-        )
-    elif not (task_agent_dir / "agent.md").exists():
-        errors.append(
-            f"{bundle_name}: Task Agent の agent.md が見つかりません: {task_agent_ref}/agent.md"
-        )
-
-    if task_agent_name not in manifest.get("agents", {}):
-        errors.append(
-            f"{bundle_name}: Task Agent ({task_agent_name}) がマニフェストに未登録です"
-        )
+    errors.extend(
+        _validate_agent_ref(bundle_name, "Task Agent", bundle["task_agent"], manifest)
+    )
 
     # QA Agent の参照チェック
-    qa_agent_name = bundle["qa_agent"]["name"]
-    qa_agent_ref = bundle["qa_agent"]["ref"]
-    qa_agent_dir = REPO_ROOT / qa_agent_ref
-
-    if not qa_agent_dir.exists():
-        errors.append(
-            f"{bundle_name}: QA Agent ディレクトリが存在しません: {qa_agent_ref}"
-        )
-    elif not (qa_agent_dir / "agent.md").exists():
-        errors.append(
-            f"{bundle_name}: QA Agent の agent.md が見つかりません: {qa_agent_ref}/agent.md"
-        )
-
-    if qa_agent_name not in manifest.get("agents", {}):
-        errors.append(
-            f"{bundle_name}: QA Agent ({qa_agent_name}) がマニフェストに未登録です"
-        )
+    errors.extend(
+        _validate_agent_ref(bundle_name, "QA Agent", bundle["qa_agent"], manifest)
+    )
 
     # Task Agent と QA Agent が同一でないかチェック
-    if task_agent_name == qa_agent_name:
+    if bundle["task_agent"]["name"] == bundle["qa_agent"]["name"]:
         errors.append(
-            f"{bundle_name}: Task Agent と QA Agent が同一です ({task_agent_name})。"
+            f"{bundle_name}: Task Agent と QA Agent が同一です "
+            f"({bundle['task_agent']['name']})。"
             "Actor-Critic パターンでは別エージェントである必要があります"
         )
 
@@ -130,6 +156,17 @@ def validate_bundle(bundle_dir: Path, schema: dict, manifest: dict) -> list[str]
             errors.append(
                 f"{bundle_name}: SKILL ファイルが見つかりません: {skill_path}"
             )
+
+    # QA 設定の論理チェック
+    qa = bundle.get("workflow", {}).get("qa", {})
+    threshold = qa.get("pass_threshold", 0.80)
+    delta = qa.get("convergence_delta", 0.02)
+    if delta >= threshold:
+        errors.append(
+            f"{bundle_name}: convergence_delta ({delta}) が "
+            f"pass_threshold ({threshold}) 以上です。"
+            "収束判定が意図通りに動作しない可能性があります"
+        )
 
     return errors
 
