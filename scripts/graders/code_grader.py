@@ -56,7 +56,12 @@ def grade_ground_truth(
     total_found = len(matched)
     total_issues = len(issues)
 
-    precision = 1.0 if total_found == 0 else total_found / max(total_found, 1)
+    # エージェントが報告した指摘の総数を推定（false positive 検出用）
+    total_agent_detections = _count_agent_detections(agent_output)
+    # 少なくとも matched 数は報告しているはず
+    total_agent_detections = max(total_agent_detections, total_found)
+
+    precision = total_found / total_agent_detections if total_agent_detections > 0 else 1.0
     recall = total_found / total_issues if total_issues > 0 else 1.0
     f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
 
@@ -67,6 +72,8 @@ def grade_ground_truth(
         len(should_find_matched) / len(should_find) if should_find else 1.0
     )
 
+    extra_detections = max(0, total_agent_detections - total_found)
+
     return {
         "precision": round(precision, 3),
         "recall": round(recall, 3),
@@ -75,9 +82,30 @@ def grade_ground_truth(
         "should_find_recall": round(should_find_recall, 3),
         "matched": [_safe_issue(i) for i in matched],
         "missed": [_safe_issue(i) for i in missed],
+        "extra": extra_detections,
         "total_issues": total_issues,
         "total_matched": total_found,
+        "total_agent_detections": total_agent_detections,
     }
+
+
+def _count_agent_detections(agent_output: str) -> int:
+    """エージェント出力から報告された指摘の総数を推定する。"""
+    patterns = [
+        r"(?i)\[?\s*(?:MUST\s+FIX|SHOULD\s+FIX|CONSIDER|CRITICAL|HIGH|MEDIUM|LOW)\s*\]?",
+        r"(?:問題|脆弱性|Issue|Finding|指摘)\s*[#\d]",
+        r"^\s*[-*]\s+\*\*",  # Markdown bullet with bold (common issue format)
+        r"^\s*\d+\.\s+\*\*",  # Numbered list with bold
+        r"(?:CWE-\d+)",
+    ]
+    lines = agent_output.split("\n")
+    detection_lines = set()
+    for i, line in enumerate(lines):
+        for pattern in patterns:
+            if re.search(pattern, line):
+                detection_lines.add(i)
+                break
+    return len(detection_lines)
 
 
 def _match_issue(issue: dict, output_lower: str, line_tolerance: int) -> str | None:
