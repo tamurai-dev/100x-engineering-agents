@@ -521,7 +521,7 @@ def run_bundle(
             if delta <= qa_settings.get("convergence_delta", 0.02):
                 print(
                     f"  収束検出"
-                    f"（Δ={delta:.3f} <= {qa_settings['convergence_delta']}）"
+                    f"（Δ={delta:.3f} <= {qa_settings.get('convergence_delta', 0.02)}）"
                 )
                 results["final_status"] = "converged"
                 break
