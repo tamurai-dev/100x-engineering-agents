@@ -7,27 +7,28 @@
 # --- Identity（プロジェクト識別） ---
 name: 100x-engineering-agents
 description: >
-  AIエージェントが正しく動くために必要な「構造化されたコンテキスト」を
-  設計・管理・運用するためのフレームワーク。
-  エンタープライズが求めるセキュリティ・コンプライアンス・ガバナンスを
-  エージェントが自律的に遵守できる状態を目指す。
+  ANTHROPIC_API_KEY ひとつで、AIエージェントの作成・テスト・評価が
+  ローカル完結で行えるフレームワーク。
+  技術スタック非依存。GitHub リポジトリ不要。
+  コード検査から業務効率化まで、あらゆる用途のエージェントを生成できる。
 owner: YoshibaTakumu
 repo: tamurai-dev/100x-engineering-agents
 
 # --- Status（プロジェクト状態） ---
-status: inception                  # inception | active | maintenance | archived
-tech_stack: 未決定                  # 技術スタック選定後に更新
-ci_cd: 未設定                       # CI/CDパイプライン構築後に更新
+status: active
+tech_stack: Python 3.10+（技術スタック非依存 — 生成するエージェントは任意の言語・領域に対応）
+ci_cd: GitHub Actions（make check-all 自動実行）
 
 # --- Document Governance（文書統制） ---
 document:
-  type: single-source-of-truth     # この文書の性質
-  read_frequency: session-start    # エージェントは全セッション開始時に必読
+  type: single-source-of-truth
+  read_frequency: session-start
   audience:
-    - ai-agent                     # Devin, Claude Code, Cursor, etc.
-    - human-developer
+    - end-user                      # エージェントを作りたい人（非開発者含む）
+    - ai-agent                      # Devin, Claude Code, Cursor, etc.
+    - human-developer               # フレームワーク開発者
   permission:
-    modify: owner-approval-required  # オーナー承認なしに変更禁止
+    modify: owner-approval-required
     reason: 規約変更は全エージェント・開発者に影響するため
   integrity:
     - 曖昧な記述や願望は載せない
@@ -37,11 +38,11 @@ document:
 
 # --- Agent Behavior（エージェント行動制御） ---
 agent:
-  entry_point: AGENTS.md           # エージェント共通指示書（CLAUDE.md から参照）
+  entry_point: AGENTS.md
   language:
-    documentation: ja              # README, Issue, PR本文, コミットメッセージ
-    code_comments: en              # コード内コメント
-    identifiers: en                # 変数名, 関数名, クラス名
+    documentation: ja
+    code_comments: en
+    identifiers: en
   disallowedActions:
     - main ブランチへの直接プッシュ
     - force push（--force-with-lease は自分のfeatureブランチに限り許可）
@@ -50,41 +51,133 @@ agent:
     - テストの改変による通過
     - 自動生成ファイルの手動編集
     - AGENTS.md / README.md の無断変更
-  effort: high                     # low | medium | high | max
+  effort: high
 
 # --- Directory Layout ---
 layout:
-  agents_dir: agents/              # 全エージェント資産の格納場所
-  claude_symlink: .claude -> agents  # Claude Code 互換 symlink
+  agents_dir: agents/
+  claude_symlink: .claude -> agents
 ---
 
 # 100x Engineering Agents
+
+**ANTHROPIC_API_KEY ひとつで、AIエージェントの作成・テスト・品質評価がローカル完結で行えるフレームワーク。**
+
+GitHub リポジトリを持っていなくても、自分の業務効率化のためのエージェントが作れる。コードレビューからデータ集計まで、技術スタックを問わずあらゆる用途に対応。
+
+---
+
+## 0. クイックスタート（5分で最初のエージェント）
+
+### 前提条件
+
+- Python 3.10 以上
+- [Anthropic API キー](https://console.anthropic.com/)
+
+### セットアップ
+
+```bash
+# 1. クローン
+git clone https://github.com/tamurai-dev/100x-engineering-agents.git
+cd 100x-engineering-agents
+
+# 2. 依存パッケージをインストール
+pip install -e ".[dev]"
+
+# 3. 初期セットアップ（HMAC鍵生成 + マニフェスト初期化 + pre-commit hook）
+make setup
+
+# 4. API キーをセット
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+### エージェントを作る
+
+#### 方法 A: 自然言語から全自動生成（Agent Factory）
+
+GitHubリポジトリを持っていなくても、自然言語で仕様を書くだけでエージェントが作れる。
+
+```bash
+# 業務効率化エージェントの例
+make create-smart-agent SPEC="毎週の営業レポートを自動集計し、前週比を含むサマリーを生成するエージェント"
+
+# コード検査エージェントの例
+make create-smart-agent SPEC="Pythonコードのパフォーマンスボトルネックを検出し改善案を提示するエージェント"
+
+# EDD（評価駆動開発）をスキップして高速に作成
+make create-smart-agent SPEC="..." SKIP_EDD=1
+```
+
+Agent Factory は以下を全自動で行う:
+
+1. **Blueprint 生成** — 自然言語仕様から agent.md + config.json + test-prompts.json を生成
+2. **Eval Suite 生成** — 品質評価用の fixture + ground-truth + rubric を生成
+3. **登録 + バリデーション** — マニフェスト登録 + 整合性検証
+4. **EDD ループ** — 評価 → 改善 → 再評価を自動で繰り返し品質を向上
+
+#### 方法 B: テンプレートから手動作成
+
+構造を細かく制御したい場合はテンプレートベースで作成し、中身を手動で編集する。
+
+```bash
+# テンプレートから作成
+make create-agent NAME=my-agent
+
+# 生成されたファイルを編集
+#   agents/agents/my-agent/agent.md          ← エージェントの役割・能力を定義
+#   agents/agents/my-agent/config.json       ← API実行パラメータを定義
+#   agents/agents/my-agent/test-prompts.json ← テストケースを定義
+```
+
+### テスト・評価
+
+```bash
+# 設定の確認（API 不要）
+make test-agent-dry NAME=my-agent
+
+# スモークテスト（API キー必須）
+make test-agent NAME=my-agent MODEL=haiku
+
+# 品質評価（API キー必須、3回試行でスコア算出）
+make eval-agent NAME=my-agent MODEL=haiku TRIALS=3
+
+# 全エージェント一括テスト
+make test-all-agents MODEL=haiku
+
+# 全コマンドの一覧を表示
+make help
+```
+
+---
 
 ## 1. ビジョン
 
 ### 1.1 なぜこのプロジェクトが存在するか
 
-ソフトウェア開発の現場では、AIエージェントの導入が進んでいる。しかし多くの組織で起きているのは「エージェントを使ったが、手戻りが増えた」「品質が下がった」「結局人間がやり直した」という失敗だ。
+AIエージェントの導入が進んでいるが、多くの現場で「手戻りが増えた」「品質が下がった」「結局人間がやり直した」という失敗が起きている。
 
-原因は明確で、**エージェントに渡すコンテキスト（仕様・規約・判断基準）が曖昧だから**だ。エージェントは曖昧な指示を受けると、もっともらしいが間違ったコードを生成する。人間はそれをレビューで弾くが、それでは生産性は上がらない。
+原因は明確で、**エージェントに渡すコンテキスト（仕様・規約・判断基準）が曖昧だから**だ。エージェントは曖昧な指示を受けると、もっともらしいが間違った出力を生成する。
 
-100x Engineering Agents は、この問題を根本から解決する。**エージェントが正しく動くために必要な「構造化されたコンテキスト」を設計・管理・運用するためのフレームワーク**を構築する。
+100x Engineering Agents は、この問題を根本から解決する。**エージェントが正しく動くために必要な「構造化されたコンテキスト」を設計・管理・運用するためのフレームワーク**を提供する。
 
 ### 1.2 目指す状態
 
-- エージェントが初見のリポジトリでも、READMEと規約ファイルを読むだけで**人間と同等以上の品質**でコードを書ける
-- 1つのタスクに対して、人間の介入が**レビュー承認の1回だけ**で済む
-- エンタープライズが求めるセキュリティ・コンプライアンス・ガバナンスの要件を、エージェントが**自律的に遵守**できる
+- **誰でもエージェントが作れる** — ANTHROPIC_API_KEY と自然言語の仕様だけで、プログラミング経験がなくてもエージェントを作成・テスト・改善できる
+- **技術スタック非依存** — Python、TypeScript、Go、その他あらゆる言語やフレームワークのプロジェクトに対応。コード以外の業務効率化にも対応
+- **GitHub リポジトリ不要** — コードベースを持たない人でも、業務プロセスの自動化エージェントを作成できる
+- **品質が計測可能** — 「動いた気がする」ではなく、Precision/Recall/F1 スコアでエージェントの品質を定量評価できる
+- **ローカル完結** — 外部サービス（Devin, Cursor 等）に依存せず、Mac のターミナルだけで全ワークフローが完結する
 
 ### 1.3 スコープ
 
 **やること:**
 
-- AIエージェントが参照するドキュメント体系の設計パターンとテンプレート
-- エージェント向け開発規約（コーディング標準、コミット規約、レビュー基準）の策定
-- エンタープライズ要件（セキュリティ、監査、マルチテナント等）をエージェントに遵守させるためのガードレール設計
-- エージェントのタスク実行品質を計測・改善するための評価フレームワーク
-- 実プロジェクトでの適用事例とベストプラクティスの蓄積
+- ANTHROPIC_API_KEY だけで動く、エージェント作成・テスト・評価の CLI ツール一式
+- 自然言語からのエージェント全自動生成（Agent Factory）
+- 3層 Grader による品質評価フレームワーク（Code-Based / Model-Based / Test Execution）
+- 評価駆動開発（EDD）による自動品質改善ループ
+- エージェント向けコンテキスト設計のテンプレートとベストプラクティス
+- 実プロジェクトへの適用事例の蓄積
 
 **やらないこと:**
 
@@ -197,7 +290,7 @@ feat: エージェント実行ログの構造化出力を追加
 AIエージェントが本リポジトリで作業する際の追加ルール:
 
 1. **推測でコードを書かない** — 不明な仕様がある場合、コードを書く前にIssueでオーナーに確認する
-2. **存在しないライブラリを使わない** — `package.json`、`pyproject.toml` 等の依存定義ファイルを確認し、プロジェクトが使用していないライブラリを勝手に追加しない。追加が必要な場合はPR本文でその理由を明記する
+2. **存在しないライブラリを使わない** — `pyproject.toml` 等の依存定義ファイルを確認し、プロジェクトが使用していないライブラリを勝手に追加しない。追加が必要な場合はPR本文でその理由を明記する
 3. **自動生成ファイルを手動編集しない** — ロックファイル、マイグレーションファイル等は専用ツール経由で更新する
 4. **テストを改変して通さない** — テストが失敗する場合、テストではなく実装を修正する。テスト自体に問題がある場合はIssueで報告する
 5. **1回のPRで触れるファイル数を最小限にする** — 変更が広範囲に及ぶ場合は、複数のPRに分割する
@@ -215,24 +308,26 @@ AIエージェントが本リポジトリで作業する際の追加ルール:
 | 開発規約策定 | 完了（本README §2） |
 | エージェント指示書 | 完了（AGENTS.md） |
 | agents/ ディレクトリ構成 | 完了 |
-| Subagent 定義（初期5体） | 完了（agents/agents/*.md） |
+| Subagent 定義（6体） | 完了（code-reviewer, security-auditor, test-generator, doc-writer, task-planner, performance-optimizer） |
 | .claude/ symlink 設定 | 完了 |
-| 技術スタック選定 | **未決定** |
-| CI/CD パイプライン | **未設定** |
-| エンタープライズ要件定義 | **未着手**（ビジョン・規約の安定後に着手） |
+| pyproject.toml（依存管理） | 完了 |
+| Agent Factory（全自動生成） | 完了（`make create-smart-agent`） |
+| 品質評価フレームワーク | 完了（3層 Grader + EDD ループ） |
+| CI/CD パイプライン | 完了（GitHub Actions） |
+| Getting Started ドキュメント | 完了（本README §0） |
+| エンタープライズ要件定義 | **未着手**（コア機能安定後に着手） |
+| 実プロジェクト適用事例 | **未着手** |
 
 ---
 
 ## 4. 次のステップ
 
-技術スタック選定後、以下を順次追加する:
-
-1. 技術スタック選定と開発環境構築
-2. CI/CD パイプラインの構築（lint / test / build）
+1. 実プロジェクト（NiaG-Web 等）でのエージェント適用・検証
+2. eval fixture を実プロジェクトのコードに置き換え、品質スコアの信頼性を向上
 3. agents/rules/ にエンタープライズガードレールを定義
 4. agents/skills/ に再利用可能スキルを追加
-5. agents/evaluations/ にエージェント品質評価フレームワークを設計
-6. agents/templates/ に他プロジェクト向けテンプレートを整備
+5. 他プロジェクト向けテンプレートの整備（agents/templates/）
+6. ドキュメント: ユースケース別ガイド（業務効率化、コード検査、データ処理等）
 
 ---
 
