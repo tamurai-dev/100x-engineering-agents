@@ -42,7 +42,7 @@ agent:
 
 # Duo Agents — エージェント指示書
 
-> **旧名**: 100x Engineering Agents (Duo Agents へ統一済み。リポジトリ名のリネームのみ未実施)
+> **旧名**: 100x Engineering Agents (Duo Agents へ統一済み。GitHub リポジトリ名は duo-agents へリネーム予定 — リネーム実施後 README のクローン URL を更新する)
 
 ## 1. このドキュメントの役割
 
