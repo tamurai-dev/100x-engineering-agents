@@ -38,7 +38,7 @@ from graders.test_execution_grader import grade_test_execution
 MODEL_MAP = {
     "haiku": "claude-haiku-4-5",
     "sonnet": "claude-sonnet-4-6",
-    "opus": "claude-opus-4-6",
+    "opus": "claude-opus-4-7",
 }
 
 BETA_HEADER = "managed-agents-2026-04-01"
