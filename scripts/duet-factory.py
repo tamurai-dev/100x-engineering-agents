@@ -2,7 +2,7 @@
 """
 Duet Factory — 自然言語からデュエット（Task Agent + QA Agent）を自動生成する CLI
 
-ユーザーの自然言語仕様から、以下の5フェーズでデュエットを完全自動生成する:
+ユーザーの自然言語仕様から、以下の4フェーズでデュエットを完全自動生成する:
   Phase 1: Duet Blueprint 生成（Task Agent + QA Agent 設計）
   Phase 2: QA Agent テンプレート展開（artifact_format → QA テンプレート自動選択）
   Phase 3: duet.json + workflow.md 生成
