@@ -28,13 +28,24 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
 import datetime
 import json
 import os
 import sys
 import time
+from enum import Enum
 from pathlib import Path
+from typing import Annotated
+
+import typer
+
+
+class ModelChoice(str, Enum):
+    """Available model tiers."""
+    haiku = "haiku"
+    sonnet = "sonnet"
+    opus = "opus"
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DUETS_DIR = REPO_ROOT / "agents" / "duets"
@@ -1218,56 +1229,56 @@ def run_duet(
     return results
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Duet ワークフロー実行エンジン v2"
-    )
-    parser.add_argument("duet_name", help="デュエット名")
-    parser.add_argument(
-        "--input", required=False, help="Task Agent への入力"
-    )
-    parser.add_argument(
-        "--model",
-        choices=["haiku", "sonnet", "opus"],
-        default=None,
-        help="モデルのオーバーライド",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="API を呼ばずにワークフロー検証のみ実行",
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="詳細なデバッグログを出力する",
-    )
-    parser.add_argument(
-        "--multiagent",
-        action="store_true",
-        help="Multiagent Sessions モードで実行（共有ファイルシステム）",
-    )
-    args = parser.parse_args()
+app = typer.Typer(add_completion=False, help="Duet ワークフロー実行エンジン v2")
 
-    if not args.dry_run and not args.input:
-        parser.error("--input は必須です（--dry-run 時を除く）")
 
-    if args.multiagent and not args.dry_run:
+@app.command()
+def main(
+    duet_name: Annotated[str, typer.Argument(help="デュエット名")],
+    input: Annotated[
+        str | None,
+        typer.Option("--input", help="Task Agent への入力"),
+    ] = None,
+    model: Annotated[
+        ModelChoice | None,
+        typer.Option("--model", help="モデルのオーバーライド"),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="API を呼ばずにワークフロー検証のみ実行"),
+    ] = False,
+    verbose: Annotated[
+        bool,
+        typer.Option("--verbose", help="詳細なデバッグログを出力する"),
+    ] = False,
+    multiagent: Annotated[
+        bool,
+        typer.Option("--multiagent", help="Multiagent Sessions モードで実行（共有ファイルシステム）"),
+    ] = False,
+) -> None:
+    """Duet ワークフロー実行エンジン v2。"""
+    if not dry_run and not input:
+        typer.echo("ERROR: --input は必須です（--dry-run 時を除く）", err=True)
+        raise typer.Exit(code=2)
+
+    model_str = model.value if model else None
+
+    if multiagent and not dry_run:
         run_duet_multiagent(
-            duet_name=args.duet_name,
-            user_input=args.input or "",
-            model=args.model,
-            verbose=args.verbose,
+            duet_name=duet_name,
+            user_input=input or "",
+            model=model_str,
+            verbose=verbose,
         )
     else:
         run_duet(
-            duet_name=args.duet_name,
-            user_input=args.input or "",
-            model=args.model,
-            dry_run=args.dry_run,
-            verbose=args.verbose,
+            duet_name=duet_name,
+            user_input=input or "",
+            model=model_str,
+            dry_run=dry_run,
+            verbose=verbose,
         )
 
 
 if __name__ == "__main__":
-    main()
+    app()
