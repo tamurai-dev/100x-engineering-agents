@@ -369,7 +369,7 @@ class TestDuetFactoryCLI(unittest.TestCase):
             cwd=str(REPO_ROOT),
         )
         self.assertEqual(result.returncode, 0, f"stderr: {result.stderr}")
-        self.assertIn("qa-presentation.md.tmpl", result.stdout)
+        self.assertIn("qa-agent/presentation.md.tmpl", result.stdout)
         self.assertIn("sonnet", result.stdout)
 
 

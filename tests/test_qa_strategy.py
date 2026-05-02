@@ -36,8 +36,8 @@ class TestResolveQAStrategy(unittest.TestCase):
     def test_presentation_returns_dedicated_template(self) -> None:
         strategy = resolve_qa_strategy("presentation")
         self.assertEqual(strategy.artifact_format, "presentation")
-        self.assertEqual(strategy.agent_template, "qa-presentation.md.tmpl")
-        self.assertEqual(strategy.config_template, "qa-config.json.tmpl")
+        self.assertEqual(strategy.agent_template, "qa-agent/presentation.md.tmpl")
+        self.assertEqual(strategy.config_template, "qa-agent/config.json.tmpl")
         self.assertIn("convert_pdf", strategy.pipeline)
         self.assertIn("vision_qa", strategy.pipeline)
         self.assertEqual(strategy.execution_strategy, "script_generation")
@@ -45,14 +45,14 @@ class TestResolveQAStrategy(unittest.TestCase):
     def test_html_ui_returns_dedicated_template(self) -> None:
         strategy = resolve_qa_strategy("html_ui")
         self.assertEqual(strategy.artifact_format, "html_ui")
-        self.assertEqual(strategy.agent_template, "qa-html-ui.md.tmpl")
+        self.assertEqual(strategy.agent_template, "qa-agent/html-ui.md.tmpl")
         self.assertIn("playwright_screenshot", strategy.pipeline)
         self.assertEqual(strategy.execution_strategy, "script_generation")
 
     def test_code_returns_dedicated_template(self) -> None:
         strategy = resolve_qa_strategy("code")
         self.assertEqual(strategy.artifact_format, "code")
-        self.assertEqual(strategy.agent_template, "qa-code.md.tmpl")
+        self.assertEqual(strategy.agent_template, "qa-agent/code.md.tmpl")
         self.assertIn("lint", strategy.pipeline)
         self.assertIn("test_execution", strategy.pipeline)
         self.assertEqual(strategy.execution_strategy, "direct")
@@ -60,12 +60,12 @@ class TestResolveQAStrategy(unittest.TestCase):
     def test_text_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("text")
         self.assertEqual(strategy.artifact_format, "text")
-        self.assertEqual(strategy.agent_template, "qa-generic.md.tmpl")
+        self.assertEqual(strategy.agent_template, "qa-agent/generic.md.tmpl")
 
     def test_document_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("document")
         self.assertEqual(strategy.artifact_format, "document")
-        self.assertEqual(strategy.agent_template, "qa-generic.md.tmpl")
+        self.assertEqual(strategy.agent_template, "qa-agent/generic.md.tmpl")
 
     def test_structured_data_returns_generic_template(self) -> None:
         strategy = resolve_qa_strategy("structured_data")
@@ -129,10 +129,10 @@ class TestTemplateFiles(unittest.TestCase):
     def test_agent_templates_have_frontmatter(self) -> None:
         """全 agent.md テンプレートが frontmatter（---）で始まる。"""
         template_files = [
-            "qa-presentation.md.tmpl",
-            "qa-html-ui.md.tmpl",
-            "qa-code.md.tmpl",
-            "qa-generic.md.tmpl",
+            "qa-agent/presentation.md.tmpl",
+            "qa-agent/html-ui.md.tmpl",
+            "qa-agent/code.md.tmpl",
+            "qa-agent/generic.md.tmpl",
         ]
         for tmpl in template_files:
             path = TEMPLATES_DIR / tmpl
@@ -143,8 +143,8 @@ class TestTemplateFiles(unittest.TestCase):
             )
 
     def test_config_template_is_valid_json(self) -> None:
-        """qa-config.json.tmpl が有効な JSON である。"""
-        path = TEMPLATES_DIR / "qa-config.json.tmpl"
+        """qa-agent/config.json.tmpl が有効な JSON である。"""
+        path = TEMPLATES_DIR / "qa-agent/config.json.tmpl"
         content = path.read_text(encoding="utf-8")
         data = json.loads(content)
         self.assertIn("name", data)
@@ -153,8 +153,8 @@ class TestTemplateFiles(unittest.TestCase):
         self.assertIn("tools", data)
 
     def test_config_template_has_qa_system_prompt(self) -> None:
-        """qa-config.json.tmpl の system に QA 専門家プロンプトが含まれる。"""
-        path = TEMPLATES_DIR / "qa-config.json.tmpl"
+        """qa-agent/config.json.tmpl の system に QA 専門家プロンプトが含まれる。"""
+        path = TEMPLATES_DIR / "qa-agent/config.json.tmpl"
         data = json.loads(path.read_text(encoding="utf-8"))
         system = data["system"]
         self.assertIn("品質検査専門家", system)
@@ -162,8 +162,8 @@ class TestTemplateFiles(unittest.TestCase):
         self.assertIn("タスク実行の過程を知らない状態", system)
 
     def test_config_template_has_placeholders(self) -> None:
-        """qa-config.json.tmpl がプレースホルダーを含む。"""
-        path = TEMPLATES_DIR / "qa-config.json.tmpl"
+        """qa-agent/config.json.tmpl がプレースホルダーを含む。"""
+        path = TEMPLATES_DIR / "qa-agent/config.json.tmpl"
         data = json.loads(path.read_text(encoding="utf-8"))
         # Duet Factory がこれらを実際の値に置換する
         self.assertEqual(data["name"], "<duet-name>-qa")
@@ -200,9 +200,9 @@ class TestQAStrategyCompleteness(unittest.TestCase):
     def test_dedicated_formats_have_specific_templates(self) -> None:
         """専用テンプレートを持つ format が正しいテンプレートを返す。"""
         dedicated = {
-            "presentation": "qa-presentation.md.tmpl",
-            "html_ui": "qa-html-ui.md.tmpl",
-            "code": "qa-code.md.tmpl",
+            "presentation": "qa-agent/presentation.md.tmpl",
+            "html_ui": "qa-agent/html-ui.md.tmpl",
+            "code": "qa-agent/code.md.tmpl",
         }
         for fmt, expected_tmpl in dedicated.items():
             strategy = resolve_qa_strategy(fmt)
@@ -226,8 +226,8 @@ class TestQAStrategyCompleteness(unittest.TestCase):
             strategy = resolve_qa_strategy(fmt)
             self.assertEqual(
                 strategy.agent_template,
-                "qa-generic.md.tmpl",
-                f"{fmt} should use qa-generic.md.tmpl",
+                "qa-agent/generic.md.tmpl",
+                f"{fmt} should use qa-agent/generic.md.tmpl",
             )
 
     def test_generic_preserves_original_artifact_format(self) -> None:

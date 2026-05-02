@@ -17,8 +17,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-MD_TEMPLATE="$REPO_ROOT/agents/templates/subagent.md.tmpl"
-CONFIG_TEMPLATE="$REPO_ROOT/agents/templates/config.json.tmpl"
+MD_TEMPLATE="$REPO_ROOT/agents/templates/task-agent/agent.md.tmpl"
+CONFIG_TEMPLATE="$REPO_ROOT/agents/templates/task-agent/config.json.tmpl"
 AGENTS_DIR="$REPO_ROOT/agents/agents"
 
 # ── 引数チェック ──────────────────────────────────

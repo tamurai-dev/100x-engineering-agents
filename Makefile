@@ -28,7 +28,7 @@ validate: ## 全 subagent の frontmatter をバリデーション（Claude Code
 validate-config: ## 全 config.json をバリデーション（Managed Agents API 用 + 整合性チェック）
 	@$(PYTHON) scripts/validate-config.py
 
-check-template: ## テンプレート (subagent.md.tmpl) の整合性チェック
+check-template: ## テンプレート (task-agent/agent.md.tmpl) の整合性チェック
 	@$(PYTHON) scripts/validate_subagents.py --check-template
 
 test: ## テストスイート実行（正常系 + 異常系 + 既存エージェント）

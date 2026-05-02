@@ -85,14 +85,14 @@ agent:
 │   │       └── duet.json           #     デュエット定義（Task/QA Agent 参照、QA ループ設定）
 │   ├── schemas/                      # （PR-2 で削除済。pydantic v2 モデルへ移行: src/duo_agents/schemas.py）
 │   ├── templates/                    # テンプレート
-│   │   ├── subagent.md.tmpl          #   agent.md テンプレート
+│   │   ├── task-agent/agent.md.tmpl          #   agent.md テンプレート
 │   │   ├── config.json.tmpl          #   config.json テンプレート
 │   │   ├── test-prompts.json.tmpl    #   テストケーステンプレート
-│   │   ├── qa-presentation.md.tmpl   #   QA テンプレート: presentation（ビジュアル品質検査）
-│   │   ├── qa-html-ui.md.tmpl        #   QA テンプレート: html_ui（UI 品質検査）
-│   │   ├── qa-code.md.tmpl           #   QA テンプレート: code（コード品質検査）
-│   │   ├── qa-generic.md.tmpl        #   QA テンプレート: generic（汎用品質検査）
-│   │   └── qa-config.json.tmpl       #   QA Agent config.json テンプレート
+│   │   ├── qa-agent/presentation.md.tmpl   #   QA テンプレート: presentation（ビジュアル品質検査）
+│   │   ├── qa-agent/html-ui.md.tmpl        #   QA テンプレート: html_ui（UI 品質検査）
+│   │   ├── qa-agent/code.md.tmpl           #   QA テンプレート: code（コード品質検査）
+│   │   ├── qa-agent/generic.md.tmpl        #   QA テンプレート: generic（汎用品質検査）
+│   │   └── qa-agent/config.json.tmpl       #   QA Agent config.json テンプレート
 │   ├── skills/                       # 再利用可能スキル定義
 │   ├── commands/                     # カスタムスラッシュコマンド
 │   ├── rules/                        # トピック別ルール（パスゲート対応）
@@ -437,10 +437,10 @@ Phase 1: Duet Blueprint 生成
 
 Phase 2: QA Agent テンプレート展開
   artifact_format → qa_strategy.py → QA テンプレート自動選択
-  - presentation → qa-presentation.md.tmpl（ビジュアル品質検査）
-  - html_ui → qa-html-ui.md.tmpl（UI 品質検査）
-  - code → qa-code.md.tmpl（コード品質検査）
-  - その他 → qa-generic.md.tmpl（汎用品質検査）
+  - presentation → qa-agent/presentation.md.tmpl（ビジュアル品質検査）
+  - html_ui → qa-agent/html-ui.md.tmpl（UI 品質検査）
+  - code → qa-agent/code.md.tmpl（コード品質検査）
+  - その他 → qa-agent/generic.md.tmpl（汎用品質検査）
 
 Phase 3: SKILL.md 生成
   Claude Messages API → タスク固有の手順書（前提条件・実行手順・品質基準）

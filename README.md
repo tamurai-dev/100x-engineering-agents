@@ -179,10 +179,10 @@ Task Agent（Actor）          QA Agent（Critic）
 
 | artifact_format | QA テンプレート | QA パイプライン |
 |----------------|---------------|---------------|
-| `presentation` | qa-presentation.md.tmpl | PPTX → PDF → PNG → Vision API |
-| `html_ui` | qa-html-ui.md.tmpl | Playwright screenshot → Vision API |
-| `code` | qa-code.md.tmpl | lint + test execution + 静的解析 |
-| その他 | qa-generic.md.tmpl | 汎用テキスト分析 |
+| `presentation` | qa-agent/presentation.md.tmpl | PPTX → PDF → PNG → Vision API |
+| `html_ui` | qa-agent/html-ui.md.tmpl | Playwright screenshot → Vision API |
+| `code` | qa-agent/code.md.tmpl | lint + test execution + 静的解析 |
+| その他 | qa-agent/generic.md.tmpl | 汎用テキスト分析 |
 
 **Duet Factory（デュエット自動生成）:**
 

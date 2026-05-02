@@ -8,8 +8,8 @@ Usage:
     from scripts.duet_factory.qa_strategy import resolve_qa_strategy
 
     strategy = resolve_qa_strategy("presentation")
-    print(strategy.agent_template)    # "qa-presentation.md.tmpl"
-    print(strategy.config_template)   # "qa-config.json.tmpl"
+    print(strategy.agent_template)    # "qa-agent/presentation.md.tmpl"
+    print(strategy.config_template)   # "qa-agent/config.json.tmpl"
     print(strategy.pipeline)          # ["convert_pdf", "render_png", "vision_qa"]
 """
 
@@ -81,8 +81,8 @@ class QAStrategy:
 _STRATEGY_MAP: dict[str, QAStrategy] = {
     "presentation": QAStrategy(
         artifact_format="presentation",
-        agent_template="qa-presentation.md.tmpl",
-        config_template="qa-config.json.tmpl",
+        agent_template="qa-agent/presentation.md.tmpl",
+        config_template="qa-agent/config.json.tmpl",
         pipeline=["convert_pdf", "render_png", "vision_qa"],
         execution_strategy="script_generation",
         recommended_model="sonnet",
@@ -90,8 +90,8 @@ _STRATEGY_MAP: dict[str, QAStrategy] = {
     ),
     "html_ui": QAStrategy(
         artifact_format="html_ui",
-        agent_template="qa-html-ui.md.tmpl",
-        config_template="qa-config.json.tmpl",
+        agent_template="qa-agent/html-ui.md.tmpl",
+        config_template="qa-agent/config.json.tmpl",
         pipeline=["playwright_screenshot", "vision_qa"],
         execution_strategy="script_generation",
         recommended_model="sonnet",
@@ -99,8 +99,8 @@ _STRATEGY_MAP: dict[str, QAStrategy] = {
     ),
     "code": QAStrategy(
         artifact_format="code",
-        agent_template="qa-code.md.tmpl",
-        config_template="qa-config.json.tmpl",
+        agent_template="qa-agent/code.md.tmpl",
+        config_template="qa-agent/config.json.tmpl",
         pipeline=["lint", "test_execution", "static_analysis"],
         execution_strategy="direct",
         recommended_model="haiku",
@@ -110,8 +110,8 @@ _STRATEGY_MAP: dict[str, QAStrategy] = {
 
 # generic fallback defaults (text, structured_data, document, media_*, environment_state)
 _GENERIC_DEFAULTS = {
-    "agent_template": "qa-generic.md.tmpl",
-    "config_template": "qa-config.json.tmpl",
+    "agent_template": "qa-agent/generic.md.tmpl",
+    "config_template": "qa-agent/config.json.tmpl",
     "pipeline": ["text_analysis"],
     "execution_strategy": "direct",
     "recommended_model": "haiku",

@@ -31,16 +31,16 @@ VALID_ARTIFACT_FORMATS: Final[frozenset[str]] = frozenset(
 # artifact_format → QA template filename (under TEMPLATES_DIR).
 # Formats not listed here fall back to the generic QA template.
 FORMAT_TO_QA_TEMPLATE: Final[dict[str, str]] = {
-    "presentation": "qa-presentation.md.tmpl",
-    "html_ui": "qa-html-ui.md.tmpl",
-    "code": "qa-code.md.tmpl",
+    "presentation": "qa-agent/presentation.md.tmpl",
+    "html_ui": "qa-agent/html-ui.md.tmpl",
+    "code": "qa-agent/code.md.tmpl",
     # All other formats use generic.
-    "text": "qa-generic.md.tmpl",
-    "structured_data": "qa-generic.md.tmpl",
-    "document": "qa-generic.md.tmpl",
-    "media_image": "qa-generic.md.tmpl",
-    "media_video": "qa-generic.md.tmpl",
-    "environment_state": "qa-generic.md.tmpl",
+    "text": "qa-agent/generic.md.tmpl",
+    "structured_data": "qa-agent/generic.md.tmpl",
+    "document": "qa-agent/generic.md.tmpl",
+    "media_image": "qa-agent/generic.md.tmpl",
+    "media_video": "qa-agent/generic.md.tmpl",
+    "environment_state": "qa-agent/generic.md.tmpl",
 }
 
 # Formats that require Sonnet or higher by default (visual / structured tasks
