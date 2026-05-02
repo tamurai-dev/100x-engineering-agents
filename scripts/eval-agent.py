@@ -530,40 +530,73 @@ def save_eval_results(agent_name: str, model: str, task_results: list[dict]) -> 
     return filepath
 
 
-def main():
-    import argparse
+from enum import Enum
+from typing import Annotated
 
-    parser = argparse.ArgumentParser(description="エージェント品質評価ランナー")
-    parser.add_argument("agent_name", nargs="?", help="評価対象エージェント名")
-    parser.add_argument("--all", action="store_true", help="全エージェントを評価")
-    parser.add_argument("--model", default="haiku", help="テストモデル: haiku, sonnet, opus")
-    parser.add_argument("--trials", type=int, default=3, help="Trial 数（デフォルト: 3）")
-    parser.add_argument("--task", default=None, help="特定タスクのみ評価")
-    parser.add_argument("--dry-run", action="store_true", help="API を呼ばずに設定確認")
-    args = parser.parse_args()
+import typer
 
-    if not args.agent_name and not args.all:
-        parser.print_help()
-        sys.exit(1)
 
-    agents = list_agents_with_evals() if args.all else [args.agent_name]
+class ModelChoice(str, Enum):
+    """Available model tiers."""
+    haiku = "haiku"
+    sonnet = "sonnet"
+    opus = "opus"
 
-    if args.dry_run:
+
+app = typer.Typer(add_completion=False, help="エージェント品質評価ランナー")
+
+
+@app.command()
+def main(
+    agent_name: Annotated[
+        str | None,
+        typer.Argument(help="評価対象エージェント名"),
+    ] = None,
+    all_agents: Annotated[
+        bool,
+        typer.Option("--all", help="全エージェントを評価"),
+    ] = False,
+    model: Annotated[
+        ModelChoice,
+        typer.Option("--model", help="テストモデル"),
+    ] = ModelChoice.haiku,
+    trials: Annotated[
+        int,
+        typer.Option("--trials", help="Trial 数（デフォルト: 3）"),
+    ] = 3,
+    task: Annotated[
+        str | None,
+        typer.Option("--task", help="特定タスクのみ評価"),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="API を呼ばずに設定確認"),
+    ] = False,
+) -> None:
+    """エージェント品質評価ランナー。"""
+    if not agent_name and not all_agents:
+        typer.echo("ERROR: agent_name または --all を指定してください")
+        raise typer.Exit(code=1)
+
+    model_str = model.value
+    agents = list_agents_with_evals() if all_agents else [agent_name]
+
+    if dry_run:
         print("=== ドライラン ===")
-        for agent_name in agents:
-            config = load_config(agent_name)
-            suite = load_suite(agent_name)
+        for name in agents:
+            config = load_config(name)
+            suite = load_suite(name)
             tasks = suite.get("tasks", [])
-            print(f"\n{agent_name}:")
+            print(f"\n{name}:")
             print(f"  config.json: OK (model={config['model']})")
             print(f"  suite.json: {len(tasks)} タスク")
             for task_name in tasks:
-                task = load_task(agent_name, task_name)
-                fixtures = collect_fixture_files(agent_name, task_name)
+                task_def = load_task(name, task_name)
+                fixtures = collect_fixture_files(name, task_name)
                 print(f"    - {task_name}: {len(fixtures)} fixture ファイル")
-                print(f"      graders: {list(task.get('graders', {}).keys())}")
-            print(f"  モデル: {args.model} ({MODEL_MAP.get(args.model, args.model)})")
-            print(f"  Trial 数: {args.trials}")
+                print(f"      graders: {list(task_def.get('graders', {}).keys())}")
+            print(f"  モデル: {model_str} ({MODEL_MAP.get(model_str, model_str)})")
+            print(f"  Trial 数: {trials}")
         return
 
     api_key = check_api_key()
@@ -573,38 +606,38 @@ def main():
     except ImportError:
         print("ERROR: anthropic SDK が必要です")
         print("  pip install anthropic")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
     client = Anthropic(api_key=api_key)
 
-    for agent_name in agents:
-        suite = load_suite(agent_name)
+    for name in agents:
+        suite = load_suite(name)
         task_names = suite.get("tasks", [])
 
-        if args.task:
-            if args.task not in task_names:
-                print(f"ERROR: タスク '{args.task}' が {agent_name} の suite に存在しません")
-                sys.exit(1)
-            task_names = [args.task]
+        if task:
+            if task not in task_names:
+                print(f"ERROR: タスク '{task}' が {name} の suite に存在しません")
+                raise typer.Exit(code=1)
+            task_names = [task]
 
         print(f"\n{'='*60}")
-        print(f"  {agent_name} / {args.model} ({MODEL_MAP.get(args.model, args.model)})")
-        print(f"  {len(task_names)} タスク × {args.trials} trial")
+        print(f"  {name} / {model_str} ({MODEL_MAP.get(model_str, model_str)})")
+        print(f"  {len(task_names)} タスク × {trials} trial")
         print(f"{'='*60}")
 
         task_results = []
         for task_name in task_names:
             print(f"\n  タスク: {task_name}")
-            result = evaluate_task(client, agent_name, task_name, args.model, args.trials)
+            result = evaluate_task(client, name, task_name, model_str, trials)
             task_results.append(result)
 
             status = "PASS" if result["pass_at_k"] else "FAIL"
             reliability = "RELIABLE" if result["pass_all_k"] else "FLAKY"
-            print(f"  → {status} ({reliability}): pass@{args.trials}={result['pass_at_k']}, "
-                  f"pass^{args.trials}={result['pass_all_k']}, "
+            print(f"  → {status} ({reliability}): pass@{trials}={result['pass_at_k']}, "
+                  f"pass^{trials}={result['pass_all_k']}, "
                   f"mean_overall={result['mean_scores']['overall']:.3f}")
 
-        filepath = save_eval_results(agent_name, args.model, task_results)
+        filepath = save_eval_results(name, model_str, task_results)
         print(f"\n  証跡: {filepath.relative_to(REPO_ROOT)}")
 
     print(f"\n{'='*60}")
@@ -613,4 +646,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()

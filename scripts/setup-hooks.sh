@@ -22,7 +22,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "=== 100x Engineering Agents セットアップ ==="
+echo "=== Duo Agents セットアップ ==="
 echo ""
 
 # ── Step 1: Python 依存パッケージの確認 ──────────

@@ -21,13 +21,16 @@ Usage:
 
 from __future__ import annotations
 
-import argparse
 import json
 import os
 import subprocess
 import sys
 import time
+from enum import Enum
 from pathlib import Path
+from typing import Annotated
+
+import typer
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / "agents" / "agents"
@@ -39,6 +42,26 @@ MODEL_MAP = {
     "sonnet": "claude-sonnet-4-6",
     "opus": "claude-opus-4-6",
 }
+
+
+class ModelChoice(str, Enum):
+    """Available model tiers."""
+    haiku = "haiku"
+    sonnet = "sonnet"
+    opus = "opus"
+
+
+class ArtifactFormat(str, Enum):
+    """Supported artifact_format values."""
+    text = "text"
+    code = "code"
+    structured_data = "structured_data"
+    document = "document"
+    presentation = "presentation"
+    html_ui = "html_ui"
+    media_image = "media_image"
+    media_video = "media_video"
+    environment_state = "environment_state"
 
 
 def check_api_key() -> str:
@@ -263,54 +286,50 @@ def dry_run_preview(spec: str, artifact_format: str | None) -> None:
     print(f"  推定時間: 1-3 分")
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Duet Factory — 自然言語からデュエットを自動生成",
-    )
-    parser.add_argument(
-        "--spec",
-        type=str,
-        required=True,
-        help="デュエットの自然言語仕様",
-    )
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="haiku",
-        choices=["haiku", "sonnet", "opus"],
-        help="使用モデル（デフォルト: haiku）",
-    )
-    parser.add_argument(
-        "--format",
-        type=str,
-        default=None,
-        dest="artifact_format",
-        choices=[
-            "text", "code", "structured_data", "document", "presentation",
-            "html_ui", "media_image", "media_video", "environment_state",
-        ],
-        help="artifact_format を明示指定（省略時は LLM が推論）",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="API を呼び出さずにプレビュー",
-    )
+app = typer.Typer(
+    add_completion=False,
+    help="Duet Factory — 自然言語からデュエットを自動生成",
+)
 
-    args = parser.parse_args()
 
-    if args.dry_run:
-        dry_run_preview(args.spec, args.artifact_format)
+@app.command()
+def main(
+    spec: Annotated[
+        str,
+        typer.Option("--spec", help="デュエットの自然言語仕様"),
+    ],
+    model: Annotated[
+        ModelChoice,
+        typer.Option("--model", help="使用モデル"),
+    ] = ModelChoice.haiku,
+    artifact_format: Annotated[
+        ArtifactFormat | None,
+        typer.Option(
+            "--format",
+            help="artifact_format を明示指定（省略時は LLM が推論）",
+        ),
+    ] = None,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="API を呼び出さずにプレビュー"),
+    ] = False,
+) -> None:
+    """自然言語仕様から Task Agent + QA Agent のデュエットを生成する。"""
+    model_str = model.value
+    fmt_str = artifact_format.value if artifact_format else None
+
+    if dry_run:
+        dry_run_preview(spec, fmt_str)
         return
 
-    # API キー確認
+    # API key check
     check_api_key()
     client = create_client()
 
     start_time = time.time()
 
     # Phase 1: Blueprint
-    blueprint = phase1_blueprint(client, args.spec, args.model, args.artifact_format)
+    blueprint = phase1_blueprint(client, spec, model_str, fmt_str)
 
     # Phase 2: QA Agent
     from duet_factory.duet_blueprint import expand_task_agent
@@ -318,7 +337,7 @@ def main():
     qa_agent_md, qa_config = phase2_qa_agent(blueprint)
 
     # Phase 3: SKILL.md
-    skill_md = phase3_skill(client, blueprint, args.model)
+    skill_md = phase3_skill(client, blueprint, model_str)
 
     # Phase 4: duet.json + workflow.md
     duet_json, workflow_md = phase4_duet(blueprint)
@@ -353,4 +372,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    app()
