@@ -17,9 +17,6 @@
     "ref": "agents/agents/code-review-qa"
   },
   "workflow": {
-    "pre_task": {
-      "read_skills": false
-    },
     "execution": {
       "strategy": "direct"
     },

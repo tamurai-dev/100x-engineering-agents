@@ -5,7 +5,7 @@ run-duet.py を論理単位で分割した内部パッケージ。
 
 サブモジュール:
     constants  - モデルマップ、Beta ヘッダ、しきい値などの定数
-    loaders    - duet.json / agent config.json / SKILL.md のロード
+    loaders    - duet.json / agent config.json のロード
     qa         - QA レスポンスのパース、フィードバック整形、モデルエスカレーション
     sessions   - Managed Agents セッション作成、イベント送受信、ファイル取得
     orchestrator - Multiagent モード用のオーケストレーター構築
@@ -35,11 +35,9 @@ from .loaders import (
     check_api_key,
     load_agent_config,
     load_duet,
-    load_skill_md,
 )
 from .qa import (
     build_feedback_history,
-    build_skill_preamble,
     parse_qa_result,
     should_escalate_model,
 )
@@ -73,10 +71,8 @@ __all__ = [
     "check_api_key",
     "load_agent_config",
     "load_duet",
-    "load_skill_md",
     # qa
     "build_feedback_history",
-    "build_skill_preamble",
     "parse_qa_result",
     "should_escalate_model",
     # sessions

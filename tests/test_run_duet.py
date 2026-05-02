@@ -7,11 +7,9 @@ API 呼び出しなしで検証可能なロジックのみテストする。
 
 テスト対象:
   - parse_qa_result: QA JSON パース（正常系 + 異常系）
-  - build_skill_preamble: SKILL.md プロンプト前文生成
   - build_feedback_history: フィードバック蓄積テキスト生成
   - load_duet: duet.json 読み込み
   - load_agent_config: config.json 読み込み
-  - load_skill_md: SKILL.md 読み込み
   - run_duet (dry-run): ワークフロー検証モード
 """
 
@@ -40,11 +38,9 @@ from run_duet_helpers import (
     ORCHESTRATOR_MAX_QA_PROMPT_CHARS,
     build_feedback_history,
     build_orchestrator_system,
-    build_skill_preamble,
     list_session_output_files,
     load_duet,
     load_agent_config,
-    load_skill_md,
     parse_qa_result,
     should_escalate_model,
 )
@@ -137,28 +133,6 @@ class TestParseQaResult(unittest.TestCase):
         self.assertEqual(len(result["findings"]), 3)
 
 
-class TestBuildSkillPreamble(unittest.TestCase):
-    """SKILL.md プロンプト前文生成のテスト。"""
-
-    def test_basic_preamble(self):
-        """基本的なスキル前文が生成される。"""
-        skill = "# スライド生成スキル\n\n手順:\n1. pptxgenjs を使う"
-        result = build_skill_preamble(skill)
-        self.assertIn("SKILL.md", result)
-        self.assertIn("スライド生成スキル", result)
-        self.assertIn("pptxgenjs", result)
-
-    def test_preamble_ends_with_separator(self):
-        """前文がセパレータで終わる。"""
-        result = build_skill_preamble("test content")
-        self.assertIn("---", result)
-
-    def test_empty_skill(self):
-        """空のスキル内容でもクラッシュしない。"""
-        result = build_skill_preamble("")
-        self.assertIn("SKILL.md", result)
-
-
 class TestBuildFeedbackHistory(unittest.TestCase):
     """フィードバック蓄積テキスト生成のテスト。"""
 
@@ -223,30 +197,6 @@ class TestLoadAgentConfig(unittest.TestCase):
         """存在しないエージェントは sys.exit する。"""
         with self.assertRaises(SystemExit):
             load_agent_config("nonexistent-agent-xyz")
-
-
-class TestLoadSkillMd(unittest.TestCase):
-    """SKILL.md 読み込みのテスト。"""
-
-    def test_load_nonexistent_skill(self):
-        """SKILL.md がないデュエットは None を返す。"""
-        result = load_skill_md("code-review-duet")
-        # code-review-duet has no skill.md
-        self.assertIsNone(result)
-
-    def test_load_existing_skill(self):
-        """SKILL.md があるデュエットは内容を返す。"""
-        # Create a temporary skill.md for testing
-        duet_dir = REPO_ROOT / "agents" / "duets" / "code-review-duet"
-        skill_path = duet_dir / "skill.md"
-        try:
-            skill_path.write_text("# Test Skill\ntest content", encoding="utf-8")
-            result = load_skill_md("code-review-duet")
-            self.assertIsNotNone(result)
-            self.assertIn("Test Skill", result)
-        finally:
-            if skill_path.exists():
-                skill_path.unlink()
 
 
 class TestDryRun(unittest.TestCase):
@@ -424,35 +374,11 @@ class TestMultiagent(unittest.TestCase):
             "pass_threshold": 0.80,
             "convergence_delta": 0.02,
         }
-        result = build_orchestrator_system("test-duet", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings)
         self.assertIsInstance(result, str)
         self.assertIn("test-duet", result)
         self.assertIn("Task Agent", result)
         self.assertIn("QA Agent", result)
-
-    def test_build_orchestrator_system_with_skill(self):
-        """build_orchestrator_system includes SKILL.md when provided."""
-        qa_settings = {
-            "max_iterations": 3,
-            "pass_threshold": 0.80,
-        }
-        skill = "Use pptxgenjs to generate slides."
-        result = build_orchestrator_system("test-duet", qa_settings, skill)
-        self.assertIn("SKILL.md", result)
-        self.assertIn("pptxgenjs", result)
-
-    def test_build_orchestrator_system_truncates_long_skill(self):
-        """build_orchestrator_system truncates very long SKILL.md."""
-        qa_settings = {
-            "max_iterations": 3,
-            "pass_threshold": 0.80,
-        }
-        long_skill = "x" * (ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 1000)
-        result = build_orchestrator_system("test-duet", qa_settings, long_skill)
-        # The skill content should be truncated
-        self.assertLessEqual(
-            result.count("x"), ORCHESTRATOR_MAX_QA_PROMPT_CHARS + 10
-        )
 
     def test_build_orchestrator_system_contains_workflow_params(self):
         """build_orchestrator_system includes workflow parameters."""
@@ -462,7 +388,7 @@ class TestMultiagent(unittest.TestCase):
             "convergence_delta": 0.03,
             "escalation_threshold": 0.35,
         }
-        result = build_orchestrator_system("test-duet", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings)
         self.assertIn("0.9", result)
         self.assertIn("5", result)
         self.assertIn("0.35", result)
@@ -473,7 +399,7 @@ class TestMultiagent(unittest.TestCase):
             "max_iterations": 3,
             "pass_threshold": 0.80,
         }
-        result = build_orchestrator_system("test-duet", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings)
         self.assertIn("filesystem", result.lower())
         self.assertIn("/mnt/session/outputs/", result)
 
@@ -483,7 +409,7 @@ class TestMultiagent(unittest.TestCase):
             "max_iterations": 3,
             "pass_threshold": 0.80,
         }
-        result = build_orchestrator_system("test-duet", qa_settings, None)
+        result = build_orchestrator_system("test-duet", qa_settings)
         self.assertIn("final_status", result)
         self.assertIn("best_score", result)
 
@@ -512,14 +438,6 @@ class TestFileOutputInstructions(unittest.TestCase):
         """Text-based formats should not require sonnet."""
         self.assertNotIn("text", FORMAT_REQUIRES_SONNET)
         self.assertNotIn("code", FORMAT_REQUIRES_SONNET)
-
-    def test_build_skill_preamble_with_file_instructions(self):
-        """Skill preamble and file instructions combine correctly."""
-        preamble = build_skill_preamble("Use pptxgenjs for slides.")
-        combined = preamble + "Create slides" + FILE_OUTPUT_INSTRUCTIONS
-        self.assertIn("SKILL.md", combined)
-        self.assertIn("/mnt/session/outputs/", combined)
-        self.assertIn("Create slides", combined)
 
 
 if __name__ == "__main__":

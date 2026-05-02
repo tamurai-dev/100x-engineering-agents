@@ -265,10 +265,10 @@ class TestGenerateDuetJson(unittest.TestCase):
         self.assertIn("created_at", bj["metadata"])
         self.assertEqual(bj["metadata"]["author"], "duet-factory")
 
-    def test_skill_path(self) -> None:
+    def test_no_skill_field(self) -> None:
         bp = _make_blueprint()
         bj = generate_duet_json(bp)
-        self.assertEqual(bj["skill"], "agents/duets/test-duet/skill.md")
+        self.assertNotIn("skill", bj)
 
 
 class TestGenerateWorkflowMd(unittest.TestCase):

@@ -121,7 +121,7 @@ Duet Factory は以下を全自動で行う:
 
 1. **Duet Blueprint 生成** — 自然言語仕様から Task Agent + QA Agent 設計を生成
 2. **QA テンプレート展開** — artifact_format に応じた QA テンプレートを自動選択
-3. **SKILL.md 生成** — タスク固有の手順書（前提条件・手順・品質基準）
+3. **duet.json + workflow.md 生成** — Skill Resolver によるスキル自動選択を含むデュエット定義の生成
 4. **登録 + バリデーション** — マニフェスト登録（Task + QA 両方） + frontmatter + config + duet 検証
 
 #### 方法 B: テンプレートから手動で単体 Subagent を作成
@@ -195,7 +195,7 @@ make create-duet SPEC="..." FORMAT=presentation
 make create-duet-dry SPEC="..." FORMAT=presentation
 ```
 
-Duet Factory は Task Agent + QA Agent + duet.json + SKILL.md + workflow.md を1コマンドで生成し、マニフェスト登録とバリデーションまで自動で行う。
+Duet Factory は Task Agent + QA Agent + duet.json + workflow.md を1コマンドで生成し、マニフェスト登録とバリデーションまで自動で行う。
 
 ```bash
 # デュエットの検証（API 不要）
@@ -215,8 +215,7 @@ make validate-duet
 
 | 機能 | 説明 |
 |------|------|
-| **SKILL.md 注入** | デュエットの `skill.md` を Task Agent のプロンプトに自動注入 |
-| **Skills API 連携** | Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）を自動マッチ。artifact_format から最適なスキルを選択し Agent に自動アタッチ |
+| **Skills API 連携** | Anthropic プリビルトスキル（pptx/xlsx/docx/pdf）+ カスタムスキルを自動マッチ。artifact_format から最適なスキルを選択し `agents.create(skills=[...])` で Agent に自動アタッチ |
 | **Environment packages** | 必要なパッケージ（npm/pip/apt 等）を Environment に自動設定。プリビルトスキルでカバーされる場合は不要と判定 |
 | **モデル自動エスカレーション** | QA スコアが閾値（0.40）以下の場合、haiku → sonnet に自動切替。コスト最適化と品質を両立 |
 | **Files API 連携** | Task Agent が生成したファイルを QA Agent のセッションにマウント |

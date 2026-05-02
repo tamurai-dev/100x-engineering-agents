@@ -5,9 +5,8 @@ Duet Factory — 自然言語からデュエット（Task Agent + QA Agent）を
 ユーザーの自然言語仕様から、以下の5フェーズでデュエットを完全自動生成する:
   Phase 1: Duet Blueprint 生成（Task Agent + QA Agent 設計）
   Phase 2: QA Agent テンプレート展開（artifact_format → QA テンプレート自動選択）
-  Phase 3: SKILL.md 生成（タスク固有の手順書）
-  Phase 4: duet.json + workflow.md 生成
-  Phase 5: 登録 + バリデーション（マニフェスト + frontmatter + config 検証）
+  Phase 3: duet.json + workflow.md 生成
+  Phase 4: 登録 + バリデーション（マニフェスト + frontmatter + config 検証）
 
 Usage:
     python scripts/duet-factory.py --spec "pptxgenjsでスライド生成"
@@ -132,30 +131,12 @@ def phase2_qa_agent(blueprint: dict) -> tuple[str, dict]:
     return qa_md, qa_config
 
 
-def phase3_skill(client, blueprint: dict, model: str) -> str:
-    """Phase 3: SKILL.md 生成。"""
-    from duet_factory.duet_blueprint import generate_skill
-
-    print("\n" + "=" * 60)
-    print("  Phase 3: SKILL.md 生成")
-    print("=" * 60)
-
-    resolved_model = MODEL_MAP.get(model, model)
-    skill_md = generate_skill(client, blueprint, model=resolved_model)
-
-    lines = skill_md.strip().split("\n")
-    print(f"  行数: {len(lines)}")
-    print(f"  先頭: {lines[0][:60]}...")
-
-    return skill_md
-
-
-def phase4_duet(blueprint: dict) -> tuple[dict, str]:
-    """Phase 4: duet.json + workflow.md 生成。"""
+def phase3_duet(blueprint: dict) -> tuple[dict, str]:
+    """Phase 3: duet.json + workflow.md 生成。"""
     from duet_factory.duet_blueprint import generate_duet_json, generate_workflow_md
 
     print("\n" + "=" * 60)
-    print("  Phase 4: duet.json + workflow.md 生成")
+    print("  Phase 3: duet.json + workflow.md 生成")
     print("=" * 60)
 
     duet_json = generate_duet_json(blueprint)
@@ -169,17 +150,17 @@ def phase4_duet(blueprint: dict) -> tuple[dict, str]:
     return duet_json, workflow_md
 
 
-def phase5_save_and_validate(
+def phase4_save_and_validate(
     blueprint: dict,
     task_agent_md: str, task_config: dict, task_test_prompts: list,
     qa_agent_md: str, qa_config: dict,
-    duet_json: dict, workflow_md: str, skill_md: str,
+    duet_json: dict, workflow_md: str,
 ) -> list[str]:
-    """Phase 5: ファイル保存 + 登録 + バリデーション。"""
+    """Phase 4: ファイル保存 + 登録 + バリデーション。"""
     from duet_factory.duet_blueprint import save_duet, expand_task_agent
 
     print("\n" + "=" * 60)
-    print("  Phase 5: 保存 + 登録 + バリデーション")
+    print("  Phase 4: 保存 + 登録 + バリデーション")
     print("=" * 60)
 
     # Save files
@@ -187,7 +168,7 @@ def phase5_save_and_validate(
         blueprint,
         task_agent_md, task_config, task_test_prompts,
         qa_agent_md, qa_config,
-        duet_json, workflow_md, skill_md,
+        duet_json, workflow_md,
     )
 
     print(f"  Task Agent: {paths['task_agent_dir']}")
@@ -279,11 +260,10 @@ def dry_run_preview(spec: str, artifact_format: str | None) -> None:
     print(f"\n  以下のフェーズが実行されます:")
     print(f"    Phase 1: Duet Blueprint 生成（Messages API × 1）")
     print(f"    Phase 2: QA Agent テンプレート展開（ローカル）")
-    print(f"    Phase 3: SKILL.md 生成（Messages API × 1）")
-    print(f"    Phase 4: duet.json + workflow.md 生成（ローカル）")
-    print(f"    Phase 5: 登録 + バリデーション（ローカル Python）")
-    print(f"\n  推定コスト（haiku）: ~$0.10-$0.30")
-    print(f"  推定時間: 1-3 分")
+    print(f"    Phase 3: duet.json + workflow.md 生成（ローカル）")
+    print(f"    Phase 4: 登録 + バリデーション（ローカル Python）")
+    print(f"\n  推定コスト（haiku）: ~$0.05-$0.15")
+    print(f"  推定時間: 1-2 分")
 
 
 app = typer.Typer(
@@ -336,18 +316,15 @@ def main(
     task_agent_md, task_config, task_test_prompts = expand_task_agent(blueprint)
     qa_agent_md, qa_config = phase2_qa_agent(blueprint)
 
-    # Phase 3: SKILL.md
-    skill_md = phase3_skill(client, blueprint, model_str)
+    # Phase 3: duet.json + workflow.md
+    duet_json, workflow_md = phase3_duet(blueprint)
 
-    # Phase 4: duet.json + workflow.md
-    duet_json, workflow_md = phase4_duet(blueprint)
-
-    # Phase 5: Save + Validate
-    errors = phase5_save_and_validate(
+    # Phase 4: Save + Validate
+    errors = phase4_save_and_validate(
         blueprint,
         task_agent_md, task_config, task_test_prompts,
         qa_agent_md, qa_config,
-        duet_json, workflow_md, skill_md,
+        duet_json, workflow_md,
     )
 
     elapsed = time.time() - start_time

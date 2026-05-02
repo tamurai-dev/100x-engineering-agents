@@ -42,12 +42,4 @@ def load_agent_config(agent_name: str) -> dict:
         return json.load(f)
 
 
-def load_skill_md(duet_name: str) -> str | None:
-    """デュエットの SKILL.md を読み込む（存在する場合）。"""
-    skill_path = DUETS_DIR / duet_name / "skill.md"
-    if skill_path.exists():
-        return skill_path.read_text(encoding="utf-8")
-    skill_path_upper = DUETS_DIR / duet_name / "SKILL.md"
-    if skill_path_upper.exists():
-        return skill_path_upper.read_text(encoding="utf-8")
-    return None
+

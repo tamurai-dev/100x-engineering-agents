@@ -233,7 +233,6 @@ class DuetEnvironment(BaseModel):
 class DuetPreTask(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    read_skills: bool = True
     verify_packages: list[str] | None = None
 
 
@@ -298,7 +297,6 @@ class Duet(BaseModel):
     metadata: DuetMetadata | None = None
     task_agent: AgentRef
     qa_agent: AgentRef
-    skill: str | None = None
     skills: Annotated[list[SkillEntry], Field(max_length=20)] | None = None
     environment: DuetEnvironment | None = None
     workflow: DuetWorkflow

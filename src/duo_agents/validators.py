@@ -285,11 +285,6 @@ def validate_duet_dir(duet_dir: Path, manifest: dict[str, Any]) -> list[str]:
             "Actor-Critic パターンでは別エージェントである必要があります"
         )
 
-    if duet.skill:
-        full_skill_path = REPO_ROOT / duet.skill
-        if not full_skill_path.exists():
-            errors.append(f"{duet_name}: SKILL ファイルが見つかりません: {duet.skill}")
-
     qa = duet.workflow.qa
     if qa.convergence_delta >= qa.pass_threshold:
         errors.append(

@@ -43,17 +43,6 @@ def parse_qa_result(response: str) -> dict:
     }
 
 
-def build_skill_preamble(skill_content: str) -> str:
-    """SKILL.md の内容をプロンプト前文として整形する。"""
-    return (
-        "## タスク実行スキル（SKILL.md）\n\n"
-        "以下はこのタスクの実行に関する詳細なガイダンスです。"
-        "これに従って作業してください。\n\n"
-        f"{skill_content}\n\n"
-        "---\n\n"
-    )
-
-
 def build_feedback_history(feedback_entries: list[dict]) -> str:
     """蓄積されたフィードバック履歴を整形する。"""
     if not feedback_entries:
