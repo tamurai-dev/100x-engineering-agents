@@ -17,10 +17,8 @@
     "name": "code-review-qa",
     "ref": "agents/agents/code-review-qa"
   },
-  "skill": "agents/duets/code-review-duet/skill.md",
   "workflow": {
     "pre_task": {
-      "read_skills": true,
       "verify_packages": ["pylint"]
     },
     "execution": {

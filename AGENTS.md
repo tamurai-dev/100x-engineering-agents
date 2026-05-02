@@ -218,10 +218,9 @@ make create-agent NAME=<agent-name>
 方法 A（Duet Factory）は以下を全自動で行う:
 1. `agents/agents/<task-name>/` — Task Agent (Actor) を生成（agent.md + config.json）
 2. `agents/agents/<task-name>-qa/` — QA Agent (Critic) を生成（agent.md + config.json）
-3. `agents/duets/<duet-name>/duet.json` — Duet 定義（Task/QA 参照、QA ループ設定）
-4. `agents/skills/<duet-name>/SKILL.md` — タスク固有の手順書
-5. `.manifest.json` へのマニフェスト登録（HMAC-SHA256 署名付き）
-6. バリデーション
+3. `agents/duets/<duet-name>/duet.json` — Duet 定義（Task/QA 参照、QA ループ設定、Skills API スキル）
+4. `.manifest.json` へのマニフェスト登録（HMAC-SHA256 署名付き）
+5. バリデーション
 
 方法 B はテンプレートから単体 Subagent のみ生成。Duet を組む場合は方法 A を推奨する。
 
@@ -242,7 +241,7 @@ make check-all
 | 4 | `make test-duet` | Duet バリデーションテストスイート（正常系 + 異常系 + 整合性） |
 | 5 | `make test-qa-strategy` | QA 戦略エンジンテストスイート（テンプレート選択 + 完全性 + 整合性） |
 | 6 | `make test-duet-factory` | Duet Factory テストスイート（Blueprint 生成 + テンプレート展開） |
-| 7 | `make test-run-duet` | Duet ワークフロー実行エンジンテストスイート（QA パース + SKILL 注入 + フィードバック蓄積） |
+| 7 | `make test-run-duet` | Duet ワークフロー実行エンジンテストスイート（QA パース + Skills API + フィードバック蓄積） |
 | 8 | `make test-skill-resolver` | Skill Resolver テストスイート（プリビルト + コミュニティ + パッケージ解決） |
 | 9 | `make check-template` | テンプレート整合性チェック |
 | 10 | `make manifest-verify` | マニフェスト + HMAC 署名検証 |
@@ -372,13 +371,11 @@ Phase 2: QA Agent テンプレート展開
   - code → qa-agent/code.md.tmpl（コード品質検査）
   - その他 → qa-agent/generic.md.tmpl（汎用品質検査）
 
-Phase 3: SKILL.md 生成
-  Claude Messages API → タスク固有の手順書（前提条件・実行手順・品質基準）
-
-Phase 4: duet.json + workflow.md 生成
+Phase 3: duet.json + workflow.md 生成
   ローカル生成 → デュエット定義 + ワークフロー手順書
+  Skill Resolver によるスキル自動選択（プリビルト + カスタム）を duet.json の skills フィールドに反映
 
-Phase 5: 登録 + バリデーション
+Phase 4: 登録 + バリデーション
   マニフェスト登録（Task + QA 両方）+ frontmatter + config + duet 検証
 ```
 

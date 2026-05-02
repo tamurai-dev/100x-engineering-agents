@@ -6,7 +6,6 @@ Task Agent → QA Agent（fresh-context）→ フィードバック → 再実�
 ワークフローを Managed Agents API で実行する。
 
 v2 改善点:
-  - SKILL.md 注入（pre_task.read_skills）
   - Files API 連携（セッション出力ファイルの QA Agent 受け渡し）
   - フィードバック蓄積（全ラウンドの指摘を Task Agent に渡す）
   - 証跡詳細化（task_response 抜粋、tool_calls、出力ファイル一覧）
@@ -61,7 +60,6 @@ from duet_runtime import (
     REPO_ROOT,
     SKILLS_BETA,
     build_feedback_history,
-    build_skill_preamble,
     check_api_key,
     create_agent_and_session,
     download_file_content,
@@ -69,7 +67,6 @@ from duet_runtime import (
     list_session_output_files,
     load_agent_config,
     load_duet,
-    load_skill_md,
     parse_qa_result,
     send_and_collect,
     should_escalate_model,
@@ -86,7 +83,6 @@ class ModelChoice(str, Enum):
 def build_orchestrator_system(
     duet_name: str,
     qa_settings: dict,
-    skill_content: str | None,
 ) -> str:
     """Build system prompt for the orchestrator agent in multiagent mode."""
     max_iters = qa_settings["max_iterations"]
@@ -124,14 +120,6 @@ def build_orchestrator_system(
         "```\n",
     ]
 
-    if skill_content:
-        parts.append(
-            "\n## SKILL.md (pass to Task Agent)\n\n"
-            "When delegating to the Task Agent, include the following "
-            "skill guidance in your message:\n\n"
-            f"{skill_content[:ORCHESTRATOR_MAX_QA_PROMPT_CHARS]}\n"
-        )
-
     return "".join(parts)
 
 
@@ -142,7 +130,6 @@ def create_multiagent_session(
     duet_name: str,
     qa_settings: dict,
     current_model: str,
-    skill_content: str | None = None,
     skills: list[dict] | None = None,
     packages: dict[str, list[str]] | None = None,
 ) -> tuple:
@@ -181,7 +168,7 @@ def create_multiagent_session(
 
     # Orchestrator — delegates to both
     orchestrator_system = build_orchestrator_system(
-        duet_name, qa_settings, skill_content
+        duet_name, qa_settings
     )
     # callable_agents is a Research Preview parameter — pass via extra_body
     # to support SDK versions that don't have it as a named parameter yet.
@@ -334,13 +321,6 @@ def run_duet_multiagent(
 
     workflow = duet["workflow"]
     qa_settings = workflow["qa"]
-    pre_task = workflow.get("pre_task", {})
-
-    skill_content = None
-    if pre_task.get("read_skills", True):
-        skill_content = load_skill_md(duet_name)
-        if skill_content:
-            print(f"  SKILL.md: 読み込み済み ({len(skill_content)} chars)")
 
     duet_skills = duet.get("skills", [])
     duet_env = duet.get("environment", {})
@@ -373,7 +353,6 @@ def run_duet_multiagent(
         "mode": "multiagent",
         "model_override": model,
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "skill_injected": skill_content is not None,
         "skills_attached": [s.get("skill_id") for s in duet_skills],
         "packages_installed": duet_packages,
         "model_escalation": escalation_order if not explicit_model else None,
@@ -393,7 +372,6 @@ def run_duet_multiagent(
                 duet_name,
                 qa_settings,
                 current_model,
-                skill_content=skill_content,
                 skills=duet_skills or None,
                 packages=duet_packages or None,
             )
@@ -521,15 +499,6 @@ def run_duet(
 
     # ── Phase A: Pre-task ──
     workflow = duet["workflow"]
-    pre_task = workflow.get("pre_task", {})
-
-    skill_content = None
-    if pre_task.get("read_skills", True):
-        skill_content = load_skill_md(duet_name)
-        if skill_content:
-            print(f"  SKILL.md: 読み込み済み ({len(skill_content)} chars)")
-        elif verbose:
-            print("  SKILL.md: なし")
 
     # Load skills and environment from duet.json
     duet_skills = duet.get("skills", [])
@@ -545,6 +514,7 @@ def run_duet(
         pkg_strs = [f"{m}: {', '.join(p)}" for m, p in duet_packages.items()]
         print(f"  Packages: {'; '.join(pkg_strs)}")
 
+    pre_task = workflow.get("pre_task", {})
     if verbose and pre_task.get("verify_packages"):
         print(f"  verify_packages: {pre_task['verify_packages']}")
 
@@ -560,8 +530,6 @@ def run_duet(
         print("  [dry-run] QA Agent config: OK")
         print(f"    model: {qa_config.get('model')}")
         print(f"    system: {qa_config.get('system', '')[:80]}...")
-        if skill_content:
-            print(f"\n  [dry-run] SKILL.md: {len(skill_content)} chars")
         if duet_skills:
             print(f"  [dry-run] Skills: {[s.get('skill_id') for s in duet_skills]}")
         if duet_packages:
@@ -603,7 +571,6 @@ def run_duet(
         "input": user_input,
         "model_override": model,
         "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "skill_injected": skill_content is not None,
         "skills_attached": [s.get("skill_id") for s in duet_skills],
         "packages_installed": duet_packages,
         "model_escalation": escalation_order if not explicit_model else None,
@@ -625,12 +592,8 @@ def run_duet(
         packages=duet_packages or None,
     )
 
-    # Build initial prompt with skill preamble + file output instructions
-    initial_prompt = ""
-    if skill_content:
-        initial_prompt += build_skill_preamble(skill_content)
-    initial_prompt += user_input
-    initial_prompt += FILE_OUTPUT_INSTRUCTIONS
+    # Build initial prompt with file output instructions
+    initial_prompt = user_input + FILE_OUTPUT_INSTRUCTIONS
 
     task_result = send_and_collect(client, task_session.id, initial_prompt)
 
