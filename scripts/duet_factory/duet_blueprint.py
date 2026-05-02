@@ -1,7 +1,7 @@
 """
 Duet Blueprint 生成 — 自然言語仕様から Task Agent + QA Agent を同時生成する
 
-Duet Factory の中核モジュール。以下の7フェーズで動作する:
+Duet Factory の中核モジュール。以下の4フェーズで動作する:
   Phase 1: Task Agent Blueprint 生成（既存 blueprint.py を再利用）
   Phase 2: QA Agent Blueprint 生成（qa_strategy.py でテンプレート自動選択）
   Phase 3: duet.json + workflow.md 生成
