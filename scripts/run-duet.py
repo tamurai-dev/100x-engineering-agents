@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import datetime
 import json
-import os
 import sys
 import time
 from enum import Enum
@@ -39,321 +38,49 @@ from typing import Annotated
 
 import typer
 
+# Make the scripts/ dir importable so duet_runtime/ resolves regardless of CWD
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from duet_runtime import (
+    AGENTS_DIR,
+    BETA_HEADER,
+    DEFAULT_ESCALATION_THRESHOLD,
+    DEFAULT_MODEL_ESCALATION,
+    DUETS_DIR,
+    ESCALATION_IMPROVEMENT_DELTA,
+    EVIDENCE_DIR,
+    EVIDENCE_RESPONSE_LIMIT,
+    FILE_OUTPUT_INSTRUCTIONS,
+    FILES_BETA,
+    FORMAT_REQUIRES_SONNET,
+    MODEL_MAP,
+    MULTIAGENT_BETA,
+    ORCHESTRATOR_MAX_QA_PROMPT_CHARS,
+    REPO_ROOT,
+    SKILLS_BETA,
+    build_feedback_history,
+    build_skill_preamble,
+    check_api_key,
+    create_agent_and_session,
+    download_file_content,
+    list_session_files,
+    list_session_output_files,
+    load_agent_config,
+    load_duet,
+    load_skill_md,
+    parse_qa_result,
+    send_and_collect,
+    should_escalate_model,
+)
+
 
 class ModelChoice(str, Enum):
     """Available model tiers."""
     haiku = "haiku"
     sonnet = "sonnet"
     opus = "opus"
-
-
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DUETS_DIR = REPO_ROOT / "agents" / "duets"
-AGENTS_DIR = REPO_ROOT / "agents" / "agents"
-EVIDENCE_DIR = REPO_ROOT / "evidence" / "duets"
-
-MODEL_MAP = {
-    "haiku": "claude-haiku-4-5",
-    "sonnet": "claude-sonnet-4-6",
-    "opus": "claude-opus-4-6",
-}
-
-BETA_HEADER = "managed-agents-2026-04-01"
-FILES_BETA = "files-api-2025-04-14"
-SKILLS_BETA = "skills-2025-10-02"
-MULTIAGENT_BETA = "multiagent-2026-04-01"
-
-# Default model escalation order and threshold
-DEFAULT_MODEL_ESCALATION = ["haiku", "sonnet"]
-DEFAULT_ESCALATION_THRESHOLD = 0.40
-ESCALATION_IMPROVEMENT_DELTA = 0.05
-
-# Max chars of task_response to store in evidence
-EVIDENCE_RESPONSE_LIMIT = 2000
-
-# QA loop iteration limit for orchestrator prompt
-ORCHESTRATOR_MAX_QA_PROMPT_CHARS = 4000
-
-# artifact_format values that require higher-tier models by default
-FORMAT_REQUIRES_SONNET = {"presentation", "structured_data", "media_image"}
-
-# File output instructions appended to Task Agent prompt
-FILE_OUTPUT_INSTRUCTIONS = (
-    "\n\n---\n"
-    "## IMPORTANT: File Output Rules\n\n"
-    "1. Save ALL generated artifacts to `/mnt/session/outputs/`.\n"
-    "2. After saving, run `ls -la /mnt/session/outputs/` to verify "
-    "the files exist and are non-empty.\n"
-    "3. If a file is missing or empty, regenerate and save it again.\n"
-    "4. Do NOT just describe what you would create — actually create "
-    "the files and save them to the output directory.\n"
-)
-
-
-def check_api_key() -> str:
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        print("ERROR: ANTHROPIC_API_KEY が設定されていません")
-        print("  export ANTHROPIC_API_KEY='sk-ant-...'")
-        sys.exit(1)
-    return key
-
-
-def load_duet(duet_name: str) -> dict:
-    """duet.json を読み込む。"""
-    duet_path = DUETS_DIR / duet_name / "duet.json"
-    if not duet_path.exists():
-        print(f"ERROR: デュエットが見つかりません: {duet_path}")
-        sys.exit(1)
-    with open(duet_path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def load_agent_config(agent_name: str) -> dict:
-    """エージェントの config.json を読み込む。"""
-    config_path = AGENTS_DIR / agent_name / "config.json"
-    if not config_path.exists():
-        print(f"ERROR: エージェント設定が見つかりません: {config_path}")
-        sys.exit(1)
-    with open(config_path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def load_skill_md(duet_name: str) -> str | None:
-    """デュエットの SKILL.md を読み込む（存在する場合）。"""
-    skill_path = DUETS_DIR / duet_name / "skill.md"
-    if skill_path.exists():
-        return skill_path.read_text(encoding="utf-8")
-    # Check uppercase variant
-    skill_path_upper = DUETS_DIR / duet_name / "SKILL.md"
-    if skill_path_upper.exists():
-        return skill_path_upper.read_text(encoding="utf-8")
-    return None
-
-
-def create_agent_and_session(
-    client,
-    config: dict,
-    model_override: str | None,
-    title: str,
-    resources: list[dict] | None = None,
-    skills: list[dict] | None = None,
-    packages: dict[str, list[str]] | None = None,
-) -> tuple:
-    """Managed Agents API でエージェントとセッションを作成する。"""
-    agent_config = dict(config)
-    if model_override:
-        agent_config["model"] = MODEL_MAP.get(model_override, model_override)
-
-    create_params = {
-        "name": agent_config["name"],
-        "model": agent_config["model"],
-        "system": agent_config.get("system", ""),
-    }
-    if agent_config.get("description"):
-        create_params["description"] = agent_config["description"]
-    if agent_config.get("tools"):
-        create_params["tools"] = agent_config["tools"]
-    # Attach skills to the agent (pre-built and/or custom)
-    if skills:
-        create_params["skills"] = skills
-
-    agent = client.beta.agents.create(**create_params)
-
-    # Build environment config with optional packages
-    env_config: dict = {
-        "type": "cloud",
-        "networking": {"type": "unrestricted"},
-    }
-    if packages:
-        env_config["packages"] = packages
-
-    env = client.beta.environments.create(
-        name=f"duet-{agent_config['name']}-{int(time.time())}",
-        config=env_config,
-    )
-
-    session_params: dict = {
-        "agent": agent.id,
-        "environment_id": env.id,
-        "title": title,
-    }
-    if resources:
-        session_params["resources"] = resources
-
-    session = client.beta.sessions.create(**session_params)
-    return agent, env, session
-
-
-def send_and_collect(client, session_id: str, prompt: str) -> dict:
-    """メッセージを送信し、レスポンスを収集する。"""
-    messages: list[str] = []
-    tool_calls: list[dict] = []
-    errors: list[str] = []
-
-    try:
-        with client.beta.sessions.events.stream(session_id) as stream:
-            client.beta.sessions.events.send(
-                session_id,
-                events=[
-                    {
-                        "type": "user.message",
-                        "content": [{"type": "text", "text": prompt}],
-                    },
-                ],
-            )
-
-            for event in stream:
-                match event.type:
-                    case "agent.message":
-                        for block in event.content:
-                            if hasattr(block, "text"):
-                                messages.append(block.text)
-                    case "agent.tool_use":
-                        tool_calls.append({"name": event.name})
-                    case "session.error":
-                        err_msg = (
-                            str(event.error.message)
-                            if hasattr(event, "error")
-                            else "unknown error"
-                        )
-                        errors.append(err_msg)
-                    case "session.status_idle":
-                        break
-                    case "session.status_terminated":
-                        errors.append("session terminated")
-                        break
-    except Exception as e:
-        errors.append(f"stream error: {e}")
-
-    # Usage
-    session_info = client.beta.sessions.retrieve(session_id)
-    usage = {
-        "input_tokens": (
-            session_info.usage.input_tokens
-            if hasattr(session_info, "usage") and session_info.usage
-            else 0
-        ),
-        "output_tokens": (
-            session_info.usage.output_tokens
-            if hasattr(session_info, "usage") and session_info.usage
-            else 0
-        ),
-    }
-
-    return {
-        "response": "\n".join(messages),
-        "tool_calls": tool_calls,
-        "errors": errors,
-        "usage": usage,
-    }
-
-
-def list_session_files(client, session_id: str) -> list[dict]:
-    """セッションのリソース一覧からファイルを抽出する。"""
-    try:
-        resources = client.beta.sessions.resources.list(session_id=session_id)
-        files = []
-        for res in resources.data:
-            if res.type == "file":
-                files.append({
-                    "file_id": res.file_id,
-                    "mount_path": res.mount_path,
-                })
-        return files
-    except Exception:
-        return []
-
-
-def list_session_output_files(client, session_id: str) -> list[dict]:
-    """Files API で session に紐づく出力ファイルを取得する。
-
-    scope_id パラメータでセッション ID を指定し、Agent が生成したファイルを列挙する。
-    """
-    try:
-        result = client.beta.files.list(scope_id=session_id)
-        files = []
-        for f in result.data:
-            files.append({
-                "file_id": f.id,
-                "filename": f.filename,
-                "size_bytes": f.size_bytes,
-                "mime_type": f.mime_type,
-            })
-        return files
-    except Exception:
-        return []
-
-
-def download_file_content(client, file_id: str) -> bytes | None:
-    """Files API でファイル内容をダウンロードする。"""
-    try:
-        return client.beta.files.download(file_id)
-    except Exception:
-        return None
-
-
-def parse_qa_result(response: str) -> dict:
-    """QA Agent のレスポンスから JSON 結果をパースする。"""
-    import re
-
-    # Try shared extract + lenient parse first
-    try:
-        sys.path.insert(0, str(REPO_ROOT / "scripts"))
-        from duo_agents.json_utils import extract_json, parse_json_lenient
-
-        json_str = extract_json(response)
-        return parse_json_lenient(json_str)
-    except (ImportError, ValueError, json.JSONDecodeError):
-        pass
-
-    # Fallback: JSON block extraction with plain json.loads
-    json_match = re.search(r"```(?:json)?\s*\n(.*?)\n```", response, re.DOTALL)
-    if json_match:
-        try:
-            return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # Fallback: parse entire response
-    try:
-        return json.loads(response)
-    except json.JSONDecodeError:
-        pass
-
-    # Parse failure
-    return {
-        "score": 0.0,
-        "passed": False,
-        "summary": "QA Agent のレスポンスを JSON としてパースできませんでした",
-        "feedback": response[:500],
-        "parse_error": True,
-    }
-
-
-def build_skill_preamble(skill_content: str) -> str:
-    """SKILL.md の内容をプロンプト前文として整形する。"""
-    return (
-        "## タスク実行スキル（SKILL.md）\n\n"
-        "以下はこのタスクの実行に関する詳細なガイダンスです。"
-        "これに従って作業してください。\n\n"
-        f"{skill_content}\n\n"
-        "---\n\n"
-    )
-
-
-def build_feedback_history(feedback_entries: list[dict]) -> str:
-    """蓄積されたフィードバック履歴を整形する。"""
-    if not feedback_entries:
-        return ""
-    lines = ["## 過去の QA フィードバック履歴\n"]
-    for entry in feedback_entries:
-        lines.append(
-            f"### ラウンド #{entry['iteration']} "
-            f"(スコア: {entry['score']:.2f})\n"
-        )
-        lines.append(f"{entry['feedback']}\n")
-    return "\n".join(lines)
 
 
 def build_orchestrator_system(
@@ -774,30 +501,6 @@ def run_duet_multiagent(
     print(f"  証跡: {evidence_path}")
 
     return results
-
-
-def should_escalate_model(
-    current_model: str,
-    score: float,
-    prev_score: float | None,
-    escalation_order: list[str],
-    threshold: float,
-) -> str | None:
-    """Determine whether to escalate to a higher-tier model.
-
-    Returns the next model name if escalation is needed, None otherwise.
-    """
-    if score > threshold:
-        return None
-    if prev_score is not None and (score - prev_score) >= ESCALATION_IMPROVEMENT_DELTA:
-        return None
-    try:
-        idx = escalation_order.index(current_model)
-    except ValueError:
-        return None
-    if idx + 1 >= len(escalation_order):
-        return None
-    return escalation_order[idx + 1]
 
 
 def run_duet(
