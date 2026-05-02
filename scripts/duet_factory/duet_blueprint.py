@@ -36,7 +36,7 @@ TEMPLATES_DIR = REPO_ROOT / "agents" / "templates"
 MODEL_MAP = {
     "haiku": "claude-haiku-4-5",
     "sonnet": "claude-sonnet-4-6",
-    "opus": "claude-opus-4-6",
+    "opus": "claude-opus-4-7",
 }
 
 # ── Duet Blueprint 生成プロンプト ─────────────────
