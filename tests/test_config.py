@@ -15,7 +15,7 @@ from duo_agents.config import (
     AGENTS_ASSETS_DIR,
     ALL_BETAS,
     ANTHROPIC_PREBUILT_SKILLS,
-    BUNDLES_DIR,
+    DUETS_DIR,
     DEFAULT_EDD_CONVERGENCE_DELTA,
     DEFAULT_EDD_MAX_ITERATIONS,
     DEFAULT_EDD_TARGET_OVERALL,
@@ -150,8 +150,8 @@ class TestPaths:
     def test_subagents_dir_is_under_assets_dir(self) -> None:
         assert SUBAGENTS_DIR.is_relative_to(AGENTS_ASSETS_DIR)
 
-    def test_bundles_dir_is_under_assets_dir(self) -> None:
-        assert BUNDLES_DIR.is_relative_to(AGENTS_ASSETS_DIR)
+    def test_duets_dir_is_under_assets_dir(self) -> None:
+        assert DUETS_DIR.is_relative_to(AGENTS_ASSETS_DIR)
 
     def test_templates_dir_is_under_assets_dir(self) -> None:
         assert TEMPLATES_DIR.is_relative_to(AGENTS_ASSETS_DIR)
@@ -168,7 +168,7 @@ class TestPaths:
             REPO_ROOT,
             AGENTS_ASSETS_DIR,
             SUBAGENTS_DIR,
-            BUNDLES_DIR,
+            DUETS_DIR,
             TEMPLATES_DIR,
             MANIFEST_PATH,
             MANIFEST_KEY_PATH,

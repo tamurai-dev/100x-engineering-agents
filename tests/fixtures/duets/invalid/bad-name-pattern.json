@@ -1,0 +1,20 @@
+{
+  "name": "InvalidDuet",
+  "version": "1.0.0",
+  "description": "name パターンが不正なデュエット。小文字+ハイフンのみ、末尾 -duet 必須。",
+  "artifact_format": "text",
+  "task_agent": {
+    "name": "code-reviewer",
+    "ref": "agents/agents/code-reviewer"
+  },
+  "qa_agent": {
+    "name": "code-review-qa",
+    "ref": "agents/agents/code-review-qa"
+  },
+  "workflow": {
+    "qa": {
+      "max_iterations": 3,
+      "pass_threshold": 0.80
+    }
+  }
+}

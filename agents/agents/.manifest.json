@@ -5,43 +5,43 @@
       "file": "agents/agents/code-reviewer/agent.md",
       "created_at": "2026-05-01T01:09:13.440788+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "2fb52ac2b8a33306a9b4f23db923c94d91221052a6b14cfa8a3a96d8fc20df52"
+      "hmac_sha256": "4e32b5c14a8165524f6ecb9728c7435bd4438c56475132811acbd74404f1d50d"
     },
     "doc-writer": {
       "file": "agents/agents/doc-writer/agent.md",
       "created_at": "2026-05-01T01:09:13.440956+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "f99db8210c511f1b073b5457b0e6ffcab9a85da7128cadbd347f32d56f092cbf"
+      "hmac_sha256": "512f4d20e46944ce6fca0b92214617e9a8585d6fed84beec2a0342fdc8026573"
     },
     "security-auditor": {
       "file": "agents/agents/security-auditor/agent.md",
       "created_at": "2026-05-01T01:09:13.441224+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "99a0e72fdb816f50986d98b54540534392d2bc076b3ab11b6f624332f5e53c7c"
+      "hmac_sha256": "66468ab756566d942b1522b80ee349af8a50289f764d393788d91091425629dc"
     },
     "task-planner": {
       "file": "agents/agents/task-planner/agent.md",
       "created_at": "2026-05-01T01:09:13.441433+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "018be8ef2fd418415168ca4d0fac1f2d9aa6b3fa2e8c89bcd75bcba3d660b2e9"
+      "hmac_sha256": "a6f04ea5365f38902b809fb755f1f140002d274f30651558bf025b012fa233a5"
     },
     "test-generator": {
       "file": "agents/agents/test-generator/agent.md",
       "created_at": "2026-05-01T01:09:13.441584+00:00",
       "created_by": "initial-seed",
-      "hmac_sha256": "d252ffff8eda7d325101a7847cd7277060a5c986c12e6328ab11dd4680321f63"
+      "hmac_sha256": "158e48b54a6fe80aeab3bbb8f4b55264ddaf4a2c87a85c5c144f7385877957c6"
     },
     "performance-optimizer": {
       "file": "agents/agents/performance-optimizer/agent.md",
       "created_at": "2026-05-01T06:04:06.325115+00:00",
       "created_by": "create-subagent.sh",
-      "hmac_sha256": "eafb0d4cdf24109b7b0beffdd0931fc980e4919f27bfe6252857e238f8a1369d"
+      "hmac_sha256": "b0238a5b0020ee02dcebd9139e72f225d0a773a06c02c5335200c9d5b20c5828"
     },
     "code-review-qa": {
       "file": "agents/agents/code-review-qa/agent.md",
       "created_at": "2026-05-01T07:18:57.721012+00:00",
       "created_by": "create-subagent.sh",
-      "hmac_sha256": "2f125352ddcf19f6b43aba1cf50bab639aa1bdf4da30b74077e3737f811d4627"
+      "hmac_sha256": "cbb48a1eb601fd8d3ac0eeb261ae6e34d8325b800900a37fb8f332cce42a1e5f"
     }
   }
 }

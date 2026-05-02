@@ -71,7 +71,7 @@ def validate_file(filepath: Path, schema: dict) -> tuple[bool, list[str]]:
 
 def _check_template() -> int:
     print("テンプレートスキーマ整合性チェック...")
-    tmpl_path = REPO_ROOT / "agents" / "templates" / "subagent.md.tmpl"
+    tmpl_path = REPO_ROOT / "agents" / "templates" / "task-agent" / "agent.md.tmpl"
     if not tmpl_path.exists():
         print(f"FAIL: テンプレートが見つかりません: {tmpl_path}")
         return 1

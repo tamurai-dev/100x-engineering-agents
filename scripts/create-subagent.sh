@@ -5,8 +5,7 @@
 # ディレクトリ構造で作成:
 #   agents/agents/<name>/
 #     ├── agent.md          (Claude Code 用)
-#     ├── config.json       (Managed Agents API 用)
-#     └── test-prompts.json (テストケース)
+#     └── config.json       (Managed Agents API 用)
 #
 # Usage:
 #   bash scripts/create-subagent.sh <agent-name>
@@ -18,9 +17,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-MD_TEMPLATE="$REPO_ROOT/agents/templates/subagent.md.tmpl"
-CONFIG_TEMPLATE="$REPO_ROOT/agents/templates/config.json.tmpl"
-PROMPTS_TEMPLATE="$REPO_ROOT/agents/templates/test-prompts.json.tmpl"
+MD_TEMPLATE="$REPO_ROOT/agents/templates/task-agent/agent.md.tmpl"
+CONFIG_TEMPLATE="$REPO_ROOT/agents/templates/task-agent/config.json.tmpl"
 AGENTS_DIR="$REPO_ROOT/agents/agents"
 
 # ── 引数チェック ──────────────────────────────────
@@ -35,7 +33,6 @@ AGENT_NAME="$1"
 TARGET_DIR="$AGENTS_DIR/$AGENT_NAME"
 TARGET_MD="$TARGET_DIR/agent.md"
 TARGET_CONFIG="$TARGET_DIR/config.json"
-TARGET_PROMPTS="$TARGET_DIR/test-prompts.json"
 
 # ── バリデーション ────────────────────────────────
 # 名前フォーマットチェック（小文字+ハイフンのみ）
@@ -53,7 +50,7 @@ if [ -d "$TARGET_DIR" ]; then
 fi
 
 # テンプレート存在チェック
-for tmpl in "$MD_TEMPLATE" "$CONFIG_TEMPLATE" "$PROMPTS_TEMPLATE"; do
+for tmpl in "$MD_TEMPLATE" "$CONFIG_TEMPLATE"; do
     if [ ! -f "$tmpl" ]; then
         echo "ERROR: テンプレートが見つかりません: $tmpl"
         exit 1
@@ -65,34 +62,28 @@ echo "=== 新規 Subagent 作成: $AGENT_NAME ==="
 echo ""
 
 mkdir -p "$TARGET_DIR"
-echo "[1/5] ディレクトリ作成: $TARGET_DIR"
+echo "[1/4] ディレクトリ作成: $TARGET_DIR"
 
 # agent.md
 sed "s/<agent-name>/$AGENT_NAME/g" "$MD_TEMPLATE" > "$TARGET_MD"
-echo "[2/5] agent.md 作成（Claude Code 用）"
+echo "[2/4] agent.md 作成（Claude Code 用）"
 
 # config.json
 sed "s/<agent-name>/$AGENT_NAME/g" "$CONFIG_TEMPLATE" > "$TARGET_CONFIG"
-echo "[3/5] config.json 作成（Managed Agents API 用）"
-
-# test-prompts.json
-cp "$PROMPTS_TEMPLATE" "$TARGET_PROMPTS"
-echo "[4/5] test-prompts.json 作成（テストケース）"
+echo "[3/4] config.json 作成（Managed Agents API 用）"
 
 # ── マニフェスト登録（HMAC 署名付き）────────────
 python3 "$REPO_ROOT/scripts/manifest.py" register "$AGENT_NAME"
-echo "[5/5] マニフェストに登録しました（HMAC-SHA256 署名付き）"
+echo "[4/4] マニフェストに登録しました（HMAC-SHA256 署名付き）"
 
 echo ""
 echo "  次のステップ:"
 echo "    1. $TARGET_MD を編集: description, tools, システムプロンプト"
 echo "    2. $TARGET_CONFIG を編集: Managed Agents API パラメータ"
-echo "    3. $TARGET_PROMPTS を編集: テストケース定義"
-echo "    4. 検証:"
+echo "    3. 検証:"
 echo ""
 echo "       make validate           # agent.md バリデーション"
 echo "       make validate-config    # config.json バリデーション + 整合性チェック"
-echo "       make test-agent NAME=$AGENT_NAME --dry-run  # テスト予行"
 echo ""
 echo "=== 作成完了 ==="
 echo "  ディレクトリ:   $TARGET_DIR"

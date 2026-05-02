@@ -3,7 +3,7 @@
 セッション証跡収集ツール
 
 Managed Agents セッションのイベントを取得し、evidence/sessions/ に保存する。
-test-agent.py が自動保存するが、既存セッションの手動取得にも使用可能。
+run-duet.py が自動保存するが、既存セッションの手動取得にも使用可能。
 
 Usage:
     python scripts/collect-evidence.py <session-id>                   # セッションイベント取得
@@ -144,7 +144,7 @@ def generate_summary() -> None:
     ]
 
     if not entries:
-        lines.append("_証跡なし。`make test-agent NAME=<agent-name>` でテストを実行してください。_")
+        lines.append("_証跡なし。`make run-duet NAME=<duet-name> INPUT=\"...\"` でデュエットを実行してください。_")
     else:
         lines.append("| 日付 | エージェント | モデル | テスト数 | 合格 | 不合格 | ファイル |")
         lines.append("|------|------------|--------|---------|------|--------|---------|")

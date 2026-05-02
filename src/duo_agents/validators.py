@@ -1,8 +1,8 @@
-"""Validation utilities for subagents, managed-agent configs, and bundles.
+"""Validation utilities for subagents, managed-agent configs, and duets.
 
 This module replaces the jsonschema-based logic that previously lived in
 ``scripts/validate_subagents.py`` / ``scripts/validate-config.py`` /
-``scripts/validate-bundle.py``. The CLI scripts now delegate to the
+``scripts/validate-duet.py``. The CLI scripts now delegate to the
 functions defined here.
 
 Error message formatting is preserved so that pre-commit hooks, CI logs and
@@ -20,13 +20,13 @@ import yaml
 from pydantic import ValidationError
 
 from duo_agents.config.paths import (
-    BUNDLES_DIR,
+    DUETS_DIR,
     MANIFEST_PATH,
     REPO_ROOT,
     SUBAGENTS_DIR,
 )
 from duo_agents.schemas import (
-    Bundle,
+    Duet,
     ManagedAgentConfig,
     SubagentFrontmatter,
     format_validation_error,
@@ -197,7 +197,7 @@ def validate_agent_config(
     return len(errors) == 0, errors
 
 
-# ── Bundle validation ───────────────────────────────────────────────────────
+# ── Duet validation ───────────────────────────────────────────────────────
 
 
 def load_manifest() -> dict[str, Any]:
@@ -209,7 +209,7 @@ def load_manifest() -> dict[str, Any]:
 
 
 def _validate_agent_ref(
-    bundle_name: str,
+    duet_name: str,
     role: str,
     agent: dict[str, Any],
     manifest: dict[str, Any],
@@ -223,77 +223,77 @@ def _validate_agent_ref(
     ref_tail = agent_ref.rsplit("/", 1)[-1]
     if ref_tail != agent_name:
         errors.append(
-            f"{bundle_name}: {role} の ref 末尾 ({ref_tail}) が name ({agent_name}) と一致しません"
+            f"{duet_name}: {role} の ref 末尾 ({ref_tail}) が name ({agent_name}) と一致しません"
         )
 
     if not agent_dir.exists():
-        errors.append(f"{bundle_name}: {role} ディレクトリが存在しません: {agent_ref}")
+        errors.append(f"{duet_name}: {role} ディレクトリが存在しません: {agent_ref}")
     else:
         if not (agent_dir / "agent.md").exists():
             errors.append(
-                f"{bundle_name}: {role} の agent.md が見つかりません: {agent_ref}/agent.md"
+                f"{duet_name}: {role} の agent.md が見つかりません: {agent_ref}/agent.md"
             )
         if not (agent_dir / "config.json").exists():
             errors.append(
-                f"{bundle_name}: {role} の config.json が見つかりません: {agent_ref}/config.json"
+                f"{duet_name}: {role} の config.json が見つかりません: {agent_ref}/config.json"
             )
 
     if agent_name not in manifest.get("agents", {}):
-        errors.append(f"{bundle_name}: {role} ({agent_name}) がマニフェストに未登録です")
+        errors.append(f"{duet_name}: {role} ({agent_name}) がマニフェストに未登録です")
 
     return errors
 
 
-def validate_bundle_dir(bundle_dir: Path, manifest: dict[str, Any]) -> list[str]:
-    """Validate one bundle directory. Returns the list of error messages."""
+def validate_duet_dir(duet_dir: Path, manifest: dict[str, Any]) -> list[str]:
+    """Validate one duet directory. Returns the list of error messages."""
     errors: list[str] = []
-    bundle_name = bundle_dir.name
+    duet_name = duet_dir.name
 
-    bundle_json_path = bundle_dir / "bundle.json"
-    if not bundle_json_path.exists():
-        return [f"{bundle_name}: bundle.json が見つかりません"]
+    duet_json_path = duet_dir / "duet.json"
+    if not duet_json_path.exists():
+        return [f"{duet_name}: duet.json が見つかりません"]
 
     try:
-        with bundle_json_path.open(encoding="utf-8") as f:
+        with duet_json_path.open(encoding="utf-8") as f:
             raw = json.load(f)
     except json.JSONDecodeError as exc:
-        return [f"{bundle_name}: bundle.json の JSON パースエラー: {exc}"]
+        return [f"{duet_name}: duet.json の JSON パースエラー: {exc}"]
 
     try:
-        bundle = Bundle.model_validate(raw)
+        duet = Duet.model_validate(raw)
     except ValidationError as exc:
         first = exc.errors()[0]
         loc = ".".join(str(x) for x in first.get("loc", ())) or "(root)"
-        return [f"{bundle_name}: スキーマ検証エラー: [{loc}] {first.get('msg', '')}"]
+        return [f"{duet_name}: スキーマ検証エラー: [{loc}] {first.get('msg', '')}"]
 
-    if bundle.name != bundle_name:
+    if duet.name != duet_name:
         errors.append(
-            f"{bundle_name}: bundle.json の name ({bundle.name}) が "
-            f"ディレクトリ名 ({bundle_name}) と一致しません"
+            f"{duet_name}: duet.json の name ({duet.name}) が "
+            f"ディレクトリ名 ({duet_name}) と一致しません"
         )
 
     errors.extend(
-        _validate_agent_ref(bundle_name, "Task Agent", raw["task_agent"], manifest)
+        _validate_agent_ref(duet_name, "Task Agent", raw["task_agent"], manifest)
     )
     errors.extend(
-        _validate_agent_ref(bundle_name, "QA Agent", raw["qa_agent"], manifest)
+        _validate_agent_ref(duet_name, "QA Agent", raw["qa_agent"], manifest)
     )
 
-    if bundle.task_agent.name == bundle.qa_agent.name:
+    if duet.task_agent.name == duet.qa_agent.name:
         errors.append(
-            f"{bundle_name}: Task Agent と QA Agent が同一です ({bundle.task_agent.name})。"
+            f"{duet_name}: Task Agent と QA Agent が同一です ({duet.task_agent.name})。"
             "Actor-Critic パターンでは別エージェントである必要があります"
         )
 
-    if bundle.skill:
-        full_skill_path = REPO_ROOT / bundle.skill
+    if duet.skill:
+        full_skill_path = REPO_ROOT / duet.skill
         if not full_skill_path.exists():
-            errors.append(f"{bundle_name}: SKILL ファイルが見つかりません: {bundle.skill}")
+            errors.append(f"{duet_name}: SKILL ファイルが見つかりません: {duet.skill}")
 
-    qa = bundle.workflow.qa
+    qa = duet.workflow.qa
     if qa.convergence_delta >= qa.pass_threshold:
         errors.append(
-            f"{bundle_name}: convergence_delta ({qa.convergence_delta}) が "
+            f"{duet_name}: convergence_delta ({qa.convergence_delta}) が "
             f"pass_threshold ({qa.pass_threshold}) 以上です。"
             "収束判定が意図通りに動作しない可能性があります"
         )
@@ -301,11 +301,11 @@ def validate_bundle_dir(bundle_dir: Path, manifest: dict[str, Any]) -> list[str]
     return errors
 
 
-def find_bundle_dirs(target: str | Path | None = None) -> list[Path]:
-    """Return the list of bundle directories to validate.
+def find_duet_dirs(target: str | Path | None = None) -> list[Path]:
+    """Return the list of duet directories to validate.
 
-    ``target`` is either ``None`` (meaning *all* bundles) or a path-like
-    pointing to a specific bundle directory (relative paths resolve against
+    ``target`` is either ``None`` (meaning *all* duets) or a path-like
+    pointing to a specific duet directory (relative paths resolve against
     the repo root).
     """
     if target is not None:
@@ -316,12 +316,12 @@ def find_bundle_dirs(target: str | Path | None = None) -> list[Path]:
             raise FileNotFoundError(f"ディレクトリが見つかりません: {target}")
         return [target_path]
 
-    if not BUNDLES_DIR.exists():
+    if not DUETS_DIR.exists():
         return []
 
     return [
         d
-        for d in sorted(BUNDLES_DIR.iterdir())
+        for d in sorted(DUETS_DIR.iterdir())
         if d.is_dir() and not d.name.startswith(".")
     ]
 
@@ -354,10 +354,10 @@ __all__ = [
     "KNOWN_FRONTMATTER_FIELDS",
     "extract_frontmatter",
     "find_agent_config_dirs",
-    "find_bundle_dirs",
+    "find_duet_dirs",
     "find_subagent_targets",
     "load_manifest",
     "validate_agent_config",
-    "validate_bundle_dir",
+    "validate_duet_dir",
     "validate_subagent_frontmatter",
 ]

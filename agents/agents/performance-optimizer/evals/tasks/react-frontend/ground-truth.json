@@ -22,7 +22,7 @@
       "id": "moment-heavy",
       "file": "Dashboard.tsx",
       "line_range": [3, 3],
-      "type": "moment-bundle",
+      "type": "moment-duet",
       "severity": "high",
       "category": "must_find",
       "description": "moment.js（300KB+）を使用。date-fns や dayjs（数KB）への置き換えを推奨"

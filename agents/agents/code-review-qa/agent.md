@@ -3,7 +3,7 @@ name: code-review-qa
 description: >
   コードレビュー結果の品質を検査する QA エージェント。
   レビュー内容の網羅性・正確性・フォーマット準拠を fresh-context で検証する。
-  バンドルワークフローの QA フェーズで PROACTIVELY 起動される。
+  デュエットワークフローの QA フェーズで PROACTIVELY 起動される。
 model: haiku
 disallowedTools:
   - Write
